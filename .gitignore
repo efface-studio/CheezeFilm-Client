@@ -33,6 +33,20 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# database
+/data
+*.db
+*.db-journal
+
+# user-uploaded content — must stay out of source control
+/public/auditions/*
+!/public/auditions/.gitkeep
+/public/members/*
+!/public/members/.gitkeep
+
+# editor / claude
+/.claude
+
 # vercel
 .vercel
 
