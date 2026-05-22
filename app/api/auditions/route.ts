@@ -4,6 +4,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { db } from "@/lib/db";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
+import { isAcceptingApplications } from "@/lib/auditionListings";
 
 export const runtime = "nodejs";
 
@@ -80,6 +81,22 @@ export async function POST(req: Request) {
   const portfolio_url = get("portfolio_url") || null;
   const photo = form.get("photo");
 
+  // Listing — required. Submissions must target a specific open audition call.
+  const listingIdRaw = get("listing_id");
+  const listing_id = listingIdRaw ? Number(listingIdRaw) : NaN;
+  if (!Number.isFinite(listing_id)) {
+    return NextResponse.json(
+      { error: "지원할 공고를 먼저 선택해주세요." },
+      { status: 400 },
+    );
+  }
+  if (!isAcceptingApplications(listing_id)) {
+    return NextResponse.json(
+      { error: "이 공고는 더 이상 지원을 받지 않습니다." },
+      { status: 409 },
+    );
+  }
+
   // Validate text fields
   if (!name || name.length > 50) {
     return NextResponse.json(
@@ -126,9 +143,9 @@ export async function POST(req: Request) {
 
   const stmt = db.prepare(`
     INSERT INTO auditions
-      (name, age, gender, phone, email, experience, role_preference, intro, portfolio_url, photo_url)
+      (name, age, gender, phone, email, experience, role_preference, intro, portfolio_url, photo_url, listing_id)
     VALUES
-      (@name, @age, @gender, @phone, @email, @experience, @role_preference, @intro, @portfolio_url, @photo_url)
+      (@name, @age, @gender, @phone, @email, @experience, @role_preference, @intro, @portfolio_url, @photo_url, @listing_id)
   `);
 
   const result = stmt.run({
@@ -142,6 +159,7 @@ export async function POST(req: Request) {
     intro,
     portfolio_url,
     photo_url,
+    listing_id,
   });
 
   return NextResponse.json(
