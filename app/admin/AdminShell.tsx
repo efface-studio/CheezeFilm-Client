@@ -8,14 +8,16 @@ type Tab =
   | { key: "dashboard"; label: "대시보드"; icon: string }
   | { key: "auditions"; label: "오디션"; icon: string; badge?: number }
   | { key: "fan"; label: "응원 메시지"; icon: string; badge?: number }
-  | { key: "members"; label: "멤버 사진"; icon: string }
+  | { key: "members"; label: "멤버 관리"; icon: string }
+  | { key: "memberPhotos"; label: "멤버 사진"; icon: string }
   | { key: "content"; label: "사이트 콘텐츠"; icon: string };
 
 const TABS: Tab[] = [
   { key: "dashboard", label: "대시보드", icon: "▦" },
   { key: "auditions", label: "오디션", icon: "▤" },
   { key: "fan", label: "응원 메시지", icon: "✉" },
-  { key: "members", label: "멤버 사진", icon: "◉" },
+  { key: "members", label: "멤버 관리", icon: "◐" },
+  { key: "memberPhotos", label: "멤버 사진", icon: "◉" },
   { key: "content", label: "사이트 콘텐츠", icon: "✎" },
 ];
 
