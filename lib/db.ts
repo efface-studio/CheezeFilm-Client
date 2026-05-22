@@ -74,18 +74,37 @@ function createDb(): Database.Database {
 
     CREATE INDEX IF NOT EXISTS idx_members_sort ON members(sort_order ASC);
 
+    CREATE TABLE IF NOT EXISTS audition_listings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      role_type TEXT NOT NULL DEFAULT 'lead',
+      requirements TEXT NOT NULL DEFAULT '',
+      deadline TEXT,
+      status TEXT NOT NULL DEFAULT 'open',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_listings_status ON audition_listings(status, created_at DESC);
+
     CREATE INDEX IF NOT EXISTS idx_auditions_created ON auditions(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_fan_messages_created ON fan_messages(created_at DESC);
   `);
 
-  // Forward-migrate older databases that pre-date the photo_url column.
-  // sqlite-style "ADD COLUMN IF NOT EXISTS" needs introspection.
+  // Forward-migrate older databases.
   type ColInfo = { name: string };
-  const cols = conn
+  const auditionCols = conn
     .prepare("PRAGMA table_info(auditions)")
     .all() as ColInfo[];
-  if (!cols.some((c) => c.name === "photo_url")) {
+  if (!auditionCols.some((c) => c.name === "photo_url")) {
     conn.exec("ALTER TABLE auditions ADD COLUMN photo_url TEXT");
+  }
+  if (!auditionCols.some((c) => c.name === "listing_id")) {
+    conn.exec("ALTER TABLE auditions ADD COLUMN listing_id INTEGER");
+    conn.exec(
+      "CREATE INDEX IF NOT EXISTS idx_auditions_listing ON auditions(listing_id)",
+    );
   }
 
   return conn;
@@ -127,8 +146,21 @@ export type Audition = {
   intro: string;
   portfolio_url: string | null;
   photo_url: string | null;
+  listing_id: number | null;
   status: "pending" | "reviewing" | "accepted" | "rejected";
   created_at: string;
+};
+
+export type AuditionListing = {
+  id: number;
+  title: string;
+  description: string;
+  role_type: "lead" | "support" | "extra" | "staff";
+  requirements: string;
+  deadline: string | null;
+  status: "draft" | "open" | "closed";
+  created_at: string;
+  updated_at: string;
 };
 
 export type FanMessage = {

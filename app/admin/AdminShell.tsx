@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 type Tab =
   | { key: "dashboard"; label: "대시보드"; icon: string }
+  | { key: "listings"; label: "지원 공고"; icon: string }
   | { key: "auditions"; label: "오디션"; icon: string; badge?: number }
   | { key: "fan"; label: "응원 메시지"; icon: string; badge?: number }
   | { key: "members"; label: "멤버 관리"; icon: string }
@@ -14,6 +15,7 @@ type Tab =
 
 const TABS: Tab[] = [
   { key: "dashboard", label: "대시보드", icon: "▦" },
+  { key: "listings", label: "지원 공고", icon: "▣" },
   { key: "auditions", label: "오디션", icon: "▤" },
   { key: "fan", label: "응원 메시지", icon: "✉" },
   { key: "members", label: "멤버 관리", icon: "◐" },
