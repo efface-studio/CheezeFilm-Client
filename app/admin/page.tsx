@@ -12,12 +12,15 @@ import MemberPhotoManager from "./MemberPhotoManager";
 import ContentEditor from "./ContentEditor";
 import AdminListToolbar from "./AdminListToolbar";
 import MembersCrud from "./MembersCrud";
+import ListingsCrud from "./ListingsCrud";
+import { getAllListings, listingSummary } from "@/lib/auditionListings";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "관리자 대시보드 | 치즈필름" };
 
 type Tab =
   | "dashboard"
+  | "listings"
   | "auditions"
   | "fan"
   | "members"
@@ -45,6 +48,7 @@ export default async function AdminPage({
   const params = await searchParams;
   const allowed = new Set<Tab>([
     "dashboard",
+    "listings",
     "auditions",
     "fan",
     "members",
@@ -61,6 +65,7 @@ export default async function AdminPage({
   const fanMessages = db
     .prepare("SELECT * FROM fan_messages ORDER BY created_at DESC")
     .all() as FanMessage[];
+  const listings = getAllListings();
   const contentItems = getAllContent();
 
   const auditionStats = {
@@ -128,6 +133,15 @@ export default async function AdminPage({
             .slice(0, 5)}
           trend={trend}
         />
+      )}
+
+      {tab === "listings" && (
+        <SectionHeader
+          title="지원 공고"
+          subtitle={`총 ${listings.length}건 · 모집중 ${listings.filter((l) => l.status === "open").length}건`}
+        >
+          <ListingsCrud listings={listings} />
+        </SectionHeader>
       )}
 
       {tab === "auditions" && (
@@ -543,6 +557,23 @@ function AuditionsTable({ items }: { items: Audition[] }) {
 
             {/* Other fields column */}
             <div className="grid md:grid-cols-3 gap-4">
+            <div className="md:col-span-3">
+              <DetailField
+                label="지원 공고"
+                value={
+                  listingSummary(a.listing_id) ? (
+                    <span className="inline-flex items-center gap-2 text-sm text-zinc-700 bg-purple-50 border border-purple-200 px-2 py-1 rounded">
+                      <span className="text-purple-700">▣</span>
+                      {listingSummary(a.listing_id)}
+                    </span>
+                  ) : (
+                    <span className="text-sm text-zinc-400 italic">
+                      (공고 미지정 — 구버전 지원서)
+                    </span>
+                  )
+                }
+              />
+            </div>
             <DetailField label="연락처" value={a.phone ?? "—"} />
             <DetailField label="희망 포지션" value={a.role_preference ?? "—"} />
             <DetailField
