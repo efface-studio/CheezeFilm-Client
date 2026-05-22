@@ -11,11 +11,18 @@ import AdminActions from "./AdminActions";
 import MemberPhotoManager from "./MemberPhotoManager";
 import ContentEditor from "./ContentEditor";
 import AdminListToolbar from "./AdminListToolbar";
+import MembersCrud from "./MembersCrud";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "관리자 대시보드 | 치즈필름" };
 
-type Tab = "dashboard" | "auditions" | "fan" | "members" | "content";
+type Tab =
+  | "dashboard"
+  | "auditions"
+  | "fan"
+  | "members"
+  | "memberPhotos"
+  | "content";
 
 const PHOTO_EXTS = [".jpg", ".jpeg", ".png", ".webp"];
 function resolveMemberPhoto(slug: string) {
@@ -36,16 +43,17 @@ export default async function AdminPage({
   if (!session) redirect("/admin/login");
 
   const params = await searchParams;
-  const tab: Tab =
-    params.tab === "fan"
-      ? "fan"
-      : params.tab === "members"
-        ? "members"
-        : params.tab === "content"
-          ? "content"
-          : params.tab === "auditions"
-            ? "auditions"
-            : "dashboard";
+  const allowed = new Set<Tab>([
+    "dashboard",
+    "auditions",
+    "fan",
+    "members",
+    "memberPhotos",
+    "content",
+  ]);
+  const tab: Tab = allowed.has(params.tab as Tab)
+    ? (params.tab as Tab)
+    : "dashboard";
 
   const auditions = db
     .prepare("SELECT * FROM auditions ORDER BY created_at DESC")
@@ -110,8 +118,14 @@ export default async function AdminPage({
           fanStats={fanStats}
           memberCount={members.length}
           memberPhotoCount={memberPhotos.filter((p) => p.photoUrl).length}
-          recentAuditions={auditions.slice(0, 5)}
-          recentMessages={fanMessages.slice(0, 5)}
+          // 대시보드 패널은 '받은 편지함'처럼 동작 — 검토/읽음 처리한 건은
+          // 자동으로 사라지고 새로 들어온 미처리 건만 위로 올라옴.
+          recentAuditions={auditions
+            .filter((a) => a.status === "pending")
+            .slice(0, 5)}
+          recentMessages={fanMessages
+            .filter((m) => !m.is_read)
+            .slice(0, 5)}
           trend={trend}
         />
       )}
@@ -145,6 +159,31 @@ export default async function AdminPage({
       )}
 
       {tab === "members" && (
+        <SectionHeader
+          title="멤버 관리"
+          subtitle={`총 ${members.length}명 · 추가 / 수정 / 삭제`}
+        >
+          <MembersCrud
+            members={members.map((m) => ({
+              slug: m.slug,
+              name: m.name,
+              nameEn: m.nameEn,
+              role: m.role,
+              roleLabel: m.roleLabel,
+              highlight: m.highlight,
+              bio: m.bio,
+              works: m.works,
+              joinedNote: m.joinedNote,
+              instagram: m.instagram,
+              sourceUrl: m.sourceUrl,
+              accent: m.accent,
+              uncertain: m.uncertain,
+            }))}
+          />
+        </SectionHeader>
+      )}
+
+      {tab === "memberPhotos" && (
         <SectionHeader
           title="멤버 사진"
           subtitle={`${memberPhotos.filter((p) => p.photoUrl).length} / ${members.length} 등록됨`}
@@ -240,11 +279,11 @@ function DashboardView({
 
       <div className="grid lg:grid-cols-2 gap-6">
         <PanelCard
-          title="최근 오디션 5건"
+          title="검토 대기 오디션"
           link={{ href: "/admin?tab=auditions", label: "전체 보기 →" }}
         >
           {recentAuditions.length === 0 ? (
-            <EmptyState>아직 접수된 오디션이 없어요.</EmptyState>
+            <EmptyState>✓ 검토 대기 중인 오디션이 없어요.</EmptyState>
           ) : (
             <ul className="divide-y divide-zinc-100">
               {recentAuditions.map((a) => (
@@ -268,11 +307,11 @@ function DashboardView({
         </PanelCard>
 
         <PanelCard
-          title="최근 응원 5건"
+          title="안 읽은 응원"
           link={{ href: "/admin?tab=fan", label: "전체 보기 →" }}
         >
           {recentMessages.length === 0 ? (
-            <EmptyState>아직 받은 응원이 없어요.</EmptyState>
+            <EmptyState>✓ 모든 응원을 확인했어요.</EmptyState>
           ) : (
             <ul className="divide-y divide-zinc-100">
               {recentMessages.map((m) => (
