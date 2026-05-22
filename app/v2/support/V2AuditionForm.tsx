@@ -1,11 +1,184 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Confetti from "@/components/Confetti";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
+type Listing = {
+  id: number;
+  title: string;
+  description: string;
+  role_type: "lead" | "support" | "extra" | "staff";
+  requirements: string;
+  deadline: string | null;
+  status: "draft" | "open" | "closed";
+  created_at: string;
+  updated_at: string;
+};
+
+const ROLE_LABEL: Record<Listing["role_type"], string> = {
+  lead: "주연",
+  support: "조연",
+  extra: "단역",
+  staff: "스태프",
+};
+
 export default function V2AuditionForm() {
+  const [listings, setListings] = useState<Listing[] | null>(null);
+  const [picked, setPicked] = useState<Listing | null>(null);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/audition-listings")
+      .then((r) => r.json() as Promise<{ listings: Listing[] }>)
+      .then((d) => {
+        if (!cancelled) setListings(d.listings ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setListings([]);
+          setLoadError("공고 목록을 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (picked) {
+    return <ApplyForm listing={picked} onBack={() => setPicked(null)} />;
+  }
+  return (
+    <ListingPicker
+      listings={listings}
+      loadError={loadError}
+      onPick={setPicked}
+    />
+  );
+}
+
+function ListingPicker({
+  listings,
+  loadError,
+  onPick,
+}: {
+  listings: Listing[] | null;
+  loadError: string;
+  onPick: (l: Listing) => void;
+}) {
+  return (
+    <div className="space-y-8">
+      <div>
+        <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-purple mb-2">
+          — Now casting
+        </div>
+        <h2
+          className="text-3xl tracking-tight"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          현재 모집중인 공고
+        </h2>
+        <p className="mt-2 text-sm text-cheeze-ink-soft">
+          지원하실 공고를 먼저 선택해주세요.
+        </p>
+      </div>
+
+      {listings === null && (
+        <div className="py-10 text-center text-sm text-cheeze-ink-soft/70">
+          불러오는 중…
+        </div>
+      )}
+
+      {listings && listings.length === 0 && (
+        <div className="border border-cheeze-purple-deep/30 p-10 text-center">
+          <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-purple-deep mb-3">
+            — No open calls
+          </div>
+          <h3
+            className="text-2xl mb-2"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            지금은 열려 있는 오디션이 없어요.
+          </h3>
+          <p className="text-sm text-cheeze-ink-soft/80 max-w-md mx-auto leading-relaxed">
+            새 작품의 캐스팅이 시작되면 이 페이지에 공고가 올라옵니다. 대신
+            응원 메시지 탭으로 마음을 전해주세요.
+          </p>
+        </div>
+      )}
+
+      {loadError && (
+        <div className="border border-cheeze-wine bg-cheeze-wine/5 px-4 py-3 text-sm text-cheeze-wine">
+          ⚠ {loadError}
+        </div>
+      )}
+
+      {listings && listings.length > 0 && (
+        <ul className="grid gap-6">
+          {listings.map((l) => (
+            <li
+              key={l.id}
+              className="border border-cheeze-purple-deep/30 hover:border-cheeze-purple-deep p-6 transition-colors"
+            >
+              <div className="flex items-start justify-between gap-6">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 bg-cheeze-purple-deep text-cheeze-yellow">
+                      {ROLE_LABEL[l.role_type]}
+                    </span>
+                    {l.deadline && (
+                      <span className="text-[10px] uppercase tracking-widest text-cheeze-wine">
+                        ~ {l.deadline}
+                      </span>
+                    )}
+                  </div>
+                  <h3
+                    className="text-2xl tracking-tight"
+                    style={{ fontFamily: "var(--font-display)" }}
+                  >
+                    {l.title}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onPick(l)}
+                  className="shrink-0 text-xs font-bold tracking-widest uppercase px-5 py-3 bg-cheeze-purple-deep text-cheeze-yellow hover:bg-cheeze-purple transition-colors"
+                >
+                  지원하기 →
+                </button>
+              </div>
+              {l.description && (
+                <p className="text-sm text-cheeze-ink-soft whitespace-pre-wrap mt-4">
+                  {l.description}
+                </p>
+              )}
+              {l.requirements && (
+                <div className="mt-4 pt-4 border-t border-cheeze-purple-deep/15">
+                  <div className="text-[10px] uppercase tracking-widest text-cheeze-purple-deep mb-1">
+                    지원 조건
+                  </div>
+                  <p className="text-sm text-cheeze-ink-soft/90 whitespace-pre-wrap">
+                    {l.requirements}
+                  </p>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function ApplyForm({
+  listing,
+  onBack,
+}: {
+  listing: Listing;
+  onBack: () => void;
+}) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -58,14 +231,16 @@ export default function V2AuditionForm() {
           접수 완료.
         </h3>
         <p className="text-cheeze-ink-soft max-w-sm mx-auto leading-relaxed">
-          지원해주셔서 감사합니다. 제작팀이 한 명씩 직접 읽고 빠르게 검토합니다.
+          <strong>{listing.title}</strong>
+          <br />에 지원해주셔서 감사합니다. 제작팀이 한 명씩 직접 읽고 빠르게
+          검토합니다.
         </p>
         <button
           type="button"
-          onClick={() => setStatus("idle")}
+          onClick={onBack}
           className="mt-8 text-xs font-bold tracking-widest uppercase px-5 py-3 bg-cheeze-purple-deep text-cheeze-yellow hover:bg-cheeze-purple transition-colors"
         >
-          한 번 더 지원
+          다른 공고 보기
         </button>
       </div>
     );
@@ -73,6 +248,39 @@ export default function V2AuditionForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-8">
+      {/* Pinned listing header */}
+      <div className="border border-cheeze-purple-deep/40 p-4 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="text-[10px] uppercase tracking-widest text-cheeze-purple-deep mb-1">
+            지원할 공고
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 bg-cheeze-purple-deep text-cheeze-yellow">
+              {ROLE_LABEL[listing.role_type]}
+            </span>
+            <h3
+              className="text-lg tracking-tight"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              {listing.title}
+            </h3>
+            {listing.deadline && (
+              <span className="text-xs text-cheeze-wine">
+                ~ {listing.deadline}
+              </span>
+            )}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onBack}
+          className="shrink-0 text-xs underline text-cheeze-ink-soft hover:text-cheeze-ink"
+        >
+          ← 다른 공고
+        </button>
+      </div>
+      <input type="hidden" name="listing_id" value={listing.id} />
+
       <div>
         <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-purple mb-2">
           — Audition form
@@ -141,7 +349,11 @@ export default function V2AuditionForm() {
             <option value="male">남성</option>
             <option value="other">기타</option>
           </SelectField>
-          <SelectField label="희망 포지션" name="role_preference">
+          <SelectField
+            label="희망 포지션"
+            name="role_preference"
+            defaultValue={listing.role_type}
+          >
             <option value="">선택 안 함</option>
             <option value="lead">주연</option>
             <option value="support">조연</option>
@@ -244,10 +456,12 @@ function SelectField({
   label,
   name,
   children,
+  defaultValue = "",
 }: {
   label: string;
   name: string;
   children: React.ReactNode;
+  defaultValue?: string;
 }) {
   return (
     <label className="block">
@@ -255,7 +469,7 @@ function SelectField({
       <select
         name={name}
         className="mt-1.5 w-full bg-transparent border-b border-cheeze-purple-deep/40 focus:border-cheeze-purple-deep outline-none py-2 text-sm"
-        defaultValue=""
+        defaultValue={defaultValue}
       >
         {children}
       </select>
