@@ -3,7 +3,6 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import Reveal from "@/components/Reveal";
 import CountUp from "@/components/CountUp";
-import CountdownLeader from "@/components/CountdownLeader";
 import Typewriter from "@/components/Typewriter";
 import TiltCard from "@/components/TiltCard";
 import { getAllVideos } from "@/lib/youtube";
@@ -101,7 +100,6 @@ export default async function Home() {
 
   return (
     <>
-      <CountdownLeader />
       <SiteHeader />
 
       {/* HERO */}
