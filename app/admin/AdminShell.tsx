@@ -44,10 +44,14 @@ export default function AdminShell({
   }
 
   return (
-    <div className="admin-shell font-pretendard min-h-screen flex items-start bg-zinc-100 text-zinc-900">
-      {/* Sidebar — desktop: sticky to viewport, mobile: full-screen drawer.
-          The aside *itself* gets `sticky top-0 h-screen` and `self-start`
-          so the flex row doesn't stretch it past the viewport. */}
+    <div className="admin-shell font-pretendard min-h-screen bg-zinc-100 text-zinc-900">
+      {/* Sidebar uses `position: fixed` on desktop instead of `sticky`.
+          `sticky` was being broken by `body { overflow-x: hidden }` in
+          globals.css — that turns body into a scroll container which
+          shifts sticky's containing-block math. Fixed is bulletproof:
+          the sidebar is anchored to the viewport regardless of any
+          parent's overflow setting. Main column gets `lg:ml-64` to make
+          room. Mobile drawer pattern unchanged. */}
       {mobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-zinc-900/50 lg:hidden"
@@ -56,8 +60,8 @@ export default function AdminShell({
       )}
       <aside
         className={`${
-          mobileOpen ? "fixed inset-y-0 left-0 z-50" : "hidden lg:flex"
-        } lg:sticky lg:top-0 lg:self-start lg:h-screen w-64 shrink-0 bg-zinc-900 text-zinc-100 flex-col`}
+          mobileOpen ? "fixed inset-y-0 left-0 z-50 flex" : "hidden lg:flex"
+        } lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 h-screen w-64 bg-zinc-900 text-zinc-100 flex-col`}
       >
           <div className="px-5 py-5 border-b border-zinc-800 flex items-center gap-3 flex-shrink-0">
             <span className="inline-flex w-9 h-9 rounded-full bg-purple-600 overflow-hidden">
@@ -140,7 +144,7 @@ export default function AdminShell({
       </aside>
 
       {/* Main column */}
-      <div className="flex-1 min-w-0 flex flex-col">
+      <div className="min-w-0 flex flex-col lg:ml-64">
         {/* Top bar */}
         <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white">
           <div className="px-5 py-3 flex items-center justify-between gap-3">
