@@ -1,13 +1,15 @@
 /**
- * 치즈필름 멤버 데이터.
+ * 치즈필름 멤버 데이터 — SQLite-backed.
  *
- * 모든 정보는 위키백과 / 위키트리 인터뷰 / 공식 인스타그램에서 교차 확인했으며,
- * 확실하지 않은 항목은 `uncertain: true` 로 표시합니다.
+ * Rows live in the `members` table; this module just provides typed
+ * accessors and the seed data used on first boot of an empty DB.
  *
- * 사진은 SNS 핫링크가 금지돼 있어 직접 끌어올 수 없습니다. 대신:
- *   - public/members/<slug>.jpg 파일이 있으면 자동으로 사용하고,
- *   - 없으면 멤버 카드별 색상 + 이니셜로 구성된 폴라로이드 풀백을 보여줍니다.
+ * Photo handling unchanged:
+ *   - public/members/<slug>.{jpg,png,webp} → served via <MemberPolaroid>
+ *   - no file → colored polaroid fallback with the first character
  */
+
+import { db } from "./db";
 
 export type MemberRole = "lead" | "actor" | "writer" | "director";
 
@@ -17,18 +19,18 @@ export type Member = {
   nameEn: string;
   role: MemberRole;
   roleLabel: string;
-  highlight: string; // a short hook shown big
+  highlight: string;
   bio: string;
   works: string[];
   joinedNote?: string;
   instagram?: string;
   sourceUrl?: string;
-  /** Accent color used as the polaroid backdrop when no photo is provided. */
   accent: "purple" | "yellow" | "wine" | "charcoal" | "olive" | "cream";
   uncertain?: boolean;
 };
 
-export const members: Member[] = [
+// ─── seed (used only when the table is empty) ──────────
+export const SEED_MEMBERS: Member[] = [
   {
     slug: "kim-eunha",
     name: "김은하",
@@ -138,8 +140,182 @@ export const members: Member[] = [
   },
 ];
 
-export function findMember(slug: string) {
-  return members.find((m) => m.slug === slug);
+// ─── row ↔ object mapping ──────────────────────────────
+type Row = {
+  slug: string;
+  name: string;
+  name_en: string;
+  role: MemberRole;
+  role_label: string;
+  highlight: string;
+  bio: string;
+  works: string; // JSON
+  joined_note: string | null;
+  instagram: string | null;
+  source_url: string | null;
+  accent: Member["accent"];
+  uncertain: number; // 0|1
+  sort_order: number;
+};
+
+function rowToMember(r: Row): Member {
+  return {
+    slug: r.slug,
+    name: r.name,
+    nameEn: r.name_en,
+    role: r.role,
+    roleLabel: r.role_label,
+    highlight: r.highlight,
+    bio: r.bio,
+    works: safeParseWorks(r.works),
+    joinedNote: r.joined_note ?? undefined,
+    instagram: r.instagram ?? undefined,
+    sourceUrl: r.source_url ?? undefined,
+    accent: r.accent,
+    uncertain: r.uncertain === 1 ? true : undefined,
+  };
+}
+
+function safeParseWorks(s: string): string[] {
+  try {
+    const parsed = JSON.parse(s);
+    return Array.isArray(parsed) ? parsed.filter((w) => typeof w === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+// ─── lazy seed on first read ───────────────────────────
+let seeded = false;
+function ensureSeeded() {
+  if (seeded) return;
+  const count = db
+    .prepare("SELECT COUNT(*) as c FROM members")
+    .get() as { c: number };
+  if (count.c === 0) {
+    const insert = db.prepare(`
+      INSERT INTO members
+        (slug, name, name_en, role, role_label, highlight, bio, works,
+         joined_note, instagram, source_url, accent, uncertain, sort_order)
+      VALUES
+        (@slug, @name, @name_en, @role, @role_label, @highlight, @bio, @works,
+         @joined_note, @instagram, @source_url, @accent, @uncertain, @sort_order)
+    `);
+    const tx = db.transaction((rows: Member[]) => {
+      rows.forEach((m, i) => {
+        insert.run({
+          slug: m.slug,
+          name: m.name,
+          name_en: m.nameEn,
+          role: m.role,
+          role_label: m.roleLabel,
+          highlight: m.highlight,
+          bio: m.bio,
+          works: JSON.stringify(m.works),
+          joined_note: m.joinedNote ?? null,
+          instagram: m.instagram ?? null,
+          source_url: m.sourceUrl ?? null,
+          accent: m.accent,
+          uncertain: m.uncertain ? 1 : 0,
+          sort_order: i,
+        });
+      });
+    });
+    tx(SEED_MEMBERS);
+  }
+  seeded = true;
+}
+
+// ─── public API (drop-in replacement for the old constant) ──
+export function getMembers(): Member[] {
+  ensureSeeded();
+  const rows = db
+    .prepare("SELECT * FROM members ORDER BY sort_order ASC, slug ASC")
+    .all() as Row[];
+  return rows.map(rowToMember);
+}
+
+export function findMember(slug: string): Member | undefined {
+  ensureSeeded();
+  const row = db
+    .prepare("SELECT * FROM members WHERE slug = ?")
+    .get(slug) as Row | undefined;
+  return row ? rowToMember(row) : undefined;
+}
+
+/** Back-compat — pages that imported `members` get a fresh list on each request. */
+export const members = new Proxy([] as Member[], {
+  get(_t, prop) {
+    const list = getMembers();
+    const value = Reflect.get(list, prop);
+    return typeof value === "function" ? value.bind(list) : value;
+  },
+});
+
+// ─── mutations (admin only — call sites must enforce auth) ──
+export function createMember(input: Member) {
+  ensureSeeded();
+  const maxOrder = db
+    .prepare("SELECT COALESCE(MAX(sort_order), -1) as m FROM members")
+    .get() as { m: number };
+  db.prepare(`
+    INSERT INTO members
+      (slug, name, name_en, role, role_label, highlight, bio, works,
+       joined_note, instagram, source_url, accent, uncertain, sort_order)
+    VALUES
+      (@slug, @name, @name_en, @role, @role_label, @highlight, @bio, @works,
+       @joined_note, @instagram, @source_url, @accent, @uncertain, @sort_order)
+  `).run({
+    slug: input.slug,
+    name: input.name,
+    name_en: input.nameEn,
+    role: input.role,
+    role_label: input.roleLabel,
+    highlight: input.highlight,
+    bio: input.bio,
+    works: JSON.stringify(input.works),
+    joined_note: input.joinedNote ?? null,
+    instagram: input.instagram ?? null,
+    source_url: input.sourceUrl ?? null,
+    accent: input.accent,
+    uncertain: input.uncertain ? 1 : 0,
+    sort_order: maxOrder.m + 1,
+  });
+}
+
+export function updateMember(slug: string, patch: Partial<Omit<Member, "slug">>) {
+  ensureSeeded();
+  // Build a dynamic SET clause — only update fields actually present in `patch`.
+  const fields: string[] = [];
+  const params: Record<string, unknown> = { slug };
+  const map: Record<string, [string, (v: unknown) => unknown]> = {
+    name: ["name", (v) => v],
+    nameEn: ["name_en", (v) => v],
+    role: ["role", (v) => v],
+    roleLabel: ["role_label", (v) => v],
+    highlight: ["highlight", (v) => v],
+    bio: ["bio", (v) => v],
+    works: ["works", (v) => JSON.stringify(v ?? [])],
+    joinedNote: ["joined_note", (v) => (v ? v : null)],
+    instagram: ["instagram", (v) => (v ? v : null)],
+    sourceUrl: ["source_url", (v) => (v ? v : null)],
+    accent: ["accent", (v) => v],
+    uncertain: ["uncertain", (v) => (v ? 1 : 0)],
+  };
+  for (const [k, v] of Object.entries(patch)) {
+    const entry = map[k];
+    if (!entry) continue;
+    const [col, fn] = entry;
+    fields.push(`${col} = @${col}`);
+    params[col] = fn(v);
+  }
+  if (fields.length === 0) return;
+  db.prepare(`UPDATE members SET ${fields.join(", ")} WHERE slug = @slug`).run(params);
+}
+
+export function deleteMember(slug: string) {
+  ensureSeeded();
+  db.prepare("DELETE FROM members WHERE slug = ?").run(slug);
 }
 
 export function getRoleColorClass(accent: Member["accent"]) {

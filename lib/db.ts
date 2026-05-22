@@ -54,6 +54,26 @@ function createDb(): Database.Database {
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS members (
+      slug TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      name_en TEXT NOT NULL DEFAULT '',
+      role TEXT NOT NULL DEFAULT 'actor',
+      role_label TEXT NOT NULL DEFAULT '',
+      highlight TEXT NOT NULL DEFAULT '',
+      bio TEXT NOT NULL DEFAULT '',
+      works TEXT NOT NULL DEFAULT '[]',
+      joined_note TEXT,
+      instagram TEXT,
+      source_url TEXT,
+      accent TEXT NOT NULL DEFAULT 'purple',
+      uncertain INTEGER NOT NULL DEFAULT 0,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_members_sort ON members(sort_order ASC);
+
     CREATE INDEX IF NOT EXISTS idx_auditions_created ON auditions(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_fan_messages_created ON fan_messages(created_at DESC);
   `);
