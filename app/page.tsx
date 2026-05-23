@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getAllVideos } from "@/lib/youtube";
 import { getContent, loadContentMap } from "@/lib/content";
 import { getMembers } from "@/lib/members";
+import { storageUrl } from "@/lib/db";
 import { InView, StaggerText } from "@/components/Stagger";
 import HeroCover from "@/components/HeroCover";
 import CountUp from "@/components/CountUp";
@@ -478,37 +479,55 @@ export default async function HomeV2() {
             </Link>
           </div>
 
-          <ol className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-3">
-            {members.slice(0, 6).map((m, i) => (
-              <InView
-                key={m.slug}
-                as="li"
-                className="v2-fade-up grid grid-cols-[auto_1fr_auto] items-baseline gap-3 py-4 border-t border-cheeze-purple-deep/15"
-                style={{ transitionDelay: `${i * 60}ms` } as React.CSSProperties}
-              >
-                <span
-                  className="text-cheeze-olive font-mono text-sm tabular-nums"
-                  style={{ minWidth: "2.5rem" }}
-                >
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span>
-                  <span className="text-2xl" style={{ fontFamily: "var(--font-display)" }}>
-                    {m.name}
-                  </span>
-                  <span className="ml-2 text-xs uppercase tracking-widest text-cheeze-olive">
-                    {m.nameEn}
-                  </span>
-                  <span className="block text-sm text-cheeze-ink-soft mt-1">
-                    “{m.highlight}”
-                  </span>
-                </span>
-                <span className="text-[10px] tracking-[0.25em] uppercase text-cheeze-purple">
-                  {m.roleLabel}
-                </span>
-              </InView>
-            ))}
-          </ol>
+          {/* Cast grid — Toss-style photo cards.
+              Only members with an uploaded photo make this preview; the
+              other roster lines without portraits would feel empty
+              alongside the photo cards. The full list (including
+              photo-less entries) still lives at /members via the "전체
+              멤버 →" link above. */}
+          {(() => {
+            const withPhotos = members
+              .filter((m) => !!m.photoPath)
+              .slice(0, 6);
+            return (
+              <ol className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5">
+                {withPhotos.map((m, i) => (
+                  <InView
+                    key={m.slug}
+                    as="li"
+                    className="v2-fade-up"
+                    style={{ transitionDelay: `${i * 60}ms` } as React.CSSProperties}
+                  >
+                    <Link
+                      href={`/members/${encodeURIComponent(m.slug)}`}
+                      className="group block"
+                    >
+                      <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-toss-100">
+                        {/* photoPath is required to enter this list, so
+                            we know `m.photoPath` is set — the `!` is
+                            informational, not assertive. */}
+                        <Image
+                          src={storageUrl("members", m.photoPath!)}
+                          alt={m.name}
+                          fill
+                          sizes="(min-width: 1024px) 16vw, (min-width: 768px) 32vw, 50vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      </div>
+                      <div className="mt-3 px-1">
+                        <div className="text-[15px] font-bold text-cheeze-ink tracking-tight truncate">
+                          {m.name}
+                        </div>
+                        <div className="mt-0.5 text-[12px] text-cheeze-ink-soft truncate">
+                          {m.roleLabel}
+                        </div>
+                      </div>
+                    </Link>
+                  </InView>
+                ))}
+              </ol>
+            );
+          })()}
         </div>
       </section>
 

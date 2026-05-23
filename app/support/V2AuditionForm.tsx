@@ -142,7 +142,7 @@ function ListingPicker({
       )}
 
       {listings && listings.length > 0 && (
-        <ul className="divide-y divide-cheeze-purple-deep/20 border-t border-b border-cheeze-purple-deep/20">
+        <ul className="space-y-3">
           {listings.map((l, i) => (
             <ListingItem
               key={l.id}
@@ -159,14 +159,14 @@ function ListingPicker({
 }
 
 /**
- * One open call rendered as a call-sheet entry — magazine-style numbered
- * index in the left rail, big display title, animated yellow rule on hover.
- * Click-anywhere-to-apply makes the whole row a single ergonomic target.
+ * One open call — Toss-style card. A single rounded surface on
+ * `bg-toss-50` that the whole row clicks. Role + deadline live in a
+ * compact pill row at the top, the title is a clean 20px bold, and a
+ * subtle "지원하기 →" sits at the bottom-right. No magazine numbering,
+ * no yellow underline, no purple-on-yellow chip.
  */
 function ListingItem({
   listing: l,
-  index,
-  total,
   onPick,
 }: {
   listing: Listing;
@@ -179,70 +179,52 @@ function ListingItem({
       <button
         type="button"
         onClick={onPick}
-        className="group block w-full text-left py-10 lg:grid lg:grid-cols-[80px_1fr_auto] lg:gap-10 lg:items-start hover:bg-cheeze-cream-deep/30 transition-colors px-2 -mx-2"
+        className="group block w-full text-left rounded-2xl bg-toss-50 hover:bg-toss-100 transition-colors px-5 py-5 sm:px-6 sm:py-6"
       >
-        {/* Left rail — magazine-style index */}
-        <div className="hidden lg:block pt-2">
-          <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">
-            No.
-          </div>
-          <div
-            className="text-4xl text-cheeze-purple-deep mt-1 leading-none tabular-nums"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            {String(index).padStart(2, "0")}
-          </div>
-          <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive mt-2 tabular-nums">
-            / {String(total).padStart(2, "0")}
-          </div>
+        {/* Status row — role pill + optional deadline. */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="inline-flex items-center text-[11px] font-semibold px-2.5 py-1 rounded-full bg-cheeze-purple/10 text-cheeze-purple-deep">
+            {ROLE_LABEL[l.role_type]}
+          </span>
+          {l.deadline && (
+            <span className="text-[12px] text-cheeze-ink-soft inline-flex items-center gap-1.5">
+              <span aria-hidden className="w-1 h-1 rounded-full bg-rose-500" />
+              {formatDeadlineLong(l.deadline)} 마감
+            </span>
+          )}
         </div>
 
-        {/* Center — metadata + headline + body */}
-        <div className="min-w-0">
-          <div className="flex items-center gap-3 mb-3 flex-wrap">
-            <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 bg-cheeze-purple-deep text-cheeze-yellow font-bold">
-              {ROLE_LABEL[l.role_type]}
-            </span>
-            {l.deadline && (
-              <span className="text-[11px] uppercase tracking-wider text-cheeze-wine font-semibold inline-flex items-center gap-1.5">
-                <span className="w-1 h-1 rounded-full bg-cheeze-wine" />
-                {formatDeadlineLong(l.deadline)} 마감
-              </span>
-            )}
-          </div>
-          <h3
-            className="text-3xl md:text-4xl tracking-tight leading-[1.05] text-cheeze-ink"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            {l.title}
-          </h3>
-          {/* Yellow accent rule — grows on hover */}
-          <div className="mt-4 h-px w-12 bg-cheeze-yellow transition-[width] duration-500 group-hover:w-32" />
+        {/* Title */}
+        <h3 className="mt-3 text-[20px] font-bold leading-snug text-cheeze-ink tracking-tight">
+          {l.title}
+        </h3>
 
-          {l.description && (
-            <p className="mt-5 text-[15px] text-cheeze-ink-soft whitespace-pre-wrap leading-relaxed max-w-prose">
-              {l.description}
-            </p>
-          )}
-          {l.requirements && (
-            <div className="mt-5 border-l-2 border-cheeze-purple-deep/30 group-hover:border-cheeze-purple-deep pl-4 py-1 transition-colors">
-              <div className="text-[10px] uppercase tracking-widest text-cheeze-purple-deep font-bold mb-1">
-                지원 조건
-              </div>
-              <p className="text-sm text-cheeze-ink-soft/90 whitespace-pre-wrap leading-relaxed">
-                {l.requirements}
-              </p>
+        {l.description && (
+          <p className="mt-2 text-[14px] text-cheeze-ink-soft whitespace-pre-wrap leading-relaxed">
+            {l.description}
+          </p>
+        )}
+
+        {l.requirements && (
+          <div className="mt-4 rounded-xl bg-white px-4 py-3">
+            <div className="text-[11px] font-semibold text-cheeze-ink-soft mb-1">
+              지원 조건
             </div>
-          )}
-        </div>
+            <p className="text-[13px] text-cheeze-ink-soft/90 whitespace-pre-wrap leading-relaxed">
+              {l.requirements}
+            </p>
+          </div>
+        )}
 
-        {/* Right — call-to-action chip + arrow shift */}
-        <div className="lg:self-end mt-6 lg:mt-0 lg:pt-2 flex lg:justify-end">
-          <span className="inline-flex items-center gap-3 text-xs font-bold tracking-widest uppercase px-6 py-4 bg-cheeze-purple-deep text-cheeze-yellow group-hover:bg-cheeze-purple transition-colors">
-            지원하기
-            <span className="inline-block transition-transform group-hover:translate-x-1.5">
-              →
-            </span>
+        {/* Footer: inline CTA, right-aligned. The whole card is the
+            click target — this is just the visual nudge. */}
+        <div className="mt-4 flex justify-end items-center gap-1.5 text-[13px] font-semibold text-cheeze-purple-deep">
+          지원하기
+          <span
+            aria-hidden
+            className="transition-transform duration-200 group-hover:translate-x-1"
+          >
+            →
           </span>
         </div>
       </button>
