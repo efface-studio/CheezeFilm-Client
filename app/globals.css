@@ -659,37 +659,40 @@ body {
    Resetting `animation` on every active flip requires the
    keyframe to be applied via a data attribute rather than a
    transition (transitions don't "restart" on prop change). */
-/* Hero cover slideshow — tuned for a 2-second rotation cadence.
+/* Hero cover slideshow — clean cross-fade.
  *
- *   - 700ms ease-in-out cross-fade (both directions identical), so two
- *     slides meet at ~50% opacity in the middle without a hard edge.
- *   - Active slide scales 1.0 → 1.04 over 2.5s. Removing `.is-active`
- *     transitions the scale *back* to 1.0 over the same window. The
- *     scale animation is always longer than the time the slide is
- *     visible, so the photo is forever drifting — no "stuck frame"
- *     moment between cross-fades.
- *   - Both transitions share `transform`/`opacity` — no keyframe
- *     animation that could "forwards"-hold and snap.
+ * Two prior attempts failed to feel smooth:
+ *   1. ease-in-out cubic-bezier (0.45, 0, 0.55, 1) → most of the
+ *      visual change happened in a tight middle window, which read
+ *      as a snap rather than a fade.
+ *   2. Pairing the opacity fade with a 2.5s transform scale meant
+ *      `transition` had two properties at different durations and
+ *      the second slide visibly snapped if the scale hadn't reached
+ *      its target before the next swap fired.
+ *
+ * This version:
+ *   - 1200ms linear opacity cross-fade. Linear means the brightness
+ *     changes at a constant rate — no "fast middle". Both directions
+ *     read as a steady film dissolve.
+ *   - No transform on the cover image itself. Subtle motion comes
+ *     from the parent `.v2-mask` already in place.
+ *   - `!important` overrides the more general `.v2-film img`
+ *     hover-zoom transition (specificity tie we keep losing in dev).
  */
 .v2-film .hero-cover-img,
 .hero-cover-img {
-  opacity: 0;
-  transform: scale(1);
-  transition:
-    opacity 700ms cubic-bezier(0.45, 0, 0.55, 1),
-    transform 2500ms cubic-bezier(0.4, 0, 0.4, 1);
-  will-change: opacity, transform;
+  opacity: 0 !important;
+  transition: opacity 1200ms linear !important;
+  will-change: opacity;
 }
 .v2-film .hero-cover-img.is-active,
 .hero-cover-img.is-active {
-  opacity: 1;
-  transform: scale(1.04);
+  opacity: 1 !important;
 }
 @media (prefers-reduced-motion: reduce) {
-  .hero-cover-img,
-  .hero-cover-img.is-active {
-    transition: opacity 200ms ease-out;
-    transform: none;
+  .v2-film .hero-cover-img,
+  .hero-cover-img {
+    transition: opacity 200ms linear !important;
   }
 }
 
