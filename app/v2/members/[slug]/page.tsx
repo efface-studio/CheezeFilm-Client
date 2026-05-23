@@ -82,7 +82,7 @@ export default async function MemberDetailPage({
   const next = idx < all.length - 1 ? all[idx + 1] : null;
 
   return (
-    <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial lg:pl-56">
+    <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial flex flex-col">
       <V2Header />
 
       {/* ── HERO ─────────────────────────────────────── */}

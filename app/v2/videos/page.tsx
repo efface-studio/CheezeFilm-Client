@@ -29,7 +29,7 @@ export default async function V2VideosPage({ searchParams }: { searchParams: Sea
   const { longform, shorts, source, totalCount } = await getAllVideos();
 
   return (
-    <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial lg:pl-56">
+    <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial flex flex-col">
       <V2Header />
 
       <section className="border-b border-cheeze-purple-deep/15">

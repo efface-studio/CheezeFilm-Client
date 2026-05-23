@@ -169,7 +169,11 @@ export default function V2Nav() {
   return (
     <>
       {/* ─────────────────────────────────────────────────
-          Desktop side rail (lg+)
+          Desktop side rail (lg+) — HOME ONLY.
+          On `/v2/*` subpages we render only the compact top bar below
+          (which has a back arrow + brand + hamburger menu) so the
+          subpage feels like content, not sub-nav. The hamburger still
+          exposes the full nav list as an overlay.
           ───────────────────────────────────────────────── */}
       {/* Background is fully transparent (no blur, no border, no surface) so
           the rail reads as a margin gutter of the same cream page rather than
@@ -178,6 +182,7 @@ export default function V2Nav() {
           here, since there's no surface to slide under. */}
       <aside
         aria-label="주 메뉴"
+        hidden={!isHome}
         className="hidden lg:flex fixed top-0 left-0 bottom-0 w-56 z-40 flex-col justify-between py-9 pl-7 pr-6"
       >
         {/* Brand */}
@@ -332,15 +337,30 @@ export default function V2Nav() {
       </aside>
 
       {/* ─────────────────────────────────────────────────
-          Mobile top bar (< lg)
+          Compact top bar — always on mobile, also on lg+ for subpages
+          since the desktop rail only renders on the home route. On home
+          the rail is the navigation; on subpages this bar takes over.
           ───────────────────────────────────────────────── */}
-      <header className="lg:hidden sticky top-0 z-40 bg-cheeze-cream/92 backdrop-blur border-b border-cheeze-purple-deep/15">
-        <div className="px-5 py-3.5 flex items-center justify-between gap-3">
+      <header
+        className={`sticky top-0 z-40 bg-cheeze-cream/92 backdrop-blur border-b border-cheeze-purple-deep/15 ${
+          isHome ? "lg:hidden" : ""
+        }`}
+      >
+        <div className="mx-auto max-w-[100rem] px-5 lg:px-8 py-3.5 flex items-center justify-between gap-3">
+          {/* Brand link — on a subpage this also serves as "← back home". */}
           <Link
             href="/v2"
-            className="flex items-center gap-3 focus:outline-none"
-            aria-label="치즈필름 홈으로"
+            className="flex items-center gap-3 focus:outline-none group/back"
+            aria-label={isHome ? "치즈필름 홈으로" : "← 치즈필름 홈으로 돌아가기"}
           >
+            {!isHome && (
+              <span
+                aria-hidden
+                className="text-cheeze-purple-deep text-lg group-hover/back:-translate-x-0.5 transition-transform"
+              >
+                ←
+              </span>
+            )}
             <span className="inline-flex w-9 h-9 rounded-full bg-cheeze-purple overflow-hidden border border-cheeze-purple-deep">
               <Image
                 src="/cheeze-logo.png"
