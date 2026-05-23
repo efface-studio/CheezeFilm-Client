@@ -257,13 +257,18 @@ export default function V2Nav() {
         aria-label="주 메뉴"
         className="hidden lg:flex fixed top-0 left-0 bottom-0 w-56 z-40 flex-col justify-between py-9 pl-7 pr-6"
       >
-        {/* Brand */}
+        {/* Brand — gentle hover wiggle:
+              - chip rotates -6° and scales up 5% (eases out for a
+                soft "pop")
+              - wordmark slides 2px to the right
+              Both share the same group/brand hover scope so they
+              animate in sync. */}
         <Link
           href="/"
-          className="group flex items-center gap-3 focus:outline-none"
+          className="group/brand flex items-center gap-3 focus:outline-none"
           aria-label="치즈필름 홈으로"
         >
-          <span className="inline-flex w-10 h-10 rounded-2xl bg-cheeze-purple overflow-hidden">
+          <span className="inline-flex w-10 h-10 rounded-2xl bg-cheeze-purple overflow-hidden transition-transform duration-300 ease-out group-hover/brand:-rotate-6 group-hover/brand:scale-105">
             <Image
               src="/cheeze-logo.png"
               alt=""
@@ -273,7 +278,7 @@ export default function V2Nav() {
               priority
             />
           </span>
-          <span className="text-[15px] font-bold text-cheeze-ink tracking-tight">
+          <span className="text-[15px] font-bold text-cheeze-ink tracking-tight transition duration-300 ease-out group-hover/brand:translate-x-0.5 group-hover/brand:text-cheeze-purple-deep">
             치즈필름
           </span>
         </Link>
@@ -439,7 +444,7 @@ export default function V2Nav() {
                 ←
               </span>
             )}
-            <span className="inline-flex w-9 h-9 rounded-full bg-cheeze-purple overflow-hidden border border-cheeze-purple-deep">
+            <span className="inline-flex w-9 h-9 rounded-2xl bg-cheeze-purple overflow-hidden transition-transform duration-300 ease-out group-hover/back:-rotate-6 group-hover/back:scale-105">
               <Image
                 src="/cheeze-logo.png"
                 alt=""
@@ -448,8 +453,10 @@ export default function V2Nav() {
                 className="w-full h-full object-cover"
               />
             </span>
-            <div className="flex flex-col leading-none">
-              <span className="font-bold text-sm tracking-tight">치즈필름</span>
+            <div className="flex flex-col leading-none transition duration-300 ease-out group-hover/back:translate-x-0.5">
+              <span className="font-bold text-sm tracking-tight text-cheeze-ink group-hover/back:text-cheeze-purple-deep transition-colors">
+                치즈필름
+              </span>
               <span className="text-[9px] tracking-[0.3em] text-cheeze-olive uppercase mt-0.5">
                 Editorial 02
               </span>
