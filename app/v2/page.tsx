@@ -3,7 +3,11 @@ import Link from "next/link";
 import { getAllVideos } from "@/lib/youtube";
 import { getContent, loadContentMap } from "@/lib/content";
 import { getMembers } from "@/lib/members";
-import { InView, StaggerText } from "@/components/Stagger";
+import {
+  InView,
+  StaggerText,
+  countStaggerCharacters,
+} from "@/components/Stagger";
 import HeroCover from "@/components/HeroCover";
 import CountUp from "@/components/CountUp";
 import V2Nav from "@/components/V2Nav";
@@ -79,18 +83,27 @@ export default async function HomeV2() {
                 <span className="v2-pulse-dot" /> A K-WEB-DRAMA STUDIO
               </div>
             </InView>
+            {/* Character-by-character typewriter for the hero. The big
+                display type rides in one syllable at a time on load.
+                Line 2 picks up its --li offset from line 1's length so
+                the second line types AFTER the first finishes instead
+                of in parallel. */}
             <InView
               as="h1"
-              className="v2-stagger v2-title leading-[0.92] tracking-[-0.02em]"
+              className="v2-typewriter v2-title leading-[0.92] tracking-[-0.02em]"
               style={{
                 fontFamily: "var(--font-display)",
                 fontSize: "clamp(2.8rem, 7.5vw, 6rem)",
               }}
             >
-              <StaggerText text={c("hero.title.line1")} />
+              <StaggerText text={c("hero.title.line1")} mode="character" />
               <br />
               <span className="text-cheeze-purple">
-                <StaggerText text={c("hero.title.line2")} />
+                <StaggerText
+                  text={c("hero.title.line2")}
+                  mode="character"
+                  startIndex={countStaggerCharacters(c("hero.title.line1"))}
+                />
               </span>
             </InView>
             <InView className="v2-fade-up" rootMargin="0px 0px -5% 0px">
