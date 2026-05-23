@@ -66,11 +66,37 @@ const NAV: NavItem[] = [
   { num: "04", label: "채용",   labelEn: "Careers", href: "/#careers",  sectionId: "careers", routeMatch: "/careers" },
 ];
 
+type OpenRoleType = "lead" | "support" | "extra" | "staff";
+
+/** Map the actual open role types to an accurate Korean status label.
+ *  We treat anything that's not "staff" as an audition role for label
+ *  purposes; if both buckets are open we show both, comma-separated. */
+function deriveOpenLabel(roleTypes: Set<OpenRoleType>): string {
+  const hasStaff = roleTypes.has("staff");
+  const hasAudition =
+    roleTypes.has("lead") ||
+    roleTypes.has("support") ||
+    roleTypes.has("extra");
+  if (hasStaff && hasAudition) return "오디션 · 스태프 모집 중";
+  if (hasAudition) return "오디션 모집 중";
+  if (hasStaff) return "스태프 모집 중";
+  // Sentinel: no openings, used by the caller to hide the row.
+  return "";
+}
+
 export default function V2Nav() {
   const pathname = usePathname();
   const isHome = pathname === "/";
   const [activeId, setActiveId] = useState<NavItem["sectionId"] | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Status label for the rail CTA — derived from what's actually open
+  // right now, not hard-coded. Defaults to empty string until the fetch
+  // resolves; the CTA falls back to a generic "지원 페이지로" caption
+  // while we don't know yet. Re-runs on path change so the label
+  // refreshes after the user navigates away from /support (admin may
+  // have flipped a listing open in another tab).
+  const [openLabel, setOpenLabel] = useState<string | null>(null);
 
   // Mark <html> as a V2 editorial route while mounted. Used by globals.css
   // to swap the canvas background to purple-deep so bottom rubber-band
@@ -84,6 +110,29 @@ export default function V2Nav() {
     html.classList.add("v2-editorial");
     return () => html.classList.remove("v2-editorial");
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/audition-listings")
+      .then((r) =>
+        r.json().catch(() => ({ listings: [] })) as Promise<{
+          listings: Array<{ role_type: OpenRoleType }>;
+        }>,
+      )
+      .then((d) => {
+        if (cancelled) return;
+        const roleTypes = new Set<OpenRoleType>(
+          (d.listings ?? []).map((l) => l.role_type),
+        );
+        setOpenLabel(deriveOpenLabel(roleTypes));
+      })
+      .catch(() => {
+        if (!cancelled) setOpenLabel("");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   // ── Scroll spy ────────────────────────────────────
   // rAF-throttled scroll listener instead of IntersectionObserver: gives us
@@ -309,19 +358,29 @@ export default function V2Nav() {
             href="/support"
             className="group/cta block rounded-2xl bg-cheeze-purple-deep text-cheeze-cream hover:bg-cheeze-purple transition-colors px-4 py-3.5"
           >
-            {/* Small status row */}
-            <div className="flex items-center gap-1.5 text-[11px] text-cheeze-cream/75">
-              <span
-                aria-hidden
-                className="block w-1.5 h-1.5 rounded-full bg-cheeze-yellow v2-cta-pulse"
-              />
-              오디션 모집 중
-            </div>
+            {/* Status row — only renders when we have at least one open
+                listing. The label reflects the actual mix of role types
+                that are open right now (오디션 / 스태프 / 둘 다), so
+                we never tell the visitor "오디션 모집 중" when only
+                staff positions are actually accepting. */}
+            {openLabel && (
+              <div className="flex items-center gap-1.5 text-[11px] text-cheeze-cream/75">
+                <span
+                  aria-hidden
+                  className="block w-1.5 h-1.5 rounded-full bg-cheeze-yellow v2-cta-pulse"
+                />
+                {openLabel}
+              </div>
+            )}
 
             {/* Action row */}
-            <div className="mt-1 flex items-center justify-between gap-2">
+            <div
+              className={`flex items-center justify-between gap-2 ${
+                openLabel ? "mt-1" : ""
+              }`}
+            >
               <span className="text-[15px] font-semibold tracking-tight text-cheeze-cream">
-                지원하기
+                {openLabel ? "지원하기" : "지원 페이지로"}
               </span>
               <span
                 aria-hidden
