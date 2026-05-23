@@ -69,6 +69,26 @@ body {
   overflow-x: hidden; /* polaroid rotations should not create horizontal scroll */
 }
 
+/* Overscroll color match for V2 routes.
+ *
+ * When the user rubber-bands past the bottom of the page on iOS/macOS,
+ * the browser exposes the <html> element's background — *not* the
+ * footer's. With `html { background: cream }` the user saw a cream
+ * stripe peeking out below the purple footer, which broke the
+ * editorial feel.
+ *
+ * Solution: switch the <html> background to the footer's purple
+ * whenever a V2 `<main class="editorial">` is on the page. Admin and
+ * other surfaces are unaffected (they don't carry `.editorial`).
+ *
+ * Yes, the *top* rubber-band also picks up the purple now, but
+ * cheaper visually than a cream gap below the footer. The flash is
+ * brief and the V2 hero already sits behind a darker brand band.
+ */
+html:has(main.editorial) {
+  background: var(--cheeze-purple-deep);
+}
+
 /* Pretendard utility — applied only inside the admin shell.
    Falls back to system stack on browsers that don't load the CDN. */
 .font-pretendard,
