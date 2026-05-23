@@ -661,41 +661,37 @@ body {
    transition (transitions don't "restart" on prop change). */
 /* The selector beats `.v2-film img` (which sets a transform/filter
    hover transition) since it's more specific with the `.hero-cover-img`
-   class added. Without this, our long opacity fade gets overridden.
-   The non-active state holds a slight zoom + a tiny horizontal nudge
-   so the outgoing slide drifts out of frame instead of just dimming
-   — much more "film cross-fade" than "image gallery swap". */
+   class added.
+
+   Behavior: a clean opacity-only cross-fade. The previous version
+   stacked a transform offset on the inactive state (scale(1.04)
+   translateX(2%)) so the outgoing slide would drift — but during
+   the opacity transition the incoming slide was briefly *visible
+   while still translated*, which read as a flicker / jitter rather
+   than a smooth fade. Simpler is better here: invisible slides hold
+   identity transform, only the active slide moves (via ken-burns).
+*/
 .v2-film .hero-cover-img,
 .hero-cover-img {
   opacity: 0;
-  transform: scale(1.04) translateX(2%);
-  transition:
-    opacity 2200ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 2200ms cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: opacity, transform;
+  transition: opacity 1000ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity;
 }
 .v2-film .hero-cover-img.is-active,
 .hero-cover-img.is-active {
   opacity: 1;
   animation: hero-cover-ken-burns 6500ms cubic-bezier(0.4, 0, 0.4, 1) forwards;
 }
-/* Ken-burns: very slow scale + counter-drift. The translateX hands
-   off cleanly from the entry transition above — incoming photo starts
-   at +2% offset, slides to 0 while it fades in, then continues
-   drifting *past* 0 across its 6.5s hold so the eye keeps moving even
-   after the fade settles. */
 @keyframes hero-cover-ken-burns {
-  from { transform: scale(1) translateX(0); }
-  to   { transform: scale(1.07) translateX(-1.5%); }
+  from { transform: scale(1); }
+  to   { transform: scale(1.07); }
 }
 @media (prefers-reduced-motion: reduce) {
   .hero-cover-img.is-active {
     animation: none;
-    transform: scale(1) translateX(0);
   }
   .hero-cover-img {
     transition: opacity 300ms ease-out;
-    transform: scale(1) translateX(0);
   }
 }
 

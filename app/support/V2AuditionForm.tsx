@@ -89,28 +89,29 @@ function ListingPicker({
         </p>
       </div>
 
-      {/* Loading state — skeleton cards instead of "불러오는 중…" text.
-          Two soft rounded blocks read more like a Toss list placeholder. */}
+      {/* Loading state — skeleton cards. After the palette swap a soft
+          `bg-toss-100` fill reads as the canonical "list placeholder" tone. */}
       {listings === null && (
         <div className="space-y-3" aria-busy="true">
           {[0, 1].map((i) => (
             <div
               key={i}
-              className="rounded-2xl bg-cheeze-cream-deep/40 h-24 animate-pulse"
+              className="rounded-2xl bg-toss-100 h-24 animate-pulse"
             />
           ))}
         </div>
       )}
 
       {/* Empty state — Toss-style centered card with a soft icon, friendly
-          message, and a secondary CTA that hops to the fan tab. Sits on the
-          page's cream background, so we use a white-tinted fill + soft
-          border to read as "a card, not a band". */}
+          message, and a secondary CTA that hops to the fan tab. Uses
+          `bg-toss-50` so the card actually shows up against the new white
+          body bg (the previous `bg-white/70` was invisible after the
+          palette swap). */}
       {listings && listings.length === 0 && (
-        <div className="rounded-3xl bg-white/70 border border-cheeze-purple-deep/10 px-6 py-12 text-center">
+        <div className="rounded-3xl bg-toss-50 px-6 py-12 text-center">
           <div
             aria-hidden
-            className="mx-auto w-14 h-14 rounded-2xl bg-cheeze-cream-deep/70 flex items-center justify-center text-3xl mb-5"
+            className="mx-auto w-14 h-14 rounded-2xl bg-white flex items-center justify-center text-3xl mb-5 shadow-sm"
           >
             🎬
           </div>
@@ -125,7 +126,7 @@ function ListingPicker({
             <button
               type="button"
               onClick={onSwitchToFan}
-              className="mt-7 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-cheeze-ink text-cheeze-cream font-semibold text-[14px] hover:bg-cheeze-ink-soft transition-colors"
+              className="mt-7 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-cheeze-ink text-white font-semibold text-[14px] hover:bg-cheeze-ink-soft transition-colors"
             >
               응원 메시지 남기기
               <span aria-hidden>→</span>

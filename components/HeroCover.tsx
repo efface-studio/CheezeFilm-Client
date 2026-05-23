@@ -36,11 +36,10 @@ export default function HeroCover({
   const slides = mode === "photo" ? photoSrcs : videoIds;
   const [idx, setIdx] = useState(0);
 
-  // 6s per slide. The new crossfade rides for 2.2s and the
-  // ken-burns drift covers the rest, so each slide gets ~3.8s of
-  // "settled" view plus 2.2s of overlap with the next — slow
-  // enough that the eye actually looks at the photo, fast enough
-  // that the slideshow doesn't feel stuck.
+  // 8s per slide. The cross-fade is now a clean 1s opacity wipe (no
+  // transform offset on inactive slides, see globals.css), so each
+  // slide gets ~7s of stable view + 1s of fade. Long enough that the
+  // eye doesn't feel a flicker every few seconds.
   // Pause when the tab is hidden so the first slide the user sees
   // is the one we're currently on.
   useEffect(() => {
@@ -50,7 +49,7 @@ export default function HeroCover({
       if (t) return;
       t = setInterval(() => {
         setIdx((i) => (i + 1) % slides.length);
-      }, 6000);
+      }, 8000);
     };
     const stop = () => {
       if (t) clearInterval(t);

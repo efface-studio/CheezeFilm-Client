@@ -27,10 +27,13 @@ export default function V2SupportTabs({
 
   return (
     <div>
+      {/* Fixed-width 2-column grid so the floating white pill no longer
+          shifts left/right as label widths differ. Both columns hold
+          the longest label width, so swapping tabs is a pure fill swap. */}
       <div
         role="tablist"
         aria-label="지원 종류 선택"
-        className="inline-flex items-center gap-1 p-1 rounded-full bg-cheeze-cream-deep/70 mb-10"
+        className="inline-grid grid-cols-2 gap-1 p-1 rounded-full bg-toss-100 mb-10 w-[280px]"
       >
         <TabButton
           active={tab === "audition"}
@@ -68,7 +71,7 @@ function TabButton({
       role="tab"
       aria-selected={active}
       onClick={onClick}
-      className={`px-5 py-2 rounded-full text-[14px] font-semibold transition-all ${
+      className={`w-full text-center px-5 py-2 rounded-full text-[14px] font-semibold transition-all ${
         active
           ? "bg-white text-cheeze-ink shadow-sm"
           : "text-cheeze-ink-soft/70 hover:text-cheeze-ink"
