@@ -60,7 +60,7 @@ export async function generateMetadata({
   if (!member) return { title: "멤버를 찾을 수 없어요" };
 
   const photo = photoUrlFor(member.photoPath);
-  const canonicalPath = `/v2/members/${encodeURIComponent(member.slug)}`;
+  const canonicalPath = `/members/${encodeURIComponent(member.slug)}`;
   return {
     title: `${member.name} · ${member.roleLabel}`,
     description:
@@ -124,7 +124,7 @@ export default async function MemberDetailPage({
           {/* Crumb + portrait */}
           <InView className="v2-fade-up lg:col-span-5">
             <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive mb-5">
-              <Link href="/v2/members" className="hover:text-cheeze-purple">
+              <Link href="/members" className="hover:text-cheeze-purple">
                 ← Cast
               </Link>
               <span className="mx-2 text-cheeze-olive/40">/</span>
@@ -303,7 +303,7 @@ export default async function MemberDetailPage({
           <div>
             {prev ? (
               <Link
-                href={`/v2/members/${encodeURIComponent(prev.slug)}`}
+                href={`/members/${encodeURIComponent(prev.slug)}`}
                 className="group block"
               >
                 <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive mb-2">
@@ -326,7 +326,7 @@ export default async function MemberDetailPage({
           <div className="text-right">
             {next ? (
               <Link
-                href={`/v2/members/${encodeURIComponent(next.slug)}`}
+                href={`/members/${encodeURIComponent(next.slug)}`}
                 className="group block"
               >
                 <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive mb-2">

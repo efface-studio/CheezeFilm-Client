@@ -12,11 +12,11 @@ export const metadata = {
   title: "채용 · Careers",
   description:
     "스튜디오 치즈는 매주 한 컷을 굽는 사람들과 함께합니다. 작가·연출·촬영·편집·운영, 결을 맞춰 일할 동료를 찾아요.",
-  alternates: { canonical: "/v2/careers" },
+  alternates: { canonical: "/careers" },
   openGraph: {
     title: "채용 · Careers | 치즈필름",
     description: "스튜디오 치즈와 함께 일할 사람을 찾고 있어요.",
-    url: "/v2/careers",
+    url: "/careers",
     type: "website",
     images: ["/cheeze-logo.png"],
   },
@@ -27,7 +27,7 @@ export const metadata = {
  * Careers page — replaces the old "문의" nav slot. Hand-tuned editorial copy
  * for now; admin doesn't need a CMS for content this static.
  *
- * Applications funnel through `/v2/support` (same audition flow the home
+ * Applications funnel through `/support` (same audition flow the home
  * uses) so every submission lands in Supabase and the admin can triage
  * them from /admin instead of an inbox. No `mailto:` anywhere on this
  * page.
@@ -35,7 +35,7 @@ export const metadata = {
  * Layout follows the V2 editorial grid: ledger-style number rail on the
  * left of each section, big display-serif headline, body type at 15px.
  */
-const APPLY_HREF = "/v2/support?tab=audition";
+const APPLY_HREF = "/support?tab=audition";
 
 export default async function V2CareersPage() {
   return (
@@ -346,7 +346,7 @@ export default async function V2CareersPage() {
           Purple band — three-step process visual + a single, focused
           "지원하기" button at the end. The old version had a wall-sized
           email address as the CTA, but applications now go through the
-          on-site form (`/v2/support`) and land in Supabase for admin
+          on-site form (`/support`) and land in Supabase for admin
           triage, so the email block is gone. */}
       <section className="bg-cheeze-purple-deep text-cheeze-cream lg:-ml-56 lg:pl-56">
         <div className="mx-auto max-w-[100rem] px-6 py-24">
@@ -465,7 +465,7 @@ export default async function V2CareersPage() {
             <div className="lg:col-span-5 lg:border-l lg:border-cheeze-cream/15 lg:pl-10 space-y-4 text-[13px]">
               <Row label="채용 외 문의">
                 <Link
-                  href="/v2/support?tab=fan"
+                  href="/support?tab=fan"
                   className="text-cheeze-cream/85 underline decoration-cheeze-cream/30 underline-offset-4 hover:text-cheeze-yellow hover:decoration-cheeze-yellow"
                 >
                   응원 메시지 / 팬레터 보내기 →

@@ -578,7 +578,7 @@ body:has(.admin-shell).vignette::before {
 }
 
 /* ── V2 home scroll snap ─────────────────────────────────────
-   Each top-level <section> on `/v2` becomes a snap stop so the
+   Each top-level <section> on `/` becomes a snap stop so the
    page rests on a clean boundary as the user scrolls. `proximity`
    keeps it gentle — only snaps when the user releases near a
    section edge, never fights mid-section scrolling for tall

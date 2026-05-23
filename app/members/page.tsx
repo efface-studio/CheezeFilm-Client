@@ -12,11 +12,11 @@ export const metadata = {
   title: "캐스트 · The Cast",
   description:
     "치즈필름의 카메라 앞과 뒤, 함께 한 컷을 굽는 사람들. 배우·작가·연출의 명단을 한 페이지에서.",
-  alternates: { canonical: "/v2/members" },
+  alternates: { canonical: "/members" },
   openGraph: {
     title: "캐스트 · The Cast | 치즈필름",
     description: "치즈필름의 배우·작가·연출의 명단.",
-    url: "/v2/members",
+    url: "/members",
     type: "website",
     images: ["/cheeze-logo.png"],
   },
@@ -56,7 +56,7 @@ export default async function V2MembersPage() {
           </InView>
           <InView className="v2-fade-up lg:col-span-3 lg:text-right text-xs text-cheeze-olive tracking-widest uppercase leading-relaxed">
             정보는 공식 인스타그램·위키트리·위키백과를 교차 확인했어요. 잘못된 부분은 {" "}
-            <Link href="/v2/support?tab=fan" className="text-cheeze-purple underline-offset-4 hover:underline">
+            <Link href="/support?tab=fan" className="text-cheeze-purple underline-offset-4 hover:underline">
               여기로
             </Link>{" "}
             알려주세요.
@@ -80,7 +80,7 @@ export default async function V2MembersPage() {
                     click, so we stop propagation on the Instagram link
                     below to keep it pointing at the IG profile. */}
                 <Link
-                  href={`/v2/members/${encodeURIComponent(m.slug)}`}
+                  href={`/members/${encodeURIComponent(m.slug)}`}
                   className="block"
                 >
                   <div className="v2-film aspect-[3/4] bg-cheeze-purple-deep relative overflow-hidden">
