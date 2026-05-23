@@ -790,22 +790,82 @@ export async function V2Footer({ isHome = false }: { isHome?: boolean } = {}) {
           <p className="mt-5 max-w-sm text-sm leading-relaxed text-cheeze-cream/75 whitespace-pre-line">
             {c("footer.tagline")}
           </p>
-          <div className="mt-5 flex items-center gap-2">
+          {/* Social buttons — branded glyphs + rounded soft fills.
+              YouTube uses its red+white play badge, Instagram uses the
+              official rounded-camera path with the brand gradient. */}
+          <div className="mt-6 flex items-center gap-2">
             <a
               href="https://www.youtube.com/@CheezeFilmz"
               target="_blank"
               rel="noreferrer"
-              className="text-[11px] px-3 py-1.5 border border-cheeze-cream/30 hover:bg-cheeze-yellow hover:text-cheeze-purple-deep hover:border-cheeze-yellow transition-colors tracking-widest uppercase"
+              className="group/social inline-flex items-center gap-2 pl-2 pr-3.5 py-2 rounded-full bg-white/10 hover:bg-white/15 backdrop-blur transition-colors"
+              aria-label="YouTube — 새 탭에서 열기"
             >
-              YouTube ↗
+              <svg
+                aria-hidden
+                viewBox="0 0 24 24"
+                width="22"
+                height="22"
+                className="shrink-0"
+              >
+                <path
+                  fill="#FF0000"
+                  d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z"
+                />
+                <path fill="#fff" d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+              </svg>
+              <span className="text-[13px] font-semibold text-cheeze-cream">
+                YouTube
+              </span>
             </a>
             <a
               href="https://www.instagram.com/cheezefilm.official/"
               target="_blank"
               rel="noreferrer"
-              className="text-[11px] px-3 py-1.5 border border-cheeze-cream/30 hover:bg-cheeze-yellow hover:text-cheeze-purple-deep hover:border-cheeze-yellow transition-colors tracking-widest uppercase"
+              className="group/social inline-flex items-center gap-2 pl-2 pr-3.5 py-2 rounded-full bg-white/10 hover:bg-white/15 backdrop-blur transition-colors"
+              aria-label="Instagram — 새 탭에서 열기"
             >
-              Instagram ↗
+              <svg
+                aria-hidden
+                viewBox="0 0 24 24"
+                width="22"
+                height="22"
+                className="shrink-0"
+              >
+                <defs>
+                  <linearGradient
+                    id="ig-grad"
+                    x1="0%"
+                    y1="100%"
+                    x2="100%"
+                    y2="0%"
+                  >
+                    <stop offset="0%" stopColor="#F58529" />
+                    <stop offset="50%" stopColor="#DD2A7B" />
+                    <stop offset="100%" stopColor="#8134AF" />
+                  </linearGradient>
+                </defs>
+                <rect
+                  x="2"
+                  y="2"
+                  width="20"
+                  height="20"
+                  rx="5.5"
+                  fill="url(#ig-grad)"
+                />
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="4.2"
+                  fill="none"
+                  stroke="#fff"
+                  strokeWidth="1.8"
+                />
+                <circle cx="17.4" cy="6.6" r="1.1" fill="#fff" />
+              </svg>
+              <span className="text-[13px] font-semibold text-cheeze-cream">
+                Instagram
+              </span>
             </a>
           </div>
         </div>
