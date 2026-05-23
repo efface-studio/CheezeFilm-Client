@@ -62,30 +62,30 @@ export default function VideosV2Grid({
 
   return (
     <>
-      {/* Filter strip — editorial pill buttons */}
+      {/* Filter strip — Toss-style pill segmented control. */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-10 pb-6 border-b border-cheeze-purple-deep/15">
-        <div className="flex items-center gap-1 text-sm">
+        <div className="inline-flex items-center gap-1 p-1 rounded-full bg-toss-100">
           <button
             type="button"
             onClick={() => switchKind("longform")}
-            className={`px-4 py-2 tracking-widest uppercase text-xs font-bold border transition-colors ${
+            className={`px-4 py-2 rounded-full text-[13px] font-semibold transition-all ${
               kind === "longform"
-                ? "bg-cheeze-purple-deep text-cheeze-yellow border-cheeze-purple-deep"
-                : "border-cheeze-purple-deep/40 text-cheeze-purple-deep hover:bg-cheeze-purple-deep/10"
+                ? "bg-white text-cheeze-ink shadow-sm"
+                : "text-cheeze-ink-soft/70 hover:text-cheeze-ink"
             }`}
           >
-            Longform · {longform.length}
+            롱폼 · {longform.length}
           </button>
           <button
             type="button"
             onClick={() => switchKind("shorts")}
-            className={`px-4 py-2 tracking-widest uppercase text-xs font-bold border transition-colors ${
+            className={`px-4 py-2 rounded-full text-[13px] font-semibold transition-all ${
               kind === "shorts"
-                ? "bg-cheeze-purple-deep text-cheeze-yellow border-cheeze-purple-deep"
-                : "border-cheeze-purple-deep/40 text-cheeze-purple-deep hover:bg-cheeze-purple-deep/10"
+                ? "bg-white text-cheeze-ink shadow-sm"
+                : "text-cheeze-ink-soft/70 hover:text-cheeze-ink"
             }`}
           >
-            Shorts · {shorts.length}
+            쇼츠 · {shorts.length}
           </button>
         </div>
 
@@ -269,16 +269,18 @@ function PlayerModal({ video, onClose }: { video: Video; onClose: () => void }) 
                 href={video.url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs font-bold uppercase tracking-widest px-3 py-2 border border-cheeze-purple-deep hover:bg-cheeze-purple-deep hover:text-cheeze-yellow transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-toss-50 text-cheeze-ink text-[13px] font-semibold hover:bg-toss-100 transition-colors"
               >
-                YouTube ↗
+                YouTube
+                <span aria-hidden>↗</span>
               </a>
               <button
                 type="button"
                 onClick={onClose}
-                className="text-xs font-bold uppercase tracking-widest px-3 py-2 bg-cheeze-purple-deep text-cheeze-yellow"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cheeze-ink text-white text-[13px] font-semibold hover:bg-cheeze-ink-soft transition-colors"
               >
-                ✕ 닫기
+                <span aria-hidden>✕</span>
+                닫기
               </button>
             </div>
           </div>

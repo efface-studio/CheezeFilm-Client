@@ -142,7 +142,7 @@ function ListingPicker({
       )}
 
       {listings && listings.length > 0 && (
-        <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {listings.map((l, i) => (
             <ListingItem
               key={l.id}
@@ -299,9 +299,10 @@ function ApplyForm({
         <button
           type="button"
           onClick={onBack}
-          className="mt-8 text-xs font-bold tracking-widest uppercase px-5 py-3 bg-cheeze-purple-deep text-cheeze-yellow hover:bg-cheeze-purple transition-colors"
+          className="mt-8 inline-flex items-center gap-1.5 px-5 py-3 rounded-xl bg-cheeze-ink text-white text-[14px] font-semibold hover:bg-cheeze-ink-soft transition-colors"
         >
           다른 공고 보기
+          <span aria-hidden>→</span>
         </button>
       </div>
     );
@@ -472,15 +473,18 @@ function ApplyForm({
         </div>
       )}
 
-      <div className="flex items-center gap-4 pt-2 border-t border-cheeze-purple-deep/15">
+      <div className="flex items-center gap-4 pt-4 border-t border-toss-100">
         <button
           type="submit"
           disabled={status === "submitting"}
-          className="text-sm font-bold tracking-widest uppercase px-6 py-3.5 bg-cheeze-purple-deep text-cheeze-yellow hover:bg-cheeze-purple disabled:bg-cheeze-olive/40 transition-colors"
+          className="inline-flex items-center gap-1.5 px-6 py-3.5 rounded-xl bg-cheeze-ink text-white text-[15px] font-semibold hover:bg-cheeze-ink-soft disabled:bg-toss-200 disabled:text-toss-500 disabled:cursor-not-allowed transition-colors"
         >
-          {status === "submitting" ? "전송 중..." : "Submit audition →"}
+          {status === "submitting" ? "전송 중…" : "지원서 제출하기"}
+          {status !== "submitting" && <span aria-hidden>→</span>}
         </button>
-        <span className="text-xs text-cheeze-olive">필수 항목은 *로 표시됩니다.</span>
+        <span className="text-[12px] text-cheeze-ink-soft">
+          필수 항목은 *로 표시됩니다.
+        </span>
       </div>
     </form>
   );

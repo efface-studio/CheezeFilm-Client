@@ -645,16 +645,18 @@ export default async function HomeV2() {
             <InView className="v2-fade-up mt-10 flex flex-wrap gap-3">
               <Link
                 href="/careers"
-                className="inline-flex items-center gap-2 text-sm font-bold tracking-widest uppercase px-5 py-3 bg-cheeze-purple-deep text-cheeze-yellow hover:bg-cheeze-purple transition-colors"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-cheeze-ink text-white text-[14px] font-semibold hover:bg-cheeze-ink-soft transition-colors"
               >
-                전체 채용 정보 →
+                전체 채용 정보
+                <span aria-hidden>→</span>
               </Link>
-              <a
-                href="mailto:cheezefilm.m@gmail.com?subject=%5B%EC%A7%80%EC%9B%90%5D%20%EC%B9%98%EC%A6%88%ED%95%84%EB%A6%84%20%EB%B0%B0%EC%9A%B0%20%EC%98%A4%EB%94%94%EC%85%98"
-                className="inline-flex items-center gap-2 text-sm font-bold tracking-widest uppercase px-5 py-3 border border-cheeze-purple-deep text-cheeze-purple-deep hover:bg-cheeze-purple-deep hover:text-cheeze-yellow transition-colors"
+              <Link
+                href="/support?tab=audition"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-toss-50 text-cheeze-ink text-[14px] font-semibold hover:bg-toss-100 transition-colors"
               >
-                지원하기 ↗
-              </a>
+                지원하기
+                <span aria-hidden>→</span>
+              </Link>
             </InView>
           </div>
 

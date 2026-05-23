@@ -63,9 +63,10 @@ export default function V2FanForm() {
         <button
           type="button"
           onClick={() => setStatus("idle")}
-          className="mt-8 text-xs font-bold tracking-widest uppercase px-5 py-3 bg-cheeze-purple-deep text-cheeze-yellow hover:bg-cheeze-purple transition-colors"
+          className="mt-8 inline-flex items-center gap-1.5 px-5 py-3 rounded-xl bg-cheeze-ink text-white text-[14px] font-semibold hover:bg-cheeze-ink-soft transition-colors"
         >
-          한마디 더
+          한마디 더 보내기
+          <span aria-hidden>→</span>
         </button>
       </div>
     );
@@ -154,13 +155,14 @@ export default function V2FanForm() {
         </div>
       )}
 
-      <div className="flex items-center gap-4 pt-2 border-t border-cheeze-purple-deep/15">
+      <div className="flex items-center gap-4 pt-4 border-t border-toss-100">
         <button
           type="submit"
           disabled={status === "submitting"}
-          className="text-sm font-bold tracking-widest uppercase px-6 py-3.5 bg-cheeze-purple-deep text-cheeze-yellow hover:bg-cheeze-purple disabled:bg-cheeze-olive/40 transition-colors"
+          className="inline-flex items-center gap-1.5 px-6 py-3.5 rounded-xl bg-cheeze-ink text-white text-[15px] font-semibold hover:bg-cheeze-ink-soft disabled:bg-toss-200 disabled:text-toss-500 disabled:cursor-not-allowed transition-colors"
         >
-          {status === "submitting" ? "전송 중..." : "Send letter →"}
+          {status === "submitting" ? "전송 중…" : "응원 보내기"}
+          {status !== "submitting" && <span aria-hidden>→</span>}
         </button>
       </div>
     </form>
