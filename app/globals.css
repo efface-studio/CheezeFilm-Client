@@ -77,15 +77,18 @@ body {
  * stripe peeking out below the purple footer, which broke the
  * editorial feel.
  *
- * Solution: switch the <html> background to the footer's purple
- * whenever a V2 `<main class="editorial">` is on the page. Admin and
- * other surfaces are unaffected (they don't carry `.editorial`).
+ * Solution: V2Nav toggles `html.v2-editorial` on mount, and we swap
+ * the canvas to the footer's purple while that class is on. Originally
+ * tried `html:has(main.editorial)` but Tailwind v4's Lightning CSS
+ * silently drops `:has()` rules from the build, so the rule never
+ * shipped. Class-based selector is well-supported and survives the
+ * minifier.
  *
- * Yes, the *top* rubber-band also picks up the purple now, but
- * cheaper visually than a cream gap below the footer. The flash is
- * brief and the V2 hero already sits behind a darker brand band.
+ * Admin and other surfaces don't get the class, so their canvas
+ * stays cream. Yes, the *top* rubber-band also picks up the purple,
+ * but cheaper visually than the cream gap that motivated this fix.
  */
-html:has(main.editorial) {
+html.v2-editorial {
   background: var(--cheeze-purple-deep);
 }
 
