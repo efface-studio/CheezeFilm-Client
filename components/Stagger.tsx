@@ -75,12 +75,6 @@ export function StaggerText({
   );
 }
 
-/** Counts the number of grapheme-ish spans a `StaggerText` would emit
- *  for a given string in character mode, so callers can compute a
- *  `startIndex` for a subsequent line without rendering twice. */
-export function countStaggerCharacters(text: string): number {
-  return Array.from(text).filter((ch) => ch !== " ").length;
-}
 
 /**
  * Generic in-view trigger — sets `data-revealed="true"` once and only once.

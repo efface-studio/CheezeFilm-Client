@@ -3,11 +3,7 @@ import Link from "next/link";
 import { getAllVideos } from "@/lib/youtube";
 import { getContent, loadContentMap } from "@/lib/content";
 import { getMembers } from "@/lib/members";
-import {
-  InView,
-  StaggerText,
-  countStaggerCharacters,
-} from "@/components/Stagger";
+import { InView, StaggerText } from "@/components/Stagger";
 import HeroCover from "@/components/HeroCover";
 import CountUp from "@/components/CountUp";
 import V2Nav from "@/components/V2Nav";
@@ -102,7 +98,16 @@ export default async function HomeV2() {
                 <StaggerText
                   text={c("hero.title.line2")}
                   mode="character"
-                  startIndex={countStaggerCharacters(c("hero.title.line1"))}
+                  // Continue --li from where line 1 left off so line 2
+                  // types AFTER line 1 finishes instead of in parallel.
+                  // Inlined instead of imported from the client component
+                  // (`countStaggerCharacters` lives in a "use client" file
+                  // and can't be called from the server).
+                  startIndex={
+                    Array.from(c("hero.title.line1")).filter(
+                      (ch) => ch !== " ",
+                    ).length
+                  }
                 />
               </span>
             </InView>
