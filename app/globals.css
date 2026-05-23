@@ -469,6 +469,13 @@ body {
   animation: v2-pulse-dot 1800ms ease-out infinite;
 }
 
+/* Same pulse ring but smaller — used inside the rail CTA's status
+   pip so the dot keeps its 1.5px size while the radiating ring is
+   still readable against the deep-purple background. */
+.v2-cta-pulse {
+  animation: v2-pulse-dot 1800ms ease-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .v2-vrule, .v2-hrule, .v2-mask, .v2-fade-up,
   .v2-stagger > *, .v2-title::after {
@@ -477,7 +484,7 @@ body {
     clip-path: none !important;
     opacity: 1 !important;
   }
-  .v2-marquee, .v2-pulse-dot { animation: none !important; }
+  .v2-marquee, .v2-pulse-dot, .v2-cta-pulse { animation: none !important; }
 }
 
 /* Vignette around viewport edges — gives a projected-screen feel.
