@@ -3,10 +3,11 @@ import { getMembers } from "@/lib/members";
 import { getAllListings } from "@/lib/auditionListings";
 
 /**
- * Dynamic sitemap — V2 is the canonical surface. We list V2 routes
- * (root, members index, support, videos) plus per-member detail pages
- * and currently-public audition listings. V1 stays crawlable but at
- * lower priority since V2 is the destination we're promoting.
+ * Dynamic sitemap. The site lives at the root path now (V1 was retired
+ * in #26 and V2 was promoted out of `/v2` in #45), so every URL here is
+ * a top-level path. We list the main routes (root, members index,
+ * support, videos, careers) plus per-member detail pages and
+ * currently-public audition listings.
  *
  * `lastModified` uses real signals where we have them: member rows
  * don't track an `updated_at` so we fall back to `now()`; listings
@@ -24,47 +25,45 @@ const SITE_URL = (
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
-  // V2 routes — the main surface.
-  const v2: MetadataRoute.Sitemap = [
+  const main: MetadataRoute.Sitemap = [
     {
-      url: `${SITE_URL}/v2`,
+      url: `${SITE_URL}/`,
       lastModified: now,
       changeFrequency: "weekly",
       priority: 1,
     },
     {
-      url: `${SITE_URL}/v2/members`,
+      url: `${SITE_URL}/members`,
       lastModified: now,
       changeFrequency: "monthly",
       priority: 0.9,
     },
     {
-      url: `${SITE_URL}/v2/videos`,
+      url: `${SITE_URL}/videos`,
       lastModified: now,
       changeFrequency: "daily",
       priority: 0.9,
     },
     {
-      url: `${SITE_URL}/v2/support`,
+      url: `${SITE_URL}/support`,
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.8,
     },
     {
-      url: `${SITE_URL}/v2/careers`,
+      url: `${SITE_URL}/careers`,
       lastModified: now,
       changeFrequency: "monthly",
       priority: 0.7,
     },
   ];
 
-  // Per-member detail pages. Photos surface as image sitemap entries so
-  // Google Image can crawl them.
+  // Per-member detail pages.
   let members: MetadataRoute.Sitemap = [];
   try {
     const allMembers = await getMembers();
     members = allMembers.map((m) => ({
-      url: `${SITE_URL}/v2/members/${encodeURIComponent(m.slug)}`,
+      url: `${SITE_URL}/members/${encodeURIComponent(m.slug)}`,
       lastModified: now,
       changeFrequency: "monthly",
       priority: 0.7,
@@ -91,5 +90,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     listings = [];
   }
 
-  return [...v2, ...members, ...listings];
+  return [...main, ...members, ...listings];
 }

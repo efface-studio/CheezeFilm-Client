@@ -37,7 +37,7 @@ function LinkPending() {
  *    and animates a yellow marker between nav items so the active section
  *    "moves" smoothly as the user scrolls.
  *
- * The four anchor sections on `/v2` (`#issue`, `#films`, `#cast`, `#contact`)
+ * The four anchor sections on `/` (`#issue`, `#films`, `#cast`, `#contact`)
  * are pre-existing — this component just observes them.
  */
 
@@ -46,29 +46,29 @@ type NavItem = {
   label: string;
   labelEn: string;
   href: string;
-  /** ID of the section to scroll-spy against, on `/v2`. */
+  /** ID of the section to scroll-spy against, on `/`. */
   sectionId: "issue" | "films" | "cast" | "careers";
   /** Path that should mark this item active when the user is on a child page. */
   routeMatch?: string;
 };
 
 // The rail is the "table of contents" for the V2 home spread, so every
-// item scrolls within `/v2` instead of jumping to a separate route. The
-// dedicated detail pages (`/v2/videos`, `/v2/members`, `/v2/careers`)
+// item scrolls within `/` instead of jumping to a separate route. The
+// dedicated detail pages (`/videos`, `/members`, `/careers`)
 // are still reachable — each home section has a "더 보기 →" CTA into
 // them. Keeping `routeMatch` around so the rail still highlights the
 // right item when a visitor lands on a detail page directly (e.g. from
 // search or a deep link).
 const NAV: NavItem[] = [
-  { num: "01", label: "소개",   labelEn: "About",   href: "/v2#issue",    sectionId: "issue" },
-  { num: "02", label: "영상",   labelEn: "Films",   href: "/v2#films",    sectionId: "films",   routeMatch: "/v2/videos" },
-  { num: "03", label: "멤버",   labelEn: "Cast",    href: "/v2#cast",     sectionId: "cast",    routeMatch: "/v2/members" },
-  { num: "04", label: "채용",   labelEn: "Careers", href: "/v2#careers",  sectionId: "careers", routeMatch: "/v2/careers" },
+  { num: "01", label: "소개",   labelEn: "About",   href: "/#issue",    sectionId: "issue" },
+  { num: "02", label: "영상",   labelEn: "Films",   href: "/#films",    sectionId: "films",   routeMatch: "/videos" },
+  { num: "03", label: "멤버",   labelEn: "Cast",    href: "/#cast",     sectionId: "cast",    routeMatch: "/members" },
+  { num: "04", label: "채용",   labelEn: "Careers", href: "/#careers",  sectionId: "careers", routeMatch: "/careers" },
 ];
 
 export default function V2Nav() {
   const pathname = usePathname();
-  const isHome = pathname === "/v2";
+  const isHome = pathname === "/";
   const [activeId, setActiveId] = useState<NavItem["sectionId"] | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -98,7 +98,7 @@ export default function V2Nav() {
     }
     // All four sectionIds have a matching element on the V2 home: #issue,
     // #films, #cast are anchor sections, and #careers is a teaser band
-    // that links out to the full /v2/careers page. With careers in the
+    // that links out to the full /careers page. With careers in the
     // list the rail highlights "04 채용" as the user scrolls past it.
     const ids: NavItem["sectionId"][] = ["issue", "films", "cast", "careers"];
 
@@ -187,7 +187,7 @@ export default function V2Nav() {
     <>
       {/* ─────────────────────────────────────────────────
           Desktop side rail (lg+) — HOME ONLY.
-          On `/v2/*` subpages we render only the compact top bar below
+          On `/*` subpages we render only the compact top bar below
           (which has a back arrow + brand + hamburger menu) so the
           subpage feels like content, not sub-nav. The hamburger still
           exposes the full nav list as an overlay.
@@ -210,7 +210,7 @@ export default function V2Nav() {
       >
         {/* Brand */}
         <Link
-          href="/v2"
+          href="/"
           className="group block focus:outline-none"
           aria-label="치즈필름 홈으로"
         >
@@ -332,7 +332,7 @@ export default function V2Nav() {
             to feel inviting and tappable. */}
         <div className="space-y-4">
           <Link
-            href="/v2/support"
+            href="/support"
             className="group/cta block rounded-2xl bg-cheeze-purple-deep text-cheeze-cream hover:bg-cheeze-purple transition-colors px-4 py-3.5"
           >
             {/* Small status row */}
@@ -394,7 +394,7 @@ export default function V2Nav() {
         <div className="mx-auto max-w-[100rem] px-5 lg:px-8 py-3.5 flex items-center justify-between gap-3">
           {/* Brand link — on a subpage this also serves as "← back home". */}
           <Link
-            href="/v2"
+            href="/"
             className="flex items-center gap-3 focus:outline-none group/back"
             aria-label={isHome ? "치즈필름 홈으로" : "← 치즈필름 홈으로 돌아가기"}
           >
@@ -437,7 +437,7 @@ export default function V2Nav() {
               />
             </button>
             <Link
-              href="/v2/support"
+              href="/support"
               className="inline-flex items-center gap-1.5 px-3 py-2 bg-cheeze-purple-deep text-cheeze-yellow text-[11px] font-bold tracking-widest uppercase hover:bg-cheeze-purple transition-colors"
             >
               지원

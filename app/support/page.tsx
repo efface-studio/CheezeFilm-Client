@@ -16,11 +16,11 @@ export const metadata = {
   title: "지원 · Apply",
   description:
     "치즈필름이 함께할 사람을 찾고 있습니다. 진행 중인 오디션 공고 확인, 팬레터 전달도 이곳에서.",
-  alternates: { canonical: "/v2/support" },
+  alternates: { canonical: "/support" },
   openGraph: {
     title: "지원 · Apply | 치즈필름",
     description: "오디션 공고 확인 · 응원 메시지 보내기.",
-    url: "/v2/support",
+    url: "/support",
     type: "website",
     images: ["/cheeze-logo.png"],
   },

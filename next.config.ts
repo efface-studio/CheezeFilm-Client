@@ -121,6 +121,17 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+
+  // V2 was promoted out of `/v2` and lives at the root now (#45). Catch
+  // every legacy `/v2*` URL with a permanent redirect so external links
+  // and search-engine indexes keep working. `:path*` includes the empty
+  // case, so plain `/v2` also lands on `/`.
+  async redirects() {
+    return [
+      { source: "/v2", destination: "/", permanent: true },
+      { source: "/v2/:path*", destination: "/:path*", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

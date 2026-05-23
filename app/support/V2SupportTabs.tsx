@@ -7,7 +7,7 @@ import V2FanForm from "./V2FanForm";
 type Tab = "audition" | "fan";
 
 /**
- * /v2/support tabs — Toss-style segmented pill.
+ * /support tabs — Toss-style segmented pill.
  *
  *   - Container is a single rounded pill filled with `cheeze-cream-deep`.
  *   - Active tab is a white pill that floats inside, with a faint shadow

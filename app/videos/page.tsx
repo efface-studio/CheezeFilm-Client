@@ -9,11 +9,11 @@ export const metadata = {
   title: "필모 · Filmography",
   description:
     "치즈필름이 지금까지 구워낸 작품들. 롱폼·쇼츠를 한 자리에서 다시 보세요.",
-  alternates: { canonical: "/v2/videos" },
+  alternates: { canonical: "/videos" },
   openGraph: {
     title: "필모 · Filmography | 치즈필름",
     description: "치즈필름의 롱폼·쇼츠 필모그래피.",
-    url: "/v2/videos",
+    url: "/videos",
     type: "website",
     images: ["/cheeze-logo.png"],
   },

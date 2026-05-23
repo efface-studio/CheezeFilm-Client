@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     "한국 웹드라마",
   ],
   alternates: {
-    canonical: "/v2",
+    canonical: "/",
   },
   openGraph: {
     title: "치즈필름 — 스토리를 굽는 사람들",
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "치즈필름",
     locale: "ko_KR",
-    url: "/v2",
+    url: "/",
     images: [
       {
         url: "/cheeze-logo.png",
@@ -69,9 +69,9 @@ export const metadata: Metadata = {
       "「일진에게 찍혔을 때」, 「일진에게 반했을 때」를 만든 스튜디오 치즈필름.",
     images: ["/cheeze-logo.png"],
   },
-  icons: {
-    icon: "/favicon.ico",
-  },
+  // Favicons / app icons are picked up automatically by Next.js from
+  // `app/icon.png` and `app/apple-icon.png` (both derived from
+  // `cheeze-logo.png`). No manual `icons` field needed.
   robots: {
     index: true,
     follow: true,

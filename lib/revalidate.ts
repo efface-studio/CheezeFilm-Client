@@ -27,24 +27,24 @@ const PROFILE = "max" as const;
 
 export function bumpMembers() {
   revalidateTag(MEMBERS_TAG, PROFILE);
-  revalidatePath("/v2");
-  revalidatePath("/v2/members");
-  revalidatePath("/v2/members/[slug]", "page");
+  revalidatePath("/");
+  revalidatePath("/members");
+  revalidatePath("/members/[slug]", "page");
 }
 
 export function bumpContent() {
   revalidateTag(CONTENT_TAG, PROFILE);
-  revalidatePath("/v2");
-  revalidatePath("/v2/careers");
-  revalidatePath("/v2/support");
+  revalidatePath("/");
+  revalidatePath("/careers");
+  revalidatePath("/support");
 }
 
 export function bumpListings() {
   revalidateTag(LISTINGS_TAG, PROFILE);
-  revalidatePath("/v2/support");
+  revalidatePath("/support");
 }
 
 export function bumpCovers() {
   revalidateTag(COVERS_TAG, PROFILE);
-  revalidatePath("/v2");
+  revalidatePath("/");
 }
