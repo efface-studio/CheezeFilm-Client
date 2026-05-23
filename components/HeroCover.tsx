@@ -36,11 +36,11 @@ export default function HeroCover({
   const slides = mode === "photo" ? photoSrcs : videoIds;
   const [idx, setIdx] = useState(0);
 
-  // 2s per slide — the user wants a snappier rotation. The cross-fade
-  // takes ~700ms in the middle and the active slide animates
-  // continuously (subtle scale, see `.hero-cover-img.is-active` in
-  // globals.css), so even though each slide is only on for two seconds,
-  // there's always motion under the cross-fade.
+  // 3s per slide. The cross-fade is ~900ms and the active slide
+  // simultaneously runs a 4.5s ken-burns zoom (see globals.css), so
+  // each slide gets ~2.1s of settled view + 900ms of overlap with
+  // the next. Bumped from 2s because the longer ken-burns wants more
+  // room — at 2s the zoom barely got started before the next swap.
   // Pause when the tab is hidden so the first slide the user sees
   // is the one we're currently on.
   useEffect(() => {
@@ -50,7 +50,7 @@ export default function HeroCover({
       if (t) return;
       t = setInterval(() => {
         setIdx((i) => (i + 1) % slides.length);
-      }, 2000);
+      }, 3000);
     };
     const stop = () => {
       if (t) clearInterval(t);
