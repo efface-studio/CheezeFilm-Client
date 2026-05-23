@@ -10,6 +10,7 @@ import { getAllVideos } from "@/lib/youtube";
 import { getContent, loadContentMap } from "@/lib/content";
 
 export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 const works = [
   {

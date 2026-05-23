@@ -5,6 +5,8 @@ import V2SupportTabs from "./V2SupportTabs";
 
 type SearchParams = Promise<{ tab?: string }>;
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "지원 · Apply",
   description:

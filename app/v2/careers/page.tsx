@@ -5,6 +5,7 @@ import { getContent, loadContentMap } from "@/lib/content";
 import CareersReel from "@/components/CareersReel";
 
 export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "채용 · Careers",

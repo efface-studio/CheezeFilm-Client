@@ -5,6 +5,8 @@ import { getContent, loadContentMap } from "@/lib/content";
 
 type SearchParams = Promise<{ tab?: string }>;
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "지원하기 | 치즈필름",
   description: "치즈필름 오디션 지원과 팬 응원 메시지를 받는 곳.",

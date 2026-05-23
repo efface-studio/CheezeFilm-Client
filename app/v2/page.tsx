@@ -12,6 +12,7 @@ import CareersReel from "@/components/CareersReel";
 import { getCoverPhotos } from "@/lib/coverPhotos";
 
 export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 // Page-level metadata — `title.absolute` bypasses the layout's "%s | 치즈필름"
 // template since the brand is already in the V2 home title. `og:image` is
 // re-stated per page because page-level `openGraph` replaces the layout
