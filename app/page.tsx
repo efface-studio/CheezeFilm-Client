@@ -272,32 +272,14 @@ export default async function HomeV2() {
             <div className="mt-5 text-[11px] tracking-[0.3em] uppercase text-cheeze-olive">
               — Studio Cheeze, since 2017
             </div>
-            {/* YouTube channel awards. Previously three identical
-                border boxes — now properly metallic chips with a
-                small play-button glyph so each award reads as an
-                actual badge. */}
-            <div className="mt-10 grid grid-cols-3 gap-3">
-              <AwardChip
-                label="Silver"
-                sublabel="10만"
-                gradient="from-zinc-300 via-zinc-100 to-zinc-300"
-                textColor="text-zinc-700"
-                iconColor="text-zinc-700"
-              />
-              <AwardChip
-                label="Gold"
-                sublabel="100만"
-                gradient="from-amber-400 via-amber-200 to-amber-400"
-                textColor="text-amber-900"
-                iconColor="text-amber-900"
-              />
-              <AwardChip
-                label="대상"
-                sublabel="Daesang"
-                gradient="from-cheeze-purple via-cheeze-purple-soft to-cheeze-purple"
-                textColor="text-white"
-                iconColor="text-cheeze-yellow"
-              />
+            {/* YouTube channel awards — single soft surface, hairline
+                divider between cells, one bold label each. The earlier
+                metallic-gradient chips read as loud; this version
+                trusts the metal-coloured dots + clean typography. */}
+            <div className="mt-10 rounded-2xl bg-toss-50 grid grid-cols-3 divide-x divide-toss-200/70">
+              <AwardChip label="Silver" dotClass="bg-zinc-400" />
+              <AwardChip label="Gold" dotClass="bg-amber-400" />
+              <AwardChip label="대상" dotClass="bg-cheeze-purple" />
             </div>
           </InView>
         </div>
@@ -1073,47 +1055,24 @@ function Stat({
 }
 
 /**
- * Channel award chip — metallic gradient pill with a small play-button
- * glyph (matches the YouTube "creator awards" silver/gold play buttons
- * visually, without lifting the actual asset). Tailwind expresses the
- * metallic body via a 3-stop linear gradient; the play glyph + label
- * stack in the middle.
+ * Channel award chip — one cell of the three-up awards strip. Just a
+ * coloured dot + bold label. The wrapping container handles the
+ * surface + dividers; the cell stays minimal so the three awards read
+ * as a unit, not three competing buttons.
  */
 function AwardChip({
   label,
-  sublabel,
-  gradient,
-  textColor,
-  iconColor,
+  dotClass,
 }: {
   label: string;
-  sublabel: string;
-  gradient: string;
-  textColor: string;
-  iconColor: string;
+  dotClass: string;
 }) {
   return (
-    <div
-      className={`relative rounded-2xl bg-gradient-to-br ${gradient} px-3 py-3 flex flex-col items-center justify-center gap-1 shadow-sm`}
-    >
-      <svg
-        aria-hidden
-        viewBox="0 0 24 24"
-        width="22"
-        height="22"
-        className={iconColor}
-      >
-        <path
-          d="M9.5 7.5v9l7-4.5-7-4.5z"
-          fill="currentColor"
-        />
-      </svg>
-      <div className={`text-[12px] font-bold tracking-tight ${textColor}`}>
+    <div className="px-3 py-4 flex items-center justify-center gap-2">
+      <span aria-hidden className={`block w-2 h-2 rounded-full ${dotClass}`} />
+      <span className="text-[13px] font-bold tracking-tight text-cheeze-ink">
         {label}
-      </div>
-      <div className={`text-[10px] tracking-wider ${textColor} opacity-70`}>
-        {sublabel}
-      </div>
+      </span>
     </div>
   );
 }

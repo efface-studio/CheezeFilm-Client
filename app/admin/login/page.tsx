@@ -21,8 +21,6 @@ export default async function AdminLoginPage() {
   const session = await getSession();
   if (session) redirect("/admin");
 
-  const isDev = process.env.NODE_ENV !== "production";
-
   return (
     <div className="admin-shell font-pretendard min-h-screen flex flex-col bg-white">
       {/* Utility row — just a back link, top-left. Keeps the visual
@@ -61,19 +59,6 @@ export default async function AdminLoginPage() {
         </div>
       </main>
 
-      {isDev && (
-        <footer className="pb-10 px-6 text-center text-[12px] text-zinc-400 leading-relaxed">
-          dev · 기본 계정{" "}
-          <code className="bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-500">
-            admin
-          </code>{" "}
-          /{" "}
-          <code className="bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-500">
-            cheeze2017!
-          </code>{" "}
-          · .env.local에서 변경
-        </footer>
-      )}
     </div>
   );
 }

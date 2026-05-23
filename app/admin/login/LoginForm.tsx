@@ -18,6 +18,11 @@ export default function LoginForm() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // Track the two fields so we can disable the submit button until both
+  // are filled. (`required` alone would only kick in on submit.)
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const canSubmit = username.trim().length > 0 && password.length > 0;
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -67,8 +72,10 @@ export default function LoginForm() {
           autoComplete="username"
           spellCheck={false}
           autoCapitalize="none"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
           className={fieldClass}
-          placeholder="admin"
+          placeholder="아이디를 입력해주세요"
         />
       </div>
 
@@ -85,6 +92,8 @@ export default function LoginForm() {
           type="password"
           required
           autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           className={fieldClass}
           placeholder="비밀번호를 입력해주세요"
         />
@@ -100,7 +109,7 @@ export default function LoginForm() {
 
       <button
         type="submit"
-        disabled={submitting}
+        disabled={submitting || !canSubmit}
         className="!mt-7 w-full h-[56px] rounded-xl bg-zinc-900 text-white font-bold text-[16px] hover:bg-zinc-800 active:bg-black disabled:bg-zinc-200 disabled:text-zinc-400 disabled:cursor-not-allowed transition-colors"
       >
         {submitting ? "로그인 중…" : "로그인"}
