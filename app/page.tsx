@@ -38,17 +38,36 @@ export const metadata = {
 };
 
 export default async function HomeV2() {
-  const [{ longform, shorts }, contentMap, members, coverPhotos] =
-    await Promise.all([
-      getAllVideos(),
-      loadContentMap(),
-      getMembers(),
-      // Hero cover: prefer landscape group/cast photos from the Supabase
-      // `covers` Storage bucket. Falls back to the 3 featured video
-      // thumbnails configured in admin → "이번 호 표지" when empty.
-      getCoverPhotos(),
-    ]);
+  const [
+    { longform, shorts, subscriberCount, viewCount, totalCount },
+    contentMap,
+    members,
+    coverPhotos,
+  ] = await Promise.all([
+    getAllVideos(),
+    loadContentMap(),
+    getMembers(),
+    // Hero cover: prefer landscape group/cast photos from the Supabase
+    // `covers` Storage bucket. Falls back to the 3 featured video
+    // thumbnails configured in admin → "이번 호 표지" when empty.
+    getCoverPhotos(),
+  ]);
   const c = (key: string) => getContent(contentMap, key);
+
+  // Live stats from the YouTube Data API (when the key is configured).
+  // We normalize subscribers → M (millions, 2 decimals) and views → 억
+  // (hundred-millions, 1 decimal) since those are the Korean
+  // channel-card conventions. Fallbacks to the content-registry values
+  // mean the page never shows a blank — admin edits still win when
+  // they're set; otherwise we use the live API number.
+  const liveSubscribersM =
+    typeof subscriberCount === "number" ? subscriberCount / 1_000_000 : null;
+  const liveViews억 =
+    typeof viewCount === "number" ? viewCount / 100_000_000 : null;
+  const liveVideoCount =
+    typeof totalCount === "number"
+      ? totalCount
+      : longform.length + shorts.length;
   // Up to 10 pinned hero video slots; each falls back to the matching
   // longform position if the admin hasn't picked one. Empty strings are
   // stripped at the end so we never render a hole.
@@ -171,12 +190,33 @@ export default async function HomeV2() {
           </aside>
         </div>
 
-        {/* Stats strip */}
+        {/* Stats strip — pulls live numbers from the YouTube Data API
+            (`getAllVideos` now surfaces `subscriberCount`, `viewCount`,
+            `totalCount`). When the API key is missing or the call
+            fails, each Stat falls back to the matching content-key
+            value the admin set in /admin → 콘텐츠. */}
         <div className="border-t border-cheeze-purple-deep/15">
           <div className="mx-auto max-w-[100rem] px-6 py-7 grid grid-cols-2 md:grid-cols-4 divide-x divide-cheeze-purple-deep/10">
-            <Stat label={c("stats.subscribers.label")} value={3.32} suffix={c("stats.subscribers.suffix")} fallback={`${c("stats.subscribers")}${c("stats.subscribers.suffix")}`} decimals={2} />
-            <Stat label={c("stats.videos.label")} value={503} suffix={c("stats.videos.suffix")} fallback={`${c("stats.videos")}${c("stats.videos.suffix")}`} />
-            <Stat label={c("stats.views.label")} value={13.8} suffix={c("stats.views.suffix")} fallback={`${c("stats.views")}${c("stats.views.suffix")}`} decimals={1} />
+            <Stat
+              label={c("stats.subscribers.label")}
+              value={liveSubscribersM ?? Number(c("stats.subscribers")) ?? 0}
+              suffix={c("stats.subscribers.suffix")}
+              fallback={`${c("stats.subscribers")}${c("stats.subscribers.suffix")}`}
+              decimals={2}
+            />
+            <Stat
+              label={c("stats.videos.label")}
+              value={liveVideoCount}
+              suffix={c("stats.videos.suffix")}
+              fallback={`${c("stats.videos")}${c("stats.videos.suffix")}`}
+            />
+            <Stat
+              label={c("stats.views.label")}
+              value={liveViews억 ?? Number(c("stats.views")) ?? 0}
+              suffix={c("stats.views.suffix")}
+              fallback={`${c("stats.views")}${c("stats.views.suffix")}`}
+              decimals={1}
+            />
             <Stat label={c("stats.year.label")} value={2017} fallback={c("stats.year")} />
           </div>
         </div>
@@ -232,10 +272,32 @@ export default async function HomeV2() {
             <div className="mt-5 text-[11px] tracking-[0.3em] uppercase text-cheeze-olive">
               — Studio Cheeze, since 2017
             </div>
-            <div className="mt-10 grid grid-cols-3 gap-2 text-[10px] tracking-[0.25em] uppercase text-cheeze-purple-deep">
-              <span className="border border-cheeze-purple-deep/30 px-2 py-1.5 text-center">Silver</span>
-              <span className="border border-cheeze-purple-deep/30 px-2 py-1.5 text-center">Gold</span>
-              <span className="border border-cheeze-purple-deep/30 px-2 py-1.5 text-center">대상</span>
+            {/* YouTube channel awards. Previously three identical
+                border boxes — now properly metallic chips with a
+                small play-button glyph so each award reads as an
+                actual badge. */}
+            <div className="mt-10 grid grid-cols-3 gap-3">
+              <AwardChip
+                label="Silver"
+                sublabel="10만"
+                gradient="from-zinc-300 via-zinc-100 to-zinc-300"
+                textColor="text-zinc-700"
+                iconColor="text-zinc-700"
+              />
+              <AwardChip
+                label="Gold"
+                sublabel="100만"
+                gradient="from-amber-400 via-amber-200 to-amber-400"
+                textColor="text-amber-900"
+                iconColor="text-amber-900"
+              />
+              <AwardChip
+                label="대상"
+                sublabel="Daesang"
+                gradient="from-cheeze-purple via-cheeze-purple-soft to-cheeze-purple"
+                textColor="text-white"
+                iconColor="text-cheeze-yellow"
+              />
             </div>
           </InView>
         </div>
@@ -1007,6 +1069,52 @@ function Stat({
         {label}
       </div>
     </InView>
+  );
+}
+
+/**
+ * Channel award chip — metallic gradient pill with a small play-button
+ * glyph (matches the YouTube "creator awards" silver/gold play buttons
+ * visually, without lifting the actual asset). Tailwind expresses the
+ * metallic body via a 3-stop linear gradient; the play glyph + label
+ * stack in the middle.
+ */
+function AwardChip({
+  label,
+  sublabel,
+  gradient,
+  textColor,
+  iconColor,
+}: {
+  label: string;
+  sublabel: string;
+  gradient: string;
+  textColor: string;
+  iconColor: string;
+}) {
+  return (
+    <div
+      className={`relative rounded-2xl bg-gradient-to-br ${gradient} px-3 py-3 flex flex-col items-center justify-center gap-1 shadow-sm`}
+    >
+      <svg
+        aria-hidden
+        viewBox="0 0 24 24"
+        width="22"
+        height="22"
+        className={iconColor}
+      >
+        <path
+          d="M9.5 7.5v9l7-4.5-7-4.5z"
+          fill="currentColor"
+        />
+      </svg>
+      <div className={`text-[12px] font-bold tracking-tight ${textColor}`}>
+        {label}
+      </div>
+      <div className={`text-[10px] tracking-wider ${textColor} opacity-70`}>
+        {sublabel}
+      </div>
+    </div>
   );
 }
 
