@@ -710,15 +710,13 @@ function AuditionDetail({ audition: a }: { audition: Audition }) {
             </div>
           </div>
 
-          {/* 자기소개 */}
+          {/* 자기소개 — Toss-style soft card. The previous version drew a
+              4px purple bar with a floating dot at the top; for a
+              short intro (e.g. "dwd") that bar looked oversized and
+              the dot poked out of the card visually. A plain rounded
+              fill scales with the content. */}
           <DetailSection eyebrow="자기소개">
-            <blockquote className="relative border-l-4 border-purple-400 pl-5 pr-3 py-1 text-[15px] text-zinc-800 whitespace-pre-wrap leading-relaxed">
-              {/* Tiny corner mark instead of a giant typographic quote —
-                  guarantees a clean render across fallback fonts. */}
-              <span
-                aria-hidden
-                className="absolute -left-[3px] -top-2 w-2 h-2 rounded-full bg-purple-400"
-              />
+            <blockquote className="rounded-xl bg-zinc-50 px-4 py-3 text-[14px] text-zinc-800 whitespace-pre-wrap leading-relaxed">
               {a.intro}
             </blockquote>
           </DetailSection>
