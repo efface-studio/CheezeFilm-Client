@@ -10,7 +10,7 @@
  */
 export default function V2Loading() {
   return (
-    <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial lg:pl-56 relative">
+    <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial flex flex-col relative">
       {/* Top progress bar — slow horizontal sweep, very visible */}
       <div
         aria-hidden

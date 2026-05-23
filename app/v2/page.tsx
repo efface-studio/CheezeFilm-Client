@@ -57,7 +57,7 @@ export default async function HomeV2() {
     // drifting between them.
     <main
       data-v2-home
-      className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial lg:pl-56"
+      className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial flex flex-col lg:pl-56"
     >
       <V2SnapScroller />
       <V2Header />
@@ -663,7 +663,7 @@ export default async function HomeV2() {
         </div>
       </section>
 
-      <V2Footer />
+      <V2Footer isHome />
     </main>
   );
 }
@@ -678,17 +678,23 @@ export function V2Header() {
   return <V2Nav />;
 }
 
-export async function V2Footer() {
+export async function V2Footer({ isHome = false }: { isHome?: boolean } = {}) {
   const year = new Date().getFullYear();
   const contentMap = await loadContentMap();
   const c = (key: string) => getContent(contentMap, key);
   return (
-    // `lg:-ml-56` cancels the `lg:pl-56` we add on <main> for the side-rail
-    // gutter, then `lg:pl-56` is re-applied to the *inner* content so the
-    // purple background reaches the page edge but the text still aligns
-    // with the rest of the page beyond the rail. Without this break-out
-    // there's a seam where the cream gutter abuts the purple footer.
-    <footer className="bg-cheeze-purple-deep text-cheeze-cream border-t border-cheeze-purple-deep lg:-ml-56 lg:pl-56">
+    // On home we have the side rail on lg+, so main carries `lg:pl-56`. We
+    // need the purple footer to reach the page edge while keeping its inner
+    // text aligned, so we break out with `lg:-ml-56 lg:pl-56`. On subpages
+    // the rail is hidden and main has no left padding, so we skip the
+    // break-out — otherwise the footer overflows the viewport leftward.
+    // `mt-auto` lets the parent `flex flex-col` main pin the footer to the
+    // bottom when content is short (otherwise a cream gap appears).
+    <footer
+      className={`mt-auto bg-cheeze-purple-deep text-cheeze-cream border-t border-cheeze-purple-deep ${
+        isHome ? "lg:-ml-56 lg:pl-56" : ""
+      }`}
+    >
       {/* ── Main grid: brand · links · contact ──────────── */}
       <div className="mx-auto max-w-[100rem] px-6 py-14 grid md:grid-cols-12 gap-x-10 gap-y-10">
         {/* Brand block (col-span-5) */}
