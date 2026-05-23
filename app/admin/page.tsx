@@ -177,15 +177,13 @@ export default async function AdminPage({
           </SectionHeader>
           <SectionHeader
             title="표지 영상 (폴백)"
-            subtitle="표지 사진이 한 장도 없을 때만 표시되는 유튜브 표지 영상 3개"
+            subtitle="표지 사진이 한 장도 없을 때만 표시되는 유튜브 표지 영상 (최대 10개)"
           >
             <IssueCoverPicker
               videos={pickerVideos}
-              initial={[
-                getContent(contentMap, "works.1.videoId").trim(),
-                getContent(contentMap, "works.2.videoId").trim(),
-                getContent(contentMap, "works.3.videoId").trim(),
-              ]}
+              initial={Array.from({ length: 10 }, (_, i) =>
+                getContent(contentMap, `works.${i + 1}.videoId`).trim(),
+              )}
             />
           </SectionHeader>
         </div>

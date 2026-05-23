@@ -49,11 +49,12 @@ export default async function HomeV2() {
       getCoverPhotos(),
     ]);
   const c = (key: string) => getContent(contentMap, key);
-  const heroVideos = [
-    c("works.1.videoId").trim() || longform[0]?.id || "",
-    c("works.2.videoId").trim() || longform[1]?.id || "",
-    c("works.3.videoId").trim() || longform[2]?.id || "",
-  ].filter(Boolean);
+  // Up to 10 pinned hero video slots; each falls back to the matching
+  // longform position if the admin hasn't picked one. Empty strings are
+  // stripped at the end so we never render a hole.
+  const heroVideos = Array.from({ length: 10 }, (_, i) =>
+    c(`works.${i + 1}.videoId`).trim() || longform[i]?.id || "",
+  ).filter(Boolean);
 
   return (
     // `data-v2-home` opts this page into scroll-snap (see globals.css).

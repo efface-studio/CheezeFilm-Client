@@ -136,31 +136,20 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
   },
 
   // ─── WORKS / FILMOGRAPHY ────────────────────────────
-  // For each work card the videoId is optional — if empty, the home page
+  // For each work slot the videoId is optional — if empty, the home page
   // falls back to the latest longform video IDs pulled from the channel feed,
   // so the section always shows real thumbnails. Paste a YouTube video ID
   // (the 11-char `?v=` part of the URL) here to pin a specific film.
-  {
-    key: "works.1.videoId",
-    label: "1번 대표작 YouTube videoId",
+  // Slots 1-10 are exposed in the admin "표지 영상 (폴백)" picker; slots
+  // beyond the first three are extras for richer fallback rotations when
+  // there are no cover photos uploaded yet.
+  ...Array.from({ length: 10 }, (_, i) => ({
+    key: `works.${i + 1}.videoId`,
+    label: `${i + 1}번 대표작 YouTube videoId`,
     fallback: "",
-    type: "text",
+    type: "text" as const,
     section: "대표작",
-  },
-  {
-    key: "works.2.videoId",
-    label: "2번 대표작 YouTube videoId",
-    fallback: "",
-    type: "text",
-    section: "대표작",
-  },
-  {
-    key: "works.3.videoId",
-    label: "3번 대표작 YouTube videoId",
-    fallback: "",
-    type: "text",
-    section: "대표작",
-  },
+  })),
 
   // ─── CTA ────────────────────────────────────────────────
   {
