@@ -283,13 +283,24 @@ export default async function HomeV2() {
               actually render. The full roster (everyone, photo or not)
               is still at /members via the "전체 멤버 →" link above. */}
           {(() => {
+            // First row of six, then a second row of six.
+            // The grid is `lg:grid-cols-6` so the array order naturally
+            // wraps after the sixth name on desktop.
             const FEATURED_CAST_NAMES = [
+              // ── Row 1
               "조효민",
               "조채윤",
               "다솜",
               "민지",
               "선경",
               "유덕",
+              // ── Row 2
+              "소정",
+              "윤오",
+              "아윤",
+              "주석",
+              "주현",
+              "예나",
             ] as const;
             const byName = new Map(members.map((m) => [m.name, m]));
             const featured = FEATURED_CAST_NAMES.map((n) => byName.get(n))
