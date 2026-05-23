@@ -27,7 +27,11 @@ const ROLE_LABEL: Record<Listing["role_type"], string> = {
   staff: "스태프",
 };
 
-export default function V2AuditionForm() {
+export default function V2AuditionForm({
+  onSwitchToFan,
+}: {
+  onSwitchToFan?: () => void;
+}) {
   const [listings, setListings] = useState<Listing[] | null>(null);
   const [picked, setPicked] = useState<Listing | null>(null);
   const [loadError, setLoadError] = useState("");
@@ -58,6 +62,7 @@ export default function V2AuditionForm() {
       listings={listings}
       loadError={loadError}
       onPick={setPicked}
+      onSwitchToFan={onSwitchToFan}
     />
   );
 }
@@ -66,55 +71,72 @@ function ListingPicker({
   listings,
   loadError,
   onPick,
+  onSwitchToFan,
 }: {
   listings: Listing[] | null;
   loadError: string;
   onPick: (l: Listing) => void;
+  onSwitchToFan?: () => void;
 }) {
   return (
     <div className="space-y-8">
       <div>
-        <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-purple mb-2">
-          — Now casting
-        </div>
-        <h2
-          className="text-3xl tracking-tight"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          현재 모집중인 공고
+        <h2 className="text-[24px] font-bold text-cheeze-ink leading-tight">
+          모집 중인 공고
         </h2>
-        <p className="mt-2 text-sm text-cheeze-ink-soft">
+        <p className="mt-1.5 text-[14px] text-cheeze-ink-soft">
           지원하실 공고를 먼저 선택해주세요.
         </p>
       </div>
 
+      {/* Loading state — skeleton cards instead of "불러오는 중…" text.
+          Two soft rounded blocks read more like a Toss list placeholder. */}
       {listings === null && (
-        <div className="py-10 text-center text-sm text-cheeze-ink-soft/70">
-          불러오는 중…
+        <div className="space-y-3" aria-busy="true">
+          {[0, 1].map((i) => (
+            <div
+              key={i}
+              className="rounded-2xl bg-cheeze-cream-deep/40 h-24 animate-pulse"
+            />
+          ))}
         </div>
       )}
 
+      {/* Empty state — Toss-style centered card with a soft icon, friendly
+          message, and a secondary CTA that hops to the fan tab. Sits on the
+          page's cream background, so we use a white-tinted fill + soft
+          border to read as "a card, not a band". */}
       {listings && listings.length === 0 && (
-        <div className="border border-cheeze-purple-deep/30 p-10 text-center">
-          <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-purple-deep mb-3">
-            — No open calls
-          </div>
-          <h3
-            className="text-2xl mb-2"
-            style={{ fontFamily: "var(--font-display)" }}
+        <div className="rounded-3xl bg-white/70 border border-cheeze-purple-deep/10 px-6 py-12 text-center">
+          <div
+            aria-hidden
+            className="mx-auto w-14 h-14 rounded-2xl bg-cheeze-cream-deep/70 flex items-center justify-center text-3xl mb-5"
           >
-            지금은 열려 있는 오디션이 없어요.
+            🎬
+          </div>
+          <h3 className="text-[18px] font-bold text-cheeze-ink mb-2">
+            진행 중인 오디션이 없어요
           </h3>
-          <p className="text-sm text-cheeze-ink-soft/80 max-w-md mx-auto leading-relaxed">
-            새 작품의 캐스팅이 시작되면 이 페이지에 공고가 올라옵니다. 대신
-            응원 메시지 탭으로 마음을 전해주세요.
+          <p className="text-[14px] text-cheeze-ink-soft leading-relaxed max-w-sm mx-auto">
+            새 공고가 올라오면 이 페이지에서 가장 먼저 만나보실 수 있어요.
+            기다리는 동안 좋아하는 작품에 응원 한마디 어떠세요?
           </p>
+          {onSwitchToFan && (
+            <button
+              type="button"
+              onClick={onSwitchToFan}
+              className="mt-7 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-cheeze-ink text-cheeze-cream font-semibold text-[14px] hover:bg-cheeze-ink-soft transition-colors"
+            >
+              응원 메시지 남기기
+              <span aria-hidden>→</span>
+            </button>
+          )}
         </div>
       )}
 
       {loadError && (
-        <div className="border border-cheeze-wine bg-cheeze-wine/5 px-4 py-3 text-sm text-cheeze-wine">
-          ⚠ {loadError}
+        <div className="rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-[14px] text-rose-700">
+          {loadError}
         </div>
       )}
 
