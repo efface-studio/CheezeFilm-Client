@@ -142,7 +142,7 @@ function ListingPicker({
       )}
 
       {listings && listings.length > 0 && (
-        <ul className="space-y-3">
+        <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {listings.map((l, i) => (
             <ListingItem
               key={l.id}
@@ -309,25 +309,27 @@ function ApplyForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-8">
-      {/* Pinned listing header */}
-      <div className="border border-cheeze-purple-deep/40 p-4 flex items-start justify-between gap-4">
+      {/* Pinned listing header — Toss-style soft card.
+          Drops the bordered editorial frame + purple-on-yellow chip +
+          wine deadline. Eyebrow stacks above a clean role pill +
+          title + deadline row, and "다른 공고" is a quiet ghost
+          button on the right. */}
+      <div className="rounded-2xl bg-toss-50 px-5 py-4 flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <div className="text-[10px] uppercase tracking-widest text-cheeze-purple-deep mb-1">
+          <div className="text-[11px] font-semibold text-cheeze-ink-soft mb-1.5">
             지원할 공고
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 bg-cheeze-purple-deep text-cheeze-yellow">
+            <span className="inline-flex items-center text-[11px] font-semibold px-2.5 py-1 rounded-full bg-cheeze-purple/10 text-cheeze-purple-deep">
               {ROLE_LABEL[listing.role_type]}
             </span>
-            <h3
-              className="text-lg tracking-tight"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
+            <h3 className="text-[16px] font-bold tracking-tight text-cheeze-ink truncate">
               {listing.title}
             </h3>
             {listing.deadline && (
-              <span className="text-xs text-cheeze-wine">
-                ~ {formatDeadline(listing.deadline)}
+              <span className="text-[12px] text-cheeze-ink-soft inline-flex items-center gap-1.5">
+                <span aria-hidden className="w-1 h-1 rounded-full bg-rose-500" />
+                {formatDeadline(listing.deadline)} 마감
               </span>
             )}
           </div>
@@ -335,9 +337,10 @@ function ApplyForm({
         <button
           type="button"
           onClick={onBack}
-          className="shrink-0 text-xs underline text-cheeze-ink-soft hover:text-cheeze-ink"
+          className="shrink-0 inline-flex items-center gap-1 px-3 py-2 rounded-xl text-[13px] font-semibold text-cheeze-ink-soft hover:bg-white transition-colors"
         >
-          ← 다른 공고
+          <span aria-hidden>←</span>
+          다른 공고
         </button>
       </div>
       <input type="hidden" name="listing_id" value={listing.id} />

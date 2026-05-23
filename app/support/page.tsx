@@ -63,7 +63,11 @@ export default async function V2SupportPage({ searchParams }: { searchParams: Se
         </div>
       </section>
 
-      <section className="mx-auto max-w-3xl px-6 py-16">
+      {/* Widened from max-w-3xl → max-w-5xl so the audition-listing
+          grid (2 columns on md+) has room to breathe. The fan-letter
+          form inside the same shell caps itself with `max-w-xl` so
+          its inputs don't stretch to the full container. */}
+      <section className="mx-auto max-w-5xl px-6 py-16">
         <V2SupportTabs initialTab={initialTab} />
       </section>
 
