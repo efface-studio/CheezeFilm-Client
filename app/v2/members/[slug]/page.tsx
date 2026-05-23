@@ -10,15 +10,37 @@ import { getAllVideos } from "@/lib/youtube";
 
 // `[slug]` is a dynamic segment but the page data (`findMember`,
 // `getAllVideos`, `getMembers`) is all cross-request cached. With
-// `revalidate` we let Next.js prerender the known slugs at build /
-// on-demand and serve them from the edge cache thereafter. Unknown
-// slugs still resolve at request time via `dynamicParams = true`
-// (Next.js default for an exported `generateStaticParams`).
+// `revalidate` we serve cached HTML for `revalidate` seconds and
+// regenerate in the background after that.
 export const revalidate = 300;
 
-export async function generateStaticParams() {
-  const all = await getMembers();
-  return all.map((m) => ({ slug: m.slug }));
+/**
+ * Pre-collect every member's slug at build time so Next.js can prerender
+ * them once and serve them straight from the edge cache thereafter.
+ *
+ * Vercel's build environment doesn't always expose `SUPABASE_*`
+ * (depending on env-scoping), and `getMembers()` throws when they're
+ * missing — so we guard against that and fall back to "no prerender,
+ * generate on first request" instead of failing the build. Unknown
+ * slugs continue to resolve at request time either way.
+ */
+export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.SUPABASE_SERVICE_ROLE_KEY
+  ) {
+    return [];
+  }
+  try {
+    const all = await getMembers();
+    return all.map((m) => ({ slug: m.slug }));
+  } catch (err) {
+    console.warn(
+      "[v2/members/[slug]] skipping prerender — getMembers failed:",
+      err,
+    );
+    return [];
+  }
 }
 
 function photoUrlFor(photoPath?: string) {
