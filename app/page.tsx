@@ -103,7 +103,7 @@ export default async function HomeV2() {
               A 3:2 landscape photo in col-span-5 (~620px) lands at ~413px
               tall, which sits comfortably alongside the headline + CTA
               stack on the left without crushing either side. */}
-          <div className="lg:col-span-7">
+          <div className="lg:col-span-6">
             {/* Toss-style eyebrow: small label pill with a status dot. */}
             <InView className="v2-fade-up">
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-toss-50 text-cheeze-purple text-[12px] font-semibold">
@@ -183,7 +183,7 @@ export default async function HomeV2() {
           {/* Cover card with mask reveal — landscape photos win when present
               in /public/covers/, otherwise we cycle the 3 featured video
               thumbnails configured in admin. */}
-          <aside className="lg:col-span-5 flex flex-col gap-4">
+          <aside className="lg:col-span-6 flex flex-col gap-4">
             <HeroCover photoSrcs={coverPhotos} videoIds={heroVideos} />
             {/* FILE · EDITION 02 caption removed — magazine masthead
                 language doesn't fit the new clean surface. */}
