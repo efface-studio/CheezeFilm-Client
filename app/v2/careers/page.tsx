@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { V2Header, V2Footer } from "../page";
 import { InView } from "@/components/Stagger";
-import { getContent, loadContentMap } from "@/lib/content";
 import CareersReel from "@/components/CareersReel";
 
 // Static-ish editorial page; only thing that changes is the `careers.*`
@@ -26,21 +25,19 @@ export const metadata = {
 
 /**
  * Careers page — replaces the old "문의" nav slot. Hand-tuned editorial copy
- * for now; admin doesn't need a CMS for content this static. Email contact
- * inherits the careers content key (falls back to the business mailbox).
+ * for now; admin doesn't need a CMS for content this static.
+ *
+ * Applications funnel through `/v2/support` (same audition flow the home
+ * uses) so every submission lands in Supabase and the admin can triage
+ * them from /admin instead of an inbox. No `mailto:` anywhere on this
+ * page.
  *
  * Layout follows the V2 editorial grid: ledger-style number rail on the
  * left of each section, big display-serif headline, body type at 15px.
  */
-export default async function V2CareersPage() {
-  // Re-use the business mailbox as the careers inbox by default; admin can
-  // override via `contact.careers` if/when HR splits it out.
-  const contentMap = await loadContentMap();
-  const careersEmail =
-    getContent(contentMap, "contact.careers")?.trim() ||
-    getContent(contentMap, "contact.business")?.trim() ||
-    "cheezefilm@sandboxnetwork.net";
+const APPLY_HREF = "/v2/support?tab=audition";
 
+export default async function V2CareersPage() {
   return (
     <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial flex flex-col">
       <V2Header />
@@ -102,18 +99,18 @@ export default async function V2CareersPage() {
             </InView>
 
             <InView className="v2-fade-up mt-8 flex flex-wrap gap-3">
-              <a
-                href={`mailto:${careersEmail}?subject=${encodeURIComponent("[지원] 치즈필름 채용")}`}
+              <Link
+                href={APPLY_HREF}
                 className="group/cta inline-flex items-center gap-2 text-sm font-bold tracking-widest uppercase px-6 py-3.5 bg-cheeze-purple-deep text-cheeze-yellow hover:bg-cheeze-purple transition-colors"
               >
-                이력서 보내기
+                지원하기
                 <span
                   aria-hidden
                   className="transition-transform group-hover/cta:translate-x-1"
                 >
                   →
                 </span>
-              </a>
+              </Link>
               <a
                 href="#roles"
                 className="inline-flex items-center gap-2 text-sm font-bold tracking-widest uppercase px-6 py-3.5 border border-cheeze-purple-deep text-cheeze-purple-deep hover:bg-cheeze-purple-deep hover:text-cheeze-yellow transition-colors"
@@ -272,14 +269,12 @@ export default async function V2CareersPage() {
                       </li>
                     ))}
                   </ul>
-                  <a
-                    href={`mailto:${careersEmail}?subject=${encodeURIComponent(
-                      "[지원] 치즈필름 배우 오디션",
-                    )}`}
+                  <Link
+                    href={APPLY_HREF}
                     className="mt-2 inline-flex items-center gap-2 self-start text-[12px] font-bold tracking-widest uppercase px-4 py-2.5 bg-cheeze-purple-deep text-cheeze-yellow hover:bg-cheeze-purple transition-colors"
                   >
                     배우로 지원하기 →
-                  </a>
+                  </Link>
                 </div>
               </InView>
             );
@@ -348,7 +343,11 @@ export default async function V2CareersPage() {
       </section>
 
       {/* ── HOW ──────────────────────────────────────────
-          Purple band — three-step process visual + giant email CTA. */}
+          Purple band — three-step process visual + a single, focused
+          "지원하기" button at the end. The old version had a wall-sized
+          email address as the CTA, but applications now go through the
+          on-site form (`/v2/support`) and land in Supabase for admin
+          triage, so the email block is gone. */}
       <section className="bg-cheeze-purple-deep text-cheeze-cream lg:-ml-56 lg:pl-56">
         <div className="mx-auto max-w-[100rem] px-6 py-24">
           <InView className="v2-fade-up flex items-end justify-between gap-6 mb-14">
@@ -364,27 +363,29 @@ export default async function V2CareersPage() {
               </h2>
             </div>
             <span className="hidden md:inline-flex font-mono text-[11px] tracking-widest uppercase text-cheeze-yellow/60">
-              3 steps · 1 email
+              3 steps · 1 form
             </span>
           </InView>
 
-          {/* Three-step process */}
-          <ol className="grid md:grid-cols-3 gap-x-6 gap-y-8 border-y border-cheeze-cream/15 py-10">
+          {/* Three-step process — same numbered editorial cards, now
+              describing the on-site form flow instead of an email
+              hand-off. */}
+          <ol className="grid md:grid-cols-3 gap-x-6 gap-y-8 border-y border-cheeze-cream/15 py-12">
             {[
               {
                 step: "01",
-                title: "메일 한 통",
-                body: "포지션 + 이력서 + 한두 줄 자기소개. 양식 없음. 작품·작업물 링크 첨부 추천.",
+                title: "공고 선택",
+                body: "지원 페이지에서 진행 중인 오디션 공고를 골라요. 배우·작가·연출·운영 등 모든 포지션이 한 곳에 모여있어요.",
               },
               {
                 step: "02",
-                title: "1주 안에 회신",
-                body: "서류 검토 후 1주 안에 1:1 면담 일정으로 회신. 못 가도 답장은 드려요.",
+                title: "지원서 작성",
+                body: "이름·연락처·짧은 자기소개와 작품 링크. 첨부 자료는 한 번에 업로드돼요. 양식 없음, 1~2분이면 끝.",
               },
               {
                 step: "03",
                 title: "작가·대표 면담",
-                body: "줌 또는 합정 사무실에서. 일하는 방식, 작품 톤, 솔직한 기대치를 맞춰봐요.",
+                body: "검토 후 1주 안에 회신해요. 줌 또는 합정 사무실에서 일하는 방식·작품 톤·기대치를 맞춰봐요.",
               },
             ].map((s, i) => (
               <InView
@@ -424,35 +425,42 @@ export default async function V2CareersPage() {
             ))}
           </ol>
 
-          {/* Giant email CTA */}
-          <InView className="v2-fade-up mt-12 grid lg:grid-cols-12 gap-x-10 gap-y-8 items-end">
+          {/* Focused CTA + side notes. Replaces the previous wall-sized
+              email — a single primary button to the form, plus the two
+              utility rows (fan letter, on-site visit) tucked alongside
+              so the visual weight doesn't shout. */}
+          <InView className="v2-fade-up mt-14 grid lg:grid-cols-12 gap-x-10 gap-y-10 items-center">
             <div className="lg:col-span-7">
-              <div className="text-[10px] tracking-[0.3em] uppercase text-cheeze-yellow/70 mb-2">
-                Send to
+              <div className="text-[10px] tracking-[0.3em] uppercase text-cheeze-yellow/70 mb-3">
+                Apply now
               </div>
-              <a
-                href={`mailto:${careersEmail}?subject=${encodeURIComponent(
-                  "[지원] 치즈필름 채용",
-                )}`}
-                className="group/email block tracking-tight text-cheeze-yellow hover:text-cheeze-cream transition-colors break-all leading-none"
+              <h3
+                className="leading-tight tracking-tight text-cheeze-yellow"
                 style={{
                   fontFamily: "var(--font-display)",
-                  fontSize: "clamp(1.8rem, 4vw, 3.5rem)",
+                  fontSize: "clamp(2rem, 3.6vw, 3rem)",
                 }}
               >
-                {careersEmail}
+                지원서 한 장이면
+                <br />
+                다음 단계로.
+              </h3>
+              <p className="mt-5 max-w-lg text-cheeze-cream/70 text-[14px] leading-relaxed">
+                모든 지원은 같은 폼을 통해 받고 있어요. 공고를 고른 뒤 짧은
+                양식만 채우시면, 작가·대표가 직접 확인합니다.
+              </p>
+              <Link
+                href={APPLY_HREF}
+                className="group/apply mt-8 inline-flex items-center gap-3 px-7 py-4 bg-cheeze-yellow text-cheeze-purple-deep font-bold tracking-widest uppercase text-sm hover:bg-cheeze-cream transition-colors"
+              >
+                지원 페이지로
                 <span
                   aria-hidden
-                  className="inline-block ml-3 text-cheeze-cream/40 group-hover/email:text-cheeze-yellow transition-colors"
+                  className="transition-transform group-hover/apply:translate-x-1"
                 >
-                  ↗
+                  →
                 </span>
-              </a>
-              <p className="mt-4 text-cheeze-cream/70 max-w-xl text-[14px] leading-relaxed">
-                메일 제목에는 지원하는 포지션을 적어주세요. 본문에는 짧게라도{" "}
-                <span className="text-cheeze-yellow">왜 치즈필름인지</span>{" "}
-                담아주시면 좋아요.
-              </p>
+              </Link>
             </div>
             <div className="lg:col-span-5 lg:border-l lg:border-cheeze-cream/15 lg:pl-10 space-y-4 text-[13px]">
               <Row label="채용 외 문의">
