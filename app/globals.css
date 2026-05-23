@@ -659,40 +659,36 @@ body {
    Resetting `animation` on every active flip requires the
    keyframe to be applied via a data attribute rather than a
    transition (transitions don't "restart" on prop change). */
-/* Hero cover slideshow.
+/* Hero cover slideshow — tuned for a 2-second rotation cadence.
  *
- * The previous cross-fade used a snappy ease-out curve + an outgoing
- * ken-burns scale that "forwards"-held at 1.07 until the next slide
- * snapped it back to 1 — a visible jolt right at the fade midpoint.
- *
- * This version:
- *   - Cross-fade is a smooth 1400ms ease-in-out — both directions
- *     ramp identically, so the two slides meet at ~50% opacity in
- *     the middle with no perceived hard edge.
- *   - Slides hold a constant idle transform (`scale(1.02)`), and the
- *     ken-burns runs as a transition (not a keyframe animation) only
- *     while `.is-active`. Removing the class smoothly transitions
- *     scale *back* to the idle value over the same window — outgoing
- *     slide no longer snaps.
+ *   - 700ms ease-in-out cross-fade (both directions identical), so two
+ *     slides meet at ~50% opacity in the middle without a hard edge.
+ *   - Active slide scales 1.0 → 1.04 over 2.5s. Removing `.is-active`
+ *     transitions the scale *back* to 1.0 over the same window. The
+ *     scale animation is always longer than the time the slide is
+ *     visible, so the photo is forever drifting — no "stuck frame"
+ *     moment between cross-fades.
+ *   - Both transitions share `transform`/`opacity` — no keyframe
+ *     animation that could "forwards"-hold and snap.
  */
 .v2-film .hero-cover-img,
 .hero-cover-img {
   opacity: 0;
-  transform: scale(1.02);
+  transform: scale(1);
   transition:
-    opacity 1400ms cubic-bezier(0.45, 0, 0.55, 1),
-    transform 7000ms cubic-bezier(0.4, 0, 0.4, 1);
+    opacity 700ms cubic-bezier(0.45, 0, 0.55, 1),
+    transform 2500ms cubic-bezier(0.4, 0, 0.4, 1);
   will-change: opacity, transform;
 }
 .v2-film .hero-cover-img.is-active,
 .hero-cover-img.is-active {
   opacity: 1;
-  transform: scale(1.07);
+  transform: scale(1.04);
 }
 @media (prefers-reduced-motion: reduce) {
   .hero-cover-img,
   .hero-cover-img.is-active {
-    transition: opacity 300ms ease-out;
+    transition: opacity 200ms ease-out;
     transform: none;
   }
 }

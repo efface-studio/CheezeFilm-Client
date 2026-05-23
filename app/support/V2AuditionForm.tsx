@@ -159,11 +159,12 @@ function ListingPicker({
 }
 
 /**
- * One open call — Toss-style card. A single rounded surface on
- * `bg-toss-50` that the whole row clicks. Role + deadline live in a
- * compact pill row at the top, the title is a clean 20px bold, and a
- * subtle "지원하기 →" sits at the bottom-right. No magazine numbering,
- * no yellow underline, no purple-on-yellow chip.
+ * One open call — Toss-style card. A white surface with a hairline
+ * border that the whole row clicks, no inner cards, no purple-on-
+ * yellow chips, no yellow underline. Role pill + deadline + title +
+ * (optional) body sit in a single relaxed column; "지원하기 →"
+ * floats top-right so the title doesn't have to share the eye with
+ * a separate footer block.
  */
 function ListingItem({
   listing: l,
@@ -179,9 +180,21 @@ function ListingItem({
       <button
         type="button"
         onClick={onPick}
-        className="group block w-full text-left rounded-2xl bg-toss-50 hover:bg-toss-100 transition-colors px-5 py-5 sm:px-6 sm:py-6"
+        className="group relative block w-full text-left rounded-2xl bg-white border border-toss-200 hover:border-cheeze-purple/40 hover:shadow-[0_4px_20px_rgba(85,34,163,0.08)] transition-all p-5 sm:p-6"
       >
-        {/* Status row — role pill + optional deadline. */}
+        {/* Floating "지원하기 →" — top-right, only visible on hover so
+            the card feels calm at rest. */}
+        <span
+          aria-hidden
+          className="absolute top-5 right-5 sm:top-6 sm:right-6 inline-flex items-center gap-1 text-[13px] font-semibold text-cheeze-purple-deep opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          지원하기
+          <span className="transition-transform group-hover:translate-x-1">
+            →
+          </span>
+        </span>
+
+        {/* Role pill + deadline */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="inline-flex items-center text-[11px] font-semibold px-2.5 py-1 rounded-full bg-cheeze-purple/10 text-cheeze-purple-deep">
             {ROLE_LABEL[l.role_type]}
@@ -194,8 +207,8 @@ function ListingItem({
           )}
         </div>
 
-        {/* Title */}
-        <h3 className="mt-3 text-[20px] font-bold leading-snug text-cheeze-ink tracking-tight">
+        {/* Title — leaves headroom on the right for the floating CTA. */}
+        <h3 className="mt-3 pr-28 text-[20px] font-bold leading-snug text-cheeze-ink tracking-tight">
           {l.title}
         </h3>
 
@@ -206,27 +219,11 @@ function ListingItem({
         )}
 
         {l.requirements && (
-          <div className="mt-4 rounded-xl bg-white px-4 py-3">
-            <div className="text-[11px] font-semibold text-cheeze-ink-soft mb-1">
-              지원 조건
-            </div>
-            <p className="text-[13px] text-cheeze-ink-soft/90 whitespace-pre-wrap leading-relaxed">
-              {l.requirements}
-            </p>
-          </div>
+          <p className="mt-3 text-[13px] text-cheeze-ink-soft/85 whitespace-pre-wrap leading-relaxed">
+            <span className="font-semibold text-cheeze-ink-soft">지원 조건 · </span>
+            {l.requirements}
+          </p>
         )}
-
-        {/* Footer: inline CTA, right-aligned. The whole card is the
-            click target — this is just the visual nudge. */}
-        <div className="mt-4 flex justify-end items-center gap-1.5 text-[13px] font-semibold text-cheeze-purple-deep">
-          지원하기
-          <span
-            aria-hidden
-            className="transition-transform duration-200 group-hover:translate-x-1"
-          >
-            →
-          </span>
-        </div>
       </button>
     </li>
   );
