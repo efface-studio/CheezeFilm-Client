@@ -180,9 +180,15 @@ export default function V2Nav() {
           a separate panel docked to the left. The page's <main> still adds
           `lg:pl-56` to reserve the gutter — content slides under nothing
           here, since there's no surface to slide under. */}
+      {/* Subpage handling: don't render the rail at all. The `hidden`
+          attribute alone isn't enough because `lg:flex` overrides
+          `[hidden] { display: none }` at the lg breakpoint, so the rail
+          would still appear on desktop. Skipping the element is also
+          better for accessibility (no off-screen focusable links) and
+          keeps the DOM lighter on detail views. */}
+      {isHome && (
       <aside
         aria-label="주 메뉴"
-        hidden={!isHome}
         className="hidden lg:flex fixed top-0 left-0 bottom-0 w-56 z-40 flex-col justify-between py-9 pl-7 pr-6"
       >
         {/* Brand */}
@@ -335,6 +341,7 @@ export default function V2Nav() {
           </div>
         </div>
       </aside>
+      )}
 
       {/* ─────────────────────────────────────────────────
           Compact top bar — always on mobile, also on lg+ for subpages
