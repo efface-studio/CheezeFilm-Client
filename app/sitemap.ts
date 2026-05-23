@@ -91,21 +91,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     listings = [];
   }
 
-  // Landing + V1 (kept crawlable but de-emphasized).
-  const legacy: MetadataRoute.Sitemap = [
-    {
-      url: `${SITE_URL}/`,
-      lastModified: now,
-      changeFrequency: "yearly",
-      priority: 0.5,
-    },
-    {
-      url: `${SITE_URL}/v1`,
-      lastModified: now,
-      changeFrequency: "yearly",
-      priority: 0.3,
-    },
-  ];
-
-  return [...v2, ...members, ...listings, ...legacy];
+  return [...v2, ...members, ...listings];
 }
