@@ -480,18 +480,26 @@ export default async function HomeV2() {
           </div>
 
           {/* Cast grid — Toss-style photo cards.
-              Only members with an uploaded photo make this preview; the
-              other roster lines without portraits would feel empty
-              alongside the photo cards. The full list (including
-              photo-less entries) still lives at /members via the "전체
-              멤버 →" link above. */}
+              Editorial pick: a hand-curated set of six members shown on
+              the home spread. Order in `FEATURED_CAST_NAMES` is the
+              order they appear; only entries with an uploaded portrait
+              actually render. The full roster (everyone, photo or not)
+              is still at /members via the "전체 멤버 →" link above. */}
           {(() => {
-            const withPhotos = members
-              .filter((m) => !!m.photoPath)
-              .slice(0, 6);
+            const FEATURED_CAST_NAMES = [
+              "조효민",
+              "조채윤",
+              "다솜",
+              "민지",
+              "선경",
+              "유덕",
+            ] as const;
+            const byName = new Map(members.map((m) => [m.name, m]));
+            const featured = FEATURED_CAST_NAMES.map((n) => byName.get(n))
+              .filter((m): m is NonNullable<typeof m> => Boolean(m?.photoPath));
             return (
               <ol className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5">
-                {withPhotos.map((m, i) => (
+                {featured.map((m, i) => (
                   <InView
                     key={m.slug}
                     as="li"
