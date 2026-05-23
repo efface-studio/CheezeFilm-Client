@@ -78,7 +78,7 @@ function buildMember(
 async function buildPlan() {
   const { videos } = await getAllVideos();
   const cast = parseCastFromVideos(videos);
-  const existing = getMembers();
+  const existing = await getMembers();
   const diff = diffCastAgainstMembers(cast, existing);
   const takenSlugs = new Set(existing.map((m) => m.slug));
   const plan = diff.toAdd.map((entry, i) => buildMember(entry, takenSlugs, i));

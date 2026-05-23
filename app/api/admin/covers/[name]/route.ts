@@ -1,16 +1,14 @@
-import fs from "node:fs";
 import path from "node:path";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { serverClient } from "@/lib/db";
 
 export const runtime = "nodejs";
 
-const COVERS_DIR = path.join(process.cwd(), "public", "covers");
-
 /**
- * Delete one cover photo by filename. The filename is taken from the URL
- * path; we explicitly reject `..` and absolute paths to keep this from
- * being a directory-traversal hole.
+ * Delete one cover photo from Supabase Storage by filename. Filename
+ * comes from the URL; we reject `..` and any path that contains
+ * directory separators to avoid touching other buckets/objects.
  */
 export async function DELETE(
   _req: Request,
@@ -23,24 +21,14 @@ export async function DELETE(
 
   const { name: raw } = await params;
   const decoded = decodeURIComponent(raw);
-  // Reject anything that tries to climb the tree. `basename` strips dirs;
-  // we then require the result to equal the input so `../foo` and `/x/y`
-  // get caught (their basename would differ).
   if (decoded !== path.basename(decoded) || decoded.includes("..")) {
     return NextResponse.json({ error: "Invalid name" }, { status: 400 });
   }
 
-  const target = path.join(COVERS_DIR, decoded);
-  if (!fs.existsSync(target)) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const sb = serverClient();
+  const { error } = await sb.storage.from("covers").remove([decoded]);
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  try {
-    fs.unlinkSync(target);
-    return NextResponse.json({ deleted: decoded });
-  } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "delete failed" },
-      { status: 500 },
-    );
-  }
+  return NextResponse.json({ deleted: decoded });
 }

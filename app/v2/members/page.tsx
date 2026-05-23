@@ -1,10 +1,9 @@
-import fs from "node:fs";
-import path from "node:path";
 import Image from "next/image";
 import Link from "next/link";
 import { V2Header, V2Footer } from "../page";
 import { InView } from "@/components/Stagger";
-import { members } from "@/lib/members";
+import { getMembers } from "@/lib/members";
+import { storageUrl } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -22,22 +21,14 @@ export const metadata = {
   twitter: { images: ["/cheeze-logo.png"] },
 };
 
-const IMAGE_EXTS = [".jpg", ".jpeg", ".png", ".webp"];
-function resolvePhoto(slug: string) {
-  const dir = path.join(process.cwd(), "public", "members");
-  for (const ext of IMAGE_EXTS) {
-    const file = path.join(dir, `${slug}${ext}`);
-    if (fs.existsSync(file)) {
-      // No `?v=<mtime>` cache-bust — Next/Image rejects query strings
-      // on local sources, and the `/members/*` Cache-Control header
-      // already serves fresh content within 1 hour with SWR fallback.
-      return `/members/${slug}${ext}`;
-    }
-  }
-  return null;
+// Photos live in Supabase Storage now. `member.photoPath` is the key
+// inside the `members` bucket — we just build a public URL from it.
+function photoUrlFor(photoPath?: string) {
+  return photoPath ? storageUrl("members", photoPath) : null;
 }
 
-export default function V2MembersPage() {
+export default async function V2MembersPage() {
+  const members = await getMembers();
   return (
     <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial lg:pl-56">
       <V2Header />
@@ -74,7 +65,7 @@ export default function V2MembersPage() {
       <section className="mx-auto max-w-[100rem] px-6 py-16">
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-14">
           {members.map((m, i) => {
-            const photo = resolvePhoto(m.slug);
+            const photo = photoUrlFor(m.photoPath);
             return (
               <InView
                 key={m.slug}

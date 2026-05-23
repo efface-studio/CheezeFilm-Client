@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import ExcelJS from "exceljs";
-import fs from "node:fs";
 import path from "node:path";
-import { db, type Audition, type FanMessage } from "@/lib/db";
+import { serverClient, type Audition, type FanMessage } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-import { listingSummary } from "@/lib/auditionListings";
+import { getAllListings } from "@/lib/auditionListings";
 
 export const runtime = "nodejs";
 
@@ -23,11 +22,17 @@ type ColSpec<T> = {
   key: string;
   header: string;
   width: number;
-  /** Optional transformer for prettifying the raw row value. */
-  format?: (row: T) => string | number | null;
+  /** Optional transformer for prettifying the raw row value. May rely on a
+   *  pre-loaded `context` object the caller threads in (e.g. listing
+   *  summaries) so the format function itself stays synchronous. */
+  format?: (row: T, ctx: ExportContext) => string | number | null;
   /** When true, the column carries a photo. CSV stores the URL string,
    *  XLSX embeds the actual image in the cell (and we tall up the row). */
   image?: boolean;
+};
+
+type ExportContext = {
+  listingSummaries: Map<number, string>;
 };
 
 const AUDITION_COLS: ColSpec<Audition>[] = [
@@ -68,7 +73,8 @@ const AUDITION_COLS: ColSpec<Audition>[] = [
     key: "listing",
     header: "지원 공고",
     width: 30,
-    format: (r) => listingSummary(r.listing_id) ?? "",
+    format: (r, ctx) =>
+      r.listing_id != null ? ctx.listingSummaries.get(r.listing_id) ?? "" : "",
   },
   { key: "experience", header: "경력", width: 40 },
   { key: "intro", header: "자기소개", width: 60 },
@@ -104,9 +110,10 @@ const FAN_COLS: ColSpec<FanMessage>[] = [
 function toRowValues<T extends Record<string, unknown>>(
   row: T,
   cols: ColSpec<T>[],
+  ctx: ExportContext,
 ): (string | number | null)[] {
   return cols.map((c) => {
-    if (c.format) return c.format(row);
+    if (c.format) return c.format(row, ctx);
     const v = row[c.key as keyof T];
     if (v === null || v === undefined) return "";
     return v as string | number;
@@ -125,10 +132,11 @@ function csvEscape(v: unknown): string {
 function buildCsv<T extends Record<string, unknown>>(
   rows: T[],
   cols: ColSpec<T>[],
+  ctx: ExportContext,
 ): string {
   const lines = [cols.map((c) => csvEscape(c.header)).join(",")];
   for (const r of rows) {
-    lines.push(toRowValues(r, cols).map(csvEscape).join(","));
+    lines.push(toRowValues(r, cols, ctx).map(csvEscape).join(","));
   }
   return "﻿" + lines.join("\r\n");
 }
@@ -152,6 +160,7 @@ async function buildXlsx<T extends Record<string, unknown>>(
   rows: T[],
   cols: ColSpec<T>[],
   sheetName: string,
+  ctx: ExportContext,
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
   wb.creator = "치즈필름 관리자";
@@ -184,10 +193,16 @@ async function buildXlsx<T extends Record<string, unknown>>(
     .map((c, i) => (c.image ? i : -1))
     .filter((i) => i >= 0);
   const hasImages = imageColIndexes.length > 0;
+  const pendingImages: Array<{
+    ri: number;
+    ci: number;
+    key: string;
+    ext: "jpeg" | "png" | "gif";
+  }> = [];
 
   // Body
   rows.forEach((r, ri) => {
-    const values = toRowValues(r, cols);
+    const values = toRowValues(r, cols, ctx);
     // Image cells start empty — the actual photo is overlaid via addImage.
     if (hasImages) {
       for (const ci of imageColIndexes) {
@@ -202,35 +217,45 @@ async function buildXlsx<T extends Record<string, unknown>>(
       // "rough points" (~ 1.33 px per point).
       row.height = 78;
     }
-    // Embed photos
+    // Embed photos — fetch the bytes from Supabase Storage. We fire the
+    // download but await it sequentially below to keep this loop simple;
+    // an export usually has <200 rows so the latency is fine.
     for (const ci of imageColIndexes) {
       const col = cols[ci];
-      const url = col.format ? col.format(r) : (r[col.key as keyof T] as unknown);
-      if (typeof url !== "string" || !url) continue;
-      if (!url.startsWith("/")) continue; // only local public paths
-      const filePath = path.join(process.cwd(), "public", url);
-      const ext = extForExceljs(url);
-      if (!ext) continue; // unsupported format — skip embed, leave blank
-      try {
-        const buf = fs.readFileSync(filePath);
-        // exceljs's image-buffer type is the older Node Buffer shape; the
-        // @types/node Buffer in this project carries newer methods. The
-        // runtime payload is identical, so we cast through unknown.
-        const imgId = wb.addImage({
-          buffer: buf as unknown as Parameters<typeof wb.addImage>[0]["buffer"],
-          extension: ext,
-        });
-        // tl coords are 0-indexed; header is row 0, data row `ri` is row ri+1.
-        ws.addImage(imgId, {
-          tl: { col: ci + 0.05, row: ri + 1 + 0.05 },
-          ext: { width: 80, height: 100 },
-          editAs: "oneCell",
-        });
-      } catch {
-        // missing file — leave the cell empty
-      }
+      const key =
+        col.format
+          ? col.format(r, ctx)
+          : (r[col.key as keyof T] as unknown);
+      if (typeof key !== "string" || !key) continue;
+      const ext = extForExceljs(key);
+      if (!ext) continue;
+      pendingImages.push({ ri, ci, key, ext });
     }
   });
+  // Resolve all image downloads in parallel, then attach to the sheet.
+  if (pendingImages.length > 0) {
+    const sb = serverClient();
+    await Promise.all(
+      pendingImages.map(async (p) => {
+        try {
+          const { data } = await sb.storage.from("auditions").download(p.key);
+          if (!data) return;
+          const buf = Buffer.from(await data.arrayBuffer());
+          const imgId = wb.addImage({
+            buffer: buf as unknown as Parameters<typeof wb.addImage>[0]["buffer"],
+            extension: p.ext,
+          });
+          ws.addImage(imgId, {
+            tl: { col: p.ci + 0.05, row: p.ri + 1 + 0.05 },
+            ext: { width: 80, height: 100 },
+            editAs: "oneCell",
+          });
+        } catch {
+          // skip — leave the cell empty
+        }
+      }),
+    );
+  }
   // Zebra stripe even rows
   for (let i = 2; i <= rows.length + 1; i++) {
     if (i % 2 === 0) continue;
@@ -258,17 +283,36 @@ export async function GET(req: Request) {
   const format = searchParams.get("format") ?? "csv";
   const today = new Date().toISOString().slice(0, 10);
 
+  const sb = serverClient();
   if (type === "auditions") {
-    const rows = db
-      .prepare("SELECT * FROM auditions ORDER BY created_at DESC")
-      .all() as Audition[];
-    return respond(rows, AUDITION_COLS, "오디션 지원자", `auditions-${today}`, format);
+    const { data } = await sb
+      .from("auditions")
+      .select("*")
+      .order("created_at", { ascending: false });
+    const rows = (data ?? []) as Audition[];
+    // Pre-resolve listing summaries so the format closures stay sync.
+    const allListings = await getAllListings();
+    const listingSummaries = new Map<number, string>(
+      allListings.map((l) => [l.id, `#${l.id} · ${l.title}`]),
+    );
+    return respond(
+      rows,
+      AUDITION_COLS,
+      "오디션 지원자",
+      `auditions-${today}`,
+      format,
+      { listingSummaries },
+    );
   }
   if (type === "fan") {
-    const rows = db
-      .prepare("SELECT * FROM fan_messages ORDER BY created_at DESC")
-      .all() as FanMessage[];
-    return respond(rows, FAN_COLS, "응원 메시지", `fan-messages-${today}`, format);
+    const { data } = await sb
+      .from("fan_messages")
+      .select("*")
+      .order("created_at", { ascending: false });
+    const rows = (data ?? []) as FanMessage[];
+    return respond(rows, FAN_COLS, "응원 메시지", `fan-messages-${today}`, format, {
+      listingSummaries: new Map(),
+    });
   }
   return NextResponse.json({ error: "Invalid type" }, { status: 400 });
 }
@@ -279,9 +323,10 @@ async function respond<T extends Record<string, unknown>>(
   sheetName: string,
   filenameBase: string,
   format: string,
+  ctx: ExportContext,
 ) {
   if (format === "xlsx") {
-    const buf = await buildXlsx(rows, cols, sheetName);
+    const buf = await buildXlsx(rows, cols, sheetName, ctx);
     // Cast to Uint8Array — Buffer is a subclass and Response accepts it.
     return new NextResponse(new Uint8Array(buf), {
       status: 200,
@@ -293,7 +338,7 @@ async function respond<T extends Record<string, unknown>>(
     });
   }
   // Default — CSV
-  const csv = buildCsv(rows, cols);
+  const csv = buildCsv(rows, cols, ctx);
   return new NextResponse(csv, {
     status: 200,
     headers: {

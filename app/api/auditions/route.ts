@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import fs from "node:fs/promises";
-import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { db } from "@/lib/db";
+import { serverClient } from "@/lib/db";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
 import { isAcceptingApplications } from "@/lib/auditionListings";
 import {
@@ -17,7 +15,6 @@ export const runtime = "nodejs";
 const AUDITION_LIMIT = 5;
 const AUDITION_WINDOW = 60 * 60_000;
 
-const PHOTOS_DIR = path.join(process.cwd(), "public", "auditions");
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024; // 8 MB
 
 const MIME_TO_EXT: Record<string, string> = {
@@ -32,16 +29,26 @@ function isEmail(v: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 }
 
+/**
+ * Save the applicant's photo to the `auditions` Storage bucket (private —
+ * admins read via signed URLs). Returns the storage key so we can drop it
+ * straight into the `photo_url` column.
+ */
 async function savePhoto(file: File): Promise<string> {
-  await fs.mkdir(PHOTOS_DIR, { recursive: true });
   const ext = MIME_TO_EXT[file.type];
   if (!ext) throw new Error("프로필 사진은 JPEG / PNG / WebP / HEIC 만 됩니다.");
-  if (file.size > MAX_PHOTO_BYTES) throw new Error("프로필 사진은 8MB 이하로 올려주세요.");
-  const filename = `${Date.now()}-${randomUUID().slice(0, 8)}.${ext}`;
-  const filepath = path.join(PHOTOS_DIR, filename);
+  if (file.size > MAX_PHOTO_BYTES)
+    throw new Error("프로필 사진은 8MB 이하로 올려주세요.");
+  const key = `${Date.now()}-${randomUUID().slice(0, 8)}.${ext}`;
+  const sb = serverClient();
   const buf = Buffer.from(await file.arrayBuffer());
-  await fs.writeFile(filepath, buf);
-  return `/auditions/${filename}`;
+  const { error } = await sb.storage
+    .from("auditions")
+    .upload(key, buf, { contentType: file.type, upsert: false });
+  if (error) throw new Error(`사진 저장 실패: ${error.message}`);
+  // Store the bucket-relative key. Admin UI builds a signed URL when
+  // it needs to display the photo (private bucket).
+  return key;
 }
 
 export async function POST(req: Request) {
@@ -113,7 +120,7 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-  if (!isAcceptingApplications(listing_id)) {
+  if (!(await isAcceptingApplications(listing_id))) {
     return NextResponse.json(
       { error: "이 공고는 더 이상 지원을 받지 않습니다." },
       { status: 409 },
@@ -164,30 +171,35 @@ export async function POST(req: Request) {
     );
   }
 
-  const stmt = db.prepare(`
-    INSERT INTO auditions
-      (name, age, birthdate, gender, phone, email, experience, role_preference, intro, portfolio_url, photo_url, listing_id)
-    VALUES
-      (@name, @age, @birthdate, @gender, @phone, @email, @experience, @role_preference, @intro, @portfolio_url, @photo_url, @listing_id)
-  `);
-
-  const result = stmt.run({
-    name,
-    age,
-    birthdate,
-    gender,
-    phone,
-    email,
-    experience,
-    role_preference,
-    intro,
-    portfolio_url,
-    photo_url,
-    listing_id,
-  });
+  const sb = serverClient();
+  const { data, error } = await sb
+    .from("auditions")
+    .insert({
+      name,
+      age,
+      birthdate,
+      gender,
+      phone,
+      email,
+      experience,
+      role_preference,
+      intro,
+      portfolio_url,
+      photo_url,
+      listing_id,
+    })
+    .select("id")
+    .single();
+  if (error) {
+    console.error("[auditions.POST]", error);
+    return NextResponse.json(
+      { error: "지원서 저장 중 문제가 발생했어요." },
+      { status: 500 },
+    );
+  }
 
   return NextResponse.json(
-    { ok: true, id: result.lastInsertRowid },
+    { ok: true, id: (data as { id: number }).id },
     { status: 201 },
   );
 }

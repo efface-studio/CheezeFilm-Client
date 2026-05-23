@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { serverClient } from "@/lib/db";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
@@ -65,20 +65,27 @@ export async function POST(req: Request) {
     );
   }
 
-  const stmt = db.prepare(`
-    INSERT INTO fan_messages (nickname, email, favorite_work, message)
-    VALUES (@nickname, @email, @favorite_work, @message)
-  `);
-
-  const result = stmt.run({
-    nickname,
-    email,
-    favorite_work: body.favorite_work ?? null,
-    message,
-  });
+  const sb = serverClient();
+  const { data, error } = await sb
+    .from("fan_messages")
+    .insert({
+      nickname,
+      email,
+      favorite_work: body.favorite_work ?? null,
+      message,
+    })
+    .select("id")
+    .single();
+  if (error) {
+    console.error("[fan-messages.POST]", error);
+    return NextResponse.json(
+      { error: "메시지 저장 중 문제가 발생했어요." },
+      { status: 500 },
+    );
+  }
 
   return NextResponse.json(
-    { ok: true, id: result.lastInsertRowid },
+    { ok: true, id: (data as { id: number }).id },
     { status: 201 },
   );
 }

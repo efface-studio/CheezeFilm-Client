@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { serverClient } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 
 export const runtime = "nodejs";
@@ -19,12 +19,16 @@ export async function PATCH(
   }
 
   const body = (await req.json().catch(() => ({}))) as { is_read?: boolean };
-  const isRead = body.is_read ? 1 : 0;
+  const is_read = !!body.is_read;
 
-  const result = db
-    .prepare("UPDATE fan_messages SET is_read = ? WHERE id = ?")
-    .run(isRead, numericId);
-  if (result.changes === 0) {
+  const sb = serverClient();
+  const { error, count } = await sb
+    .from("fan_messages")
+    .update({ is_read }, { count: "exact" })
+    .eq("id", numericId);
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  if ((count ?? 0) === 0) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   return NextResponse.json({ ok: true });
@@ -44,10 +48,14 @@ export async function DELETE(
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
 
-  const result = db
-    .prepare("DELETE FROM fan_messages WHERE id = ?")
-    .run(numericId);
-  if (result.changes === 0) {
+  const sb = serverClient();
+  const { error, count } = await sb
+    .from("fan_messages")
+    .delete({ count: "exact" })
+    .eq("id", numericId);
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  if ((count ?? 0) === 0) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   return NextResponse.json({ ok: true });

@@ -1,9 +1,11 @@
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import SupportTabs from "./SupportTabs";
-import { getContent } from "@/lib/content";
+import { getContent, loadContentMap } from "@/lib/content";
 
 type SearchParams = Promise<{ tab?: string }>;
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "지원하기 | 치즈필름",
@@ -17,6 +19,8 @@ export default async function SupportPage({
 }) {
   const params = await searchParams;
   const initialTab = params.tab === "fan" ? "fan" : "audition";
+  const contentMap = await loadContentMap();
+  const c = (key: string) => getContent(contentMap, key);
 
   return (
     <>
@@ -32,7 +36,7 @@ export default async function SupportPage({
           }}
         />
         <div className="mx-auto max-w-4xl px-5 py-16 text-center">
-          <span className="tape text-xs">{getContent("support.tape")}</span>
+          <span className="tape text-xs">{c("support.tape")}</span>
           <h1
             className="mt-6"
             style={{
@@ -41,10 +45,10 @@ export default async function SupportPage({
               lineHeight: "1",
             }}
           >
-            {getContent("support.title")}
+            {c("support.title")}
           </h1>
           <p className="mt-5 text-cheeze-ink-soft max-w-xl mx-auto leading-relaxed">
-            {getContent("support.subtitle")}
+            {c("support.subtitle")}
           </p>
         </div>
       </section>

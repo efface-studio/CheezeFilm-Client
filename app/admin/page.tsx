@@ -1,11 +1,14 @@
-import fs from "node:fs";
-import path from "node:path";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
-import { db, type Audition, type FanMessage } from "@/lib/db";
-import { members } from "@/lib/members";
-import { getAllContent } from "@/lib/content";
+import {
+  serverClient,
+  storageUrl,
+  type Audition,
+  type FanMessage,
+} from "@/lib/db";
+import { getMembers } from "@/lib/members";
+import { getAllContent, loadContentMap, getContent } from "@/lib/content";
 import AdminShell from "./AdminShell";
 import AdminActions from "./AdminActions";
 import ContentEditor from "./ContentEditor";
@@ -16,7 +19,6 @@ import IssueCoverPicker from "./IssueCoverPicker";
 import CoverPhotosManager from "./CoverPhotosManager";
 import { getAllListings, listingSummary } from "@/lib/auditionListings";
 import { getAllVideos } from "@/lib/youtube";
-import { getContent } from "@/lib/content";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "관리자 대시보드 | 치즈필름" };
@@ -30,14 +32,8 @@ type Tab =
   | "members"
   | "content";
 
-const PHOTO_EXTS = [".jpg", ".jpeg", ".png", ".webp"];
-function resolveMemberPhoto(slug: string) {
-  const dir = path.join(process.cwd(), "public", "members");
-  for (const ext of PHOTO_EXTS) {
-    const file = path.join(dir, `${slug}${ext}`);
-    if (fs.existsSync(file)) return `/members/${slug}${ext}`;
-  }
-  return null;
+function resolveMemberPhoto(photoPath: string | undefined) {
+  return photoPath ? storageUrl("members", photoPath) : null;
 }
 
 export default async function AdminPage({
@@ -62,14 +58,32 @@ export default async function AdminPage({
     ? (params.tab as Tab)
     : "dashboard";
 
-  const auditions = db
-    .prepare("SELECT * FROM auditions ORDER BY created_at DESC")
-    .all() as Audition[];
-  const fanMessages = db
-    .prepare("SELECT * FROM fan_messages ORDER BY created_at DESC")
-    .all() as FanMessage[];
-  const listings = getAllListings();
-  const contentItems = getAllContent();
+  const sb = serverClient();
+  const [
+    auditionsResult,
+    fanMessagesResult,
+    listings,
+    contentItems,
+    members,
+    contentMap,
+  ] = await Promise.all([
+    sb
+      .from("auditions")
+      .select("*")
+      .order("created_at", { ascending: false }),
+    sb
+      .from("fan_messages")
+      .select("*")
+      .order("created_at", { ascending: false }),
+    getAllListings(),
+    getAllContent(),
+    getMembers(),
+    loadContentMap(),
+  ]);
+  const auditions = (auditionsResult.data ?? []) as Audition[];
+  const fanMessages = ((fanMessagesResult.data ?? []) as FanMessage[]).map(
+    (m) => ({ ...m, is_read: m.is_read ? 1 : 0 }),
+  );
 
   // Only fetch the YouTube catalogue when the admin is actually on the
   // issue-cover picker — `getAllVideos` is expensive on the first cold
@@ -121,7 +135,7 @@ export default async function AdminPage({
     nameEn: m.nameEn,
     roleLabel: m.roleLabel,
     accent: m.accent,
-    photoUrl: resolveMemberPhoto(m.slug),
+    photoUrl: resolveMemberPhoto(m.photoPath),
   }));
 
   return (
@@ -168,9 +182,9 @@ export default async function AdminPage({
             <IssueCoverPicker
               videos={pickerVideos}
               initial={[
-                getContent("works.1.videoId").trim(),
-                getContent("works.2.videoId").trim(),
-                getContent("works.3.videoId").trim(),
+                getContent(contentMap, "works.1.videoId").trim(),
+                getContent(contentMap, "works.2.videoId").trim(),
+                getContent(contentMap, "works.3.videoId").trim(),
               ]}
             />
           </SectionHeader>

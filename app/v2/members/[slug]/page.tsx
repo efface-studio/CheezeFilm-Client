@@ -1,5 +1,3 @@
-import fs from "node:fs";
-import path from "node:path";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -7,18 +5,13 @@ import type { Metadata } from "next";
 import { V2Header, V2Footer } from "../../page";
 import { InView } from "@/components/Stagger";
 import { findMember, getMembers } from "@/lib/members";
+import { storageUrl } from "@/lib/db";
 import { getAllVideos } from "@/lib/youtube";
 
 export const dynamic = "force-dynamic";
 
-const IMAGE_EXTS = [".jpg", ".jpeg", ".png", ".webp"];
-function resolvePhoto(slug: string) {
-  const dir = path.join(process.cwd(), "public", "members");
-  for (const ext of IMAGE_EXTS) {
-    const file = path.join(dir, `${slug}${ext}`);
-    if (fs.existsSync(file)) return `/members/${slug}${ext}`;
-  }
-  return null;
+function photoUrlFor(photoPath?: string) {
+  return photoPath ? storageUrl("members", photoPath) : null;
 }
 
 type Params = Promise<{ slug: string }>;
@@ -30,10 +23,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const decoded = decodeURIComponent(slug);
-  const member = findMember(decoded);
+  const member = await findMember(decoded);
   if (!member) return { title: "멤버를 찾을 수 없어요" };
 
-  const photo = resolvePhoto(member.slug);
+  const photo = photoUrlFor(member.photoPath);
   const canonicalPath = `/v2/members/${encodeURIComponent(member.slug)}`;
   return {
     title: `${member.name} · ${member.roleLabel}`,
@@ -67,22 +60,23 @@ export default async function MemberDetailPage({
 }) {
   const { slug: rawSlug } = await params;
   const slug = decodeURIComponent(rawSlug);
-  const member = findMember(slug);
+  const member = await findMember(slug);
   if (!member) notFound();
 
-  const photo = resolvePhoto(member.slug);
+  const photo = photoUrlFor(member.photoPath);
 
   // Cross-reference recent videos where this member is in the cast.
   // `cast` info we extracted earlier lives in `member.works[]` (video
   // titles). Match against actual videos to render thumbnails + dates.
-  const { videos } = await getAllVideos().catch(() => ({ videos: [] }));
+  const [videosResult, all] = await Promise.all([
+    getAllVideos().catch(() => ({ videos: [] })),
+    getMembers(),
+  ]);
+  const { videos } = videosResult;
   const workSet = new Set(member.works);
   const appearances = videos
     .filter((v) => workSet.has(v.title))
     .slice(0, 6);
-
-  // Sibling navigation — previous/next member in roster order.
-  const all = getMembers();
   const idx = all.findIndex((m) => m.slug === member.slug);
   const prev = idx > 0 ? all[idx - 1] : null;
   const next = idx < all.length - 1 ? all[idx + 1] : null;

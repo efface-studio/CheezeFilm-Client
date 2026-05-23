@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { V2Header, V2Footer } from "../page";
 import { InView } from "@/components/Stagger";
-import { getContent } from "@/lib/content";
+import { getContent, loadContentMap } from "@/lib/content";
 import CareersReel from "@/components/CareersReel";
 
 export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "채용 · Careers",
@@ -29,12 +30,13 @@ export const metadata = {
  * Layout follows the V2 editorial grid: ledger-style number rail on the
  * left of each section, big display-serif headline, body type at 15px.
  */
-export default function V2CareersPage() {
+export default async function V2CareersPage() {
   // Re-use the business mailbox as the careers inbox by default; admin can
   // override via `contact.careers` if/when HR splits it out.
+  const contentMap = await loadContentMap();
   const careersEmail =
-    getContent("contact.careers")?.trim() ||
-    getContent("contact.business")?.trim() ||
+    getContent(contentMap, "contact.careers")?.trim() ||
+    getContent(contentMap, "contact.business")?.trim() ||
     "cheezefilm@sandboxnetwork.net";
 
   return (

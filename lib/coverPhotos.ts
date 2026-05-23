@@ -1,31 +1,37 @@
-import fs from "node:fs";
-import path from "node:path";
+import { cache } from "react";
+import { serverClient, storageUrl } from "./db";
 
 /**
- * Returns the public URLs of every landscape cover photo dropped into
- * `/public/covers/`. The V2 home hero uses them as a cross-fade slideshow,
- * falling back to YouTube video thumbnails when this list is empty.
+ * Returns the public URLs of every landscape cover photo in the
+ * Supabase `covers` Storage bucket. The V2 home hero uses them as a
+ * cross-fade slideshow, falling back to YouTube video thumbnails when
+ * this list is empty.
  *
- * Sort order = filename (so users can prefix `01-`, `02-` to control it).
- * Files starting with `_` or `.` are skipped — handy for hiding WIP shots
- * without deleting them.
+ * Sort order = filename (so the admin can prefix `01-`, `02-` to
+ * control it). Files starting with `_` or `.` are skipped — handy
+ * for hiding WIP shots without deleting them.
+ *
+ * Wrapped in `cache()` so multiple components on the same request share
+ * one Storage list call.
  */
-const ALLOWED_EXTS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
+const ALLOWED_EXTS = [".jpg", ".jpeg", ".png", ".webp"];
 
-export function getCoverPhotos(): string[] {
-  const dir = path.join(process.cwd(), "public", "covers");
-  let entries: string[];
-  try {
-    entries = fs.readdirSync(dir);
-  } catch {
-    // Folder may not exist yet (fresh checkout) — treat as "no covers".
+export const getCoverPhotos = cache(async (): Promise<string[]> => {
+  const sb = serverClient();
+  const { data, error } = await sb.storage.from("covers").list("", {
+    limit: 100,
+    sortBy: { column: "name", order: "asc" },
+  });
+  if (error) {
+    console.error("[coverPhotos]", error);
     return [];
   }
-  return entries
-    .filter((name) => {
+  return (data ?? [])
+    .filter((f) => {
+      const name = f.name;
+      if (!name) return false;
       if (name.startsWith("_") || name.startsWith(".")) return false;
-      return ALLOWED_EXTS.has(path.extname(name).toLowerCase());
+      return ALLOWED_EXTS.some((ext) => name.toLowerCase().endsWith(ext));
     })
-    .sort((a, b) => a.localeCompare(b, "en"))
-    .map((name) => `/covers/${name}`);
-}
+    .map((f) => storageUrl("covers", f.name));
+});
