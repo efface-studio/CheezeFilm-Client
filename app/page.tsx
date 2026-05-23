@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getAllVideos } from "@/lib/youtube";
 import { getContent, loadContentMap } from "@/lib/content";
 import { getMembers } from "@/lib/members";
+import { storageUrl } from "@/lib/db";
 import { InView, StaggerText } from "@/components/Stagger";
 import HeroCover from "@/components/HeroCover";
 import CountUp from "@/components/CountUp";
@@ -37,22 +38,42 @@ export const metadata = {
 };
 
 export default async function HomeV2() {
-  const [{ longform, shorts }, contentMap, members, coverPhotos] =
-    await Promise.all([
-      getAllVideos(),
-      loadContentMap(),
-      getMembers(),
-      // Hero cover: prefer landscape group/cast photos from the Supabase
-      // `covers` Storage bucket. Falls back to the 3 featured video
-      // thumbnails configured in admin → "이번 호 표지" when empty.
-      getCoverPhotos(),
-    ]);
+  const [
+    { longform, shorts, subscriberCount, viewCount, totalCount },
+    contentMap,
+    members,
+    coverPhotos,
+  ] = await Promise.all([
+    getAllVideos(),
+    loadContentMap(),
+    getMembers(),
+    // Hero cover: prefer landscape group/cast photos from the Supabase
+    // `covers` Storage bucket. Falls back to the 3 featured video
+    // thumbnails configured in admin → "이번 호 표지" when empty.
+    getCoverPhotos(),
+  ]);
   const c = (key: string) => getContent(contentMap, key);
-  const heroVideos = [
-    c("works.1.videoId").trim() || longform[0]?.id || "",
-    c("works.2.videoId").trim() || longform[1]?.id || "",
-    c("works.3.videoId").trim() || longform[2]?.id || "",
-  ].filter(Boolean);
+
+  // Live stats from the YouTube Data API (when the key is configured).
+  // We normalize subscribers → M (millions, 2 decimals) and views → 억
+  // (hundred-millions, 1 decimal) since those are the Korean
+  // channel-card conventions. Fallbacks to the content-registry values
+  // mean the page never shows a blank — admin edits still win when
+  // they're set; otherwise we use the live API number.
+  const liveSubscribersM =
+    typeof subscriberCount === "number" ? subscriberCount / 1_000_000 : null;
+  const liveViews억 =
+    typeof viewCount === "number" ? viewCount / 100_000_000 : null;
+  const liveVideoCount =
+    typeof totalCount === "number"
+      ? totalCount
+      : longform.length + shorts.length;
+  // Up to 10 pinned hero video slots; each falls back to the matching
+  // longform position if the admin hasn't picked one. Empty strings are
+  // stripped at the end so we never render a hole.
+  const heroVideos = Array.from({ length: 10 }, (_, i) =>
+    c(`works.${i + 1}.videoId`).trim() || longform[i]?.id || "",
+  ).filter(Boolean);
 
   return (
     // `data-v2-home` opts this page into scroll-snap (see globals.css).
@@ -82,24 +103,18 @@ export default async function HomeV2() {
               A 3:2 landscape photo in col-span-5 (~620px) lands at ~413px
               tall, which sits comfortably alongside the headline + CTA
               stack on the left without crushing either side. */}
-          <div className="lg:col-span-7">
+          <div className="lg:col-span-6">
+            {/* Toss-style eyebrow: small label pill with a status dot. */}
             <InView className="v2-fade-up">
-              <div className="text-[11px] tracking-[0.45em] uppercase text-cheeze-purple font-mono mb-6 flex items-center gap-2">
-                <span className="v2-pulse-dot" /> A K-WEB-DRAMA STUDIO
-              </div>
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-toss-50 text-cheeze-purple text-[12px] font-semibold">
+                <span aria-hidden className="block w-1.5 h-1.5 rounded-full bg-cheeze-purple" />
+                웹드라마 스튜디오
+              </span>
             </InView>
-            {/* Character-by-character typewriter for the hero. The big
-                display type rides in one syllable at a time on load.
-                Line 2 picks up its --li offset from line 1's length so
-                the second line types AFTER the first finishes instead
-                of in parallel. */}
             <InView
               as="h1"
-              className="v2-typewriter v2-title leading-[0.92] tracking-[-0.02em]"
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "clamp(2.8rem, 7.5vw, 6rem)",
-              }}
+              className="v2-typewriter mt-5 leading-[1.1] tracking-tight font-extrabold text-cheeze-ink"
+              style={{ fontSize: "clamp(2.4rem, 6vw, 4.5rem)" }}
             >
               <StaggerText text={c("hero.title.line1")} mode="character" />
               <br />
@@ -109,9 +124,6 @@ export default async function HomeV2() {
                   mode="character"
                   // Continue --li from where line 1 left off so line 2
                   // types AFTER line 1 finishes instead of in parallel.
-                  // Inlined instead of imported from the client component
-                  // (`countStaggerCharacters` lives in a "use client" file
-                  // and can't be called from the server).
                   startIndex={
                     Array.from(c("hero.title.line1")).filter(
                       (ch) => ch !== " ",
@@ -122,28 +134,47 @@ export default async function HomeV2() {
             </InView>
             <InView className="v2-fade-up" rootMargin="0px 0px -5% 0px">
               <p
-                className="mt-10 max-w-xl text-base sm:text-lg leading-relaxed text-cheeze-ink-soft whitespace-pre-line"
+                className="mt-8 max-w-xl text-[15px] sm:text-[16px] leading-relaxed text-cheeze-ink-soft whitespace-pre-line"
                 style={{ transitionDelay: "300ms" }}
               >
                 {c("hero.subtitle")}
               </p>
               <div
-                className="mt-10 flex flex-wrap gap-3"
+                className="mt-8 flex flex-wrap gap-3"
                 style={{ transitionDelay: "450ms" }}
               >
                 <a
                   href="https://www.youtube.com/@CheezeFilmz"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-sm font-bold tracking-widest uppercase px-5 py-3 bg-cheeze-purple-deep text-cheeze-yellow hover:bg-cheeze-purple transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-cheeze-ink text-white font-semibold text-[14px] hover:bg-cheeze-ink-soft transition-colors"
                 >
-                  ▸ Watch on YouTube
+                  {/* Official YouTube glyph (rounded rectangle + play
+                      triangle). Inline SVG so we don't pull a new icon
+                      package in just for this. `#FF0000` matches the
+                      brand red exactly. */}
+                  <svg
+                    aria-hidden
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    className="shrink-0"
+                  >
+                    <path
+                      fill="#FF0000"
+                      d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z"
+                    />
+                    <path fill="#fff" d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                  </svg>
+                  YouTube에서 보기
+                  <span aria-hidden>↗</span>
                 </a>
                 <Link
                   href="/support"
-                  className="text-sm font-bold tracking-widest uppercase px-5 py-3 border border-cheeze-purple-deep text-cheeze-purple-deep hover:bg-cheeze-purple-deep hover:text-cheeze-yellow transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-toss-50 text-cheeze-ink font-semibold text-[14px] hover:bg-toss-100 transition-colors"
                 >
-                  Audition →
+                  오디션 지원
+                  <span aria-hidden>→</span>
                 </Link>
               </div>
             </InView>
@@ -152,48 +183,48 @@ export default async function HomeV2() {
           {/* Cover card with mask reveal — landscape photos win when present
               in /public/covers/, otherwise we cycle the 3 featured video
               thumbnails configured in admin. */}
-          <aside className="lg:col-span-5 flex flex-col gap-4">
+          <aside className="lg:col-span-6 flex flex-col gap-4">
             <HeroCover photoSrcs={coverPhotos} videoIds={heroVideos} />
-            <InView className="v2-fade-up text-[10px] tracking-[0.3em] uppercase text-cheeze-olive flex justify-between">
-              <span>FILE</span>
-              <span>EDITION 02</span>
-            </InView>
+            {/* FILE · EDITION 02 caption removed — magazine masthead
+                language doesn't fit the new clean surface. */}
           </aside>
         </div>
 
-        {/* Stats strip */}
+        {/* Stats strip — pulls live numbers from the YouTube Data API
+            (`getAllVideos` now surfaces `subscriberCount`, `viewCount`,
+            `totalCount`). When the API key is missing or the call
+            fails, each Stat falls back to the matching content-key
+            value the admin set in /admin → 콘텐츠. */}
         <div className="border-t border-cheeze-purple-deep/15">
           <div className="mx-auto max-w-[100rem] px-6 py-7 grid grid-cols-2 md:grid-cols-4 divide-x divide-cheeze-purple-deep/10">
-            <Stat label={c("stats.subscribers.label")} value={3.32} suffix={c("stats.subscribers.suffix")} fallback={`${c("stats.subscribers")}${c("stats.subscribers.suffix")}`} decimals={2} />
-            <Stat label={c("stats.videos.label")} value={503} suffix={c("stats.videos.suffix")} fallback={`${c("stats.videos")}${c("stats.videos.suffix")}`} />
-            <Stat label={c("stats.views.label")} value={13.8} suffix={c("stats.views.suffix")} fallback={`${c("stats.views")}${c("stats.views.suffix")}`} decimals={1} />
+            <Stat
+              label={c("stats.subscribers.label")}
+              value={liveSubscribersM ?? Number(c("stats.subscribers")) ?? 0}
+              suffix={c("stats.subscribers.suffix")}
+              fallback={`${c("stats.subscribers")}${c("stats.subscribers.suffix")}`}
+              decimals={2}
+            />
+            <Stat
+              label={c("stats.videos.label")}
+              value={liveVideoCount}
+              suffix={c("stats.videos.suffix")}
+              fallback={`${c("stats.videos")}${c("stats.videos.suffix")}`}
+            />
+            <Stat
+              label={c("stats.views.label")}
+              value={liveViews억 ?? Number(c("stats.views")) ?? 0}
+              suffix={c("stats.views.suffix")}
+              fallback={`${c("stats.views")}${c("stats.views.suffix")}`}
+              decimals={1}
+            />
             <Stat label={c("stats.year.label")} value={2017} fallback={c("stats.year")} />
           </div>
         </div>
       </section>
 
-      {/* ── MARQUEE ──────────────────────────────────── */}
-      <div
-        data-nav-section="issue"
-        className="border-b border-cheeze-purple-deep/15 v2-marquee-stage overflow-hidden"
-      >
-        <div className="v2-marquee py-4 text-cheeze-purple-deep tracking-[0.3em] uppercase text-sm">
-          {Array.from({ length: 2 }).map((_, k) => (
-            <span key={k} className="inline-flex items-center gap-12 px-6">
-              <span>Studio Cheeze</span>
-              <span className="text-cheeze-olive">/</span>
-              <span>치즈필름</span>
-              <span className="text-cheeze-olive">/</span>
-              <span>Web Drama Since 2017</span>
-              <span className="text-cheeze-olive">/</span>
-              <span>Sandbox Network Partner</span>
-              <span className="text-cheeze-olive">/</span>
-              <span>{c("stats.subscribers")}{c("stats.subscribers.suffix")} subscribers</span>
-              <span className="text-cheeze-olive">/</span>
-            </span>
-          ))}
-        </div>
-      </div>
+      {/* Marquee removed in the Toss redesign — endless-scroll editorial
+          ribbons don't fit the new clean surface. Keeping the section
+          divider so the hero/stats band still hands off visually. */}
 
       {/* "RECENT UPLOADS" used to live here as its own section but it was
           basically a smaller-scale duplicate of FILMS below. Merged into
@@ -241,17 +272,24 @@ export default async function HomeV2() {
             <div className="mt-5 text-[11px] tracking-[0.3em] uppercase text-cheeze-olive">
               — Studio Cheeze, since 2017
             </div>
-            <div className="mt-10 grid grid-cols-3 gap-2 text-[10px] tracking-[0.25em] uppercase text-cheeze-purple-deep">
-              <span className="border border-cheeze-purple-deep/30 px-2 py-1.5 text-center">Silver</span>
-              <span className="border border-cheeze-purple-deep/30 px-2 py-1.5 text-center">Gold</span>
-              <span className="border border-cheeze-purple-deep/30 px-2 py-1.5 text-center">대상</span>
+            {/* YouTube channel awards — single soft surface, hairline
+                divider between cells, one bold label each. The earlier
+                metallic-gradient chips read as loud; this version
+                trusts the metal-coloured dots + clean typography. */}
+            <div className="mt-10 rounded-2xl bg-toss-50 grid grid-cols-3 divide-x divide-toss-200/70">
+              <AwardChip label="Silver" dotClass="bg-zinc-400" />
+              <AwardChip label="Gold" dotClass="bg-amber-400" />
+              <AwardChip label="대상" dotClass="bg-cheeze-purple" />
             </div>
           </InView>
         </div>
       </section>
 
-      {/* ── FILMS ───────────────────────────────────── */}
-      <section id="films" className="border-b border-cheeze-purple-deep/15">
+      {/* ── CAST ──────────────────────────────────────
+          Moved above the films block per user request — the cast
+          spread is the primary identity moment, so it earns the
+          first slot after the about/story intro. */}
+      <section id="cast" className="border-b border-cheeze-purple-deep/15">
         <div className="mx-auto max-w-[100rem] px-6 py-24">
           <div className="grid lg:grid-cols-12 mb-12 items-end">
             <InView className="v2-fade-up lg:col-span-2">
@@ -261,6 +299,109 @@ export default async function HomeV2() {
                 style={{ fontFamily: "var(--font-display)" }}
               >
                 02
+              </div>
+            </InView>
+            <InView className="v2-fade-up v2-title lg:col-span-7">
+              <h2
+                className="text-4xl md:text-5xl tracking-tight"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                The Cast.
+              </h2>
+              <p className="mt-3 text-cheeze-ink-soft">
+                카메라 앞과 뒤, 함께 굽는 사람들.
+              </p>
+            </InView>
+            <Link
+              href="/members"
+              className="lg:col-span-3 lg:text-right text-sm font-bold tracking-widest uppercase text-cheeze-purple hover:text-cheeze-purple-deep mt-4 lg:mt-0"
+            >
+              전체 멤버 →
+            </Link>
+          </div>
+
+          {/* Cast grid — Toss-style photo cards.
+              Editorial pick: a hand-curated set of six members shown on
+              the home spread. Order in `FEATURED_CAST_NAMES` is the
+              order they appear; only entries with an uploaded portrait
+              actually render. The full roster (everyone, photo or not)
+              is still at /members via the "전체 멤버 →" link above. */}
+          {(() => {
+            // First row of six, then a second row of six.
+            // The grid is `lg:grid-cols-6` so the array order naturally
+            // wraps after the sixth name on desktop.
+            const FEATURED_CAST_NAMES = [
+              // ── Row 1
+              "조효민",
+              "조채윤",
+              "다솜",
+              "민지",
+              "선경",
+              "유덕",
+              // ── Row 2
+              "소정",
+              "윤오",
+              "아윤",
+              "주석",
+              "주현",
+              "예나",
+            ] as const;
+            const byName = new Map(members.map((m) => [m.name, m]));
+            const featured = FEATURED_CAST_NAMES.map((n) => byName.get(n))
+              .filter((m): m is NonNullable<typeof m> => Boolean(m?.photoPath));
+            return (
+              <ol className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5">
+                {featured.map((m, i) => (
+                  <InView
+                    key={m.slug}
+                    as="li"
+                    className="v2-fade-up"
+                    style={{ transitionDelay: `${i * 60}ms` } as React.CSSProperties}
+                  >
+                    <Link
+                      href={`/members/${encodeURIComponent(m.slug)}`}
+                      className="group block"
+                    >
+                      <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-toss-100">
+                        {/* photoPath is required to enter this list, so
+                            we know `m.photoPath` is set — the `!` is
+                            informational, not assertive. */}
+                        <Image
+                          src={storageUrl("members", m.photoPath!)}
+                          alt={m.name}
+                          fill
+                          sizes="(min-width: 1024px) 16vw, (min-width: 768px) 32vw, 50vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      </div>
+                      <div className="mt-3 px-1">
+                        <div className="text-[15px] font-bold text-cheeze-ink tracking-tight truncate">
+                          {m.name}
+                        </div>
+                        <div className="mt-0.5 text-[12px] text-cheeze-ink-soft truncate">
+                          {m.roleLabel}
+                        </div>
+                      </div>
+                    </Link>
+                  </InView>
+                ))}
+              </ol>
+            );
+          })()}
+        </div>
+      </section>
+
+      {/* ── FILMS ───────────────────────────────────── */}
+      <section id="films" className="border-b border-cheeze-purple-deep/15">
+        <div className="mx-auto max-w-[100rem] px-6 py-24">
+          <div className="grid lg:grid-cols-12 mb-12 items-end">
+            <InView className="v2-fade-up lg:col-span-2">
+              <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">— Section 03</div>
+              <div
+                className="mt-3 text-[3rem] leading-none text-cheeze-purple"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                03
               </div>
             </InView>
             <InView as="div" className="v2-fade-up v2-title lg:col-span-7">
@@ -457,72 +598,6 @@ export default async function HomeV2() {
         </section>
       )}
 
-      {/* ── CAST ────────────────────────────────────── */}
-      <section id="cast" className="border-b border-cheeze-purple-deep/15">
-        <div className="mx-auto max-w-[100rem] px-6 py-24">
-          <div className="grid lg:grid-cols-12 mb-12 items-end">
-            <InView className="v2-fade-up lg:col-span-2">
-              <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">— Section 04</div>
-              <div
-                className="mt-3 text-[3rem] leading-none text-cheeze-purple"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                03
-              </div>
-            </InView>
-            <InView className="v2-fade-up v2-title lg:col-span-7">
-              <h2
-                className="text-4xl md:text-5xl tracking-tight"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                The Cast.
-              </h2>
-              <p className="mt-3 text-cheeze-ink-soft">
-                카메라 앞과 뒤, 함께 굽는 사람들.
-              </p>
-            </InView>
-            <Link
-              href="/members"
-              className="lg:col-span-3 lg:text-right text-sm font-bold tracking-widest uppercase text-cheeze-purple hover:text-cheeze-purple-deep mt-4 lg:mt-0"
-            >
-              전체 멤버 →
-            </Link>
-          </div>
-
-          <ol className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-3">
-            {members.slice(0, 6).map((m, i) => (
-              <InView
-                key={m.slug}
-                as="li"
-                className="v2-fade-up grid grid-cols-[auto_1fr_auto] items-baseline gap-3 py-4 border-t border-cheeze-purple-deep/15"
-                style={{ transitionDelay: `${i * 60}ms` } as React.CSSProperties}
-              >
-                <span
-                  className="text-cheeze-olive font-mono text-sm tabular-nums"
-                  style={{ minWidth: "2.5rem" }}
-                >
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span>
-                  <span className="text-2xl" style={{ fontFamily: "var(--font-display)" }}>
-                    {m.name}
-                  </span>
-                  <span className="ml-2 text-xs uppercase tracking-widest text-cheeze-olive">
-                    {m.nameEn}
-                  </span>
-                  <span className="block text-sm text-cheeze-ink-soft mt-1">
-                    “{m.highlight}”
-                  </span>
-                </span>
-                <span className="text-[10px] tracking-[0.25em] uppercase text-cheeze-purple">
-                  {m.roleLabel}
-                </span>
-              </InView>
-            ))}
-          </ol>
-        </div>
-      </section>
-
       {/* ── CAREERS teaser ──────────────────────────── */}
       {/* Compact preview of the full careers page so users don't have to
           click through to get the gist. Shows: heading, the reel, and the
@@ -614,16 +689,18 @@ export default async function HomeV2() {
             <InView className="v2-fade-up mt-10 flex flex-wrap gap-3">
               <Link
                 href="/careers"
-                className="inline-flex items-center gap-2 text-sm font-bold tracking-widest uppercase px-5 py-3 bg-cheeze-purple-deep text-cheeze-yellow hover:bg-cheeze-purple transition-colors"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-cheeze-ink text-white text-[14px] font-semibold hover:bg-cheeze-ink-soft transition-colors"
               >
-                전체 채용 정보 →
+                전체 채용 정보
+                <span aria-hidden>→</span>
               </Link>
-              <a
-                href="mailto:cheezefilm.m@gmail.com?subject=%5B%EC%A7%80%EC%9B%90%5D%20%EC%B9%98%EC%A6%88%ED%95%84%EB%A6%84%20%EB%B0%B0%EC%9A%B0%20%EC%98%A4%EB%94%94%EC%85%98"
-                className="inline-flex items-center gap-2 text-sm font-bold tracking-widest uppercase px-5 py-3 border border-cheeze-purple-deep text-cheeze-purple-deep hover:bg-cheeze-purple-deep hover:text-cheeze-yellow transition-colors"
+              <Link
+                href="/support?tab=audition"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-toss-50 text-cheeze-ink text-[14px] font-semibold hover:bg-toss-100 transition-colors"
               >
-                지원하기 ↗
-              </a>
+                지원하기
+                <span aria-hidden>→</span>
+              </Link>
             </InView>
           </div>
 
@@ -757,22 +834,82 @@ export async function V2Footer({ isHome = false }: { isHome?: boolean } = {}) {
           <p className="mt-5 max-w-sm text-sm leading-relaxed text-cheeze-cream/75 whitespace-pre-line">
             {c("footer.tagline")}
           </p>
-          <div className="mt-5 flex items-center gap-2">
+          {/* Social buttons — branded glyphs + rounded soft fills.
+              YouTube uses its red+white play badge, Instagram uses the
+              official rounded-camera path with the brand gradient. */}
+          <div className="mt-6 flex items-center gap-2">
             <a
               href="https://www.youtube.com/@CheezeFilmz"
               target="_blank"
               rel="noreferrer"
-              className="text-[11px] px-3 py-1.5 border border-cheeze-cream/30 hover:bg-cheeze-yellow hover:text-cheeze-purple-deep hover:border-cheeze-yellow transition-colors tracking-widest uppercase"
+              className="group/social inline-flex items-center gap-2 pl-2 pr-3.5 py-2 rounded-full bg-white/10 hover:bg-white/15 backdrop-blur transition-colors"
+              aria-label="YouTube — 새 탭에서 열기"
             >
-              YouTube ↗
+              <svg
+                aria-hidden
+                viewBox="0 0 24 24"
+                width="22"
+                height="22"
+                className="shrink-0"
+              >
+                <path
+                  fill="#FF0000"
+                  d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z"
+                />
+                <path fill="#fff" d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+              </svg>
+              <span className="text-[13px] font-semibold text-cheeze-cream">
+                YouTube
+              </span>
             </a>
             <a
               href="https://www.instagram.com/cheezefilm.official/"
               target="_blank"
               rel="noreferrer"
-              className="text-[11px] px-3 py-1.5 border border-cheeze-cream/30 hover:bg-cheeze-yellow hover:text-cheeze-purple-deep hover:border-cheeze-yellow transition-colors tracking-widest uppercase"
+              className="group/social inline-flex items-center gap-2 pl-2 pr-3.5 py-2 rounded-full bg-white/10 hover:bg-white/15 backdrop-blur transition-colors"
+              aria-label="Instagram — 새 탭에서 열기"
             >
-              Instagram ↗
+              <svg
+                aria-hidden
+                viewBox="0 0 24 24"
+                width="22"
+                height="22"
+                className="shrink-0"
+              >
+                <defs>
+                  <linearGradient
+                    id="ig-grad"
+                    x1="0%"
+                    y1="100%"
+                    x2="100%"
+                    y2="0%"
+                  >
+                    <stop offset="0%" stopColor="#F58529" />
+                    <stop offset="50%" stopColor="#DD2A7B" />
+                    <stop offset="100%" stopColor="#8134AF" />
+                  </linearGradient>
+                </defs>
+                <rect
+                  x="2"
+                  y="2"
+                  width="20"
+                  height="20"
+                  rx="5.5"
+                  fill="url(#ig-grad)"
+                />
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="4.2"
+                  fill="none"
+                  stroke="#fff"
+                  strokeWidth="1.8"
+                />
+                <circle cx="17.4" cy="6.6" r="1.1" fill="#fff" />
+              </svg>
+              <span className="text-[13px] font-semibold text-cheeze-cream">
+                Instagram
+              </span>
             </a>
           </div>
         </div>
@@ -907,16 +1044,36 @@ function Stat({
 }) {
   return (
     <InView className="v2-fade-up px-4 first:pl-0">
-      <div
-        className="text-3xl md:text-4xl text-cheeze-purple-deep tabular-nums"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <div className="text-[28px] md:text-[32px] font-extrabold text-cheeze-ink tracking-tight tabular-nums leading-none">
         <CountUp value={value} suffix={suffix} fallback={fallback} decimals={decimals} duration={1400} />
       </div>
-      <div className="mt-1 text-[10px] tracking-[0.3em] uppercase text-cheeze-olive">
+      <div className="mt-2 text-[12px] text-cheeze-ink-soft">
         {label}
       </div>
     </InView>
+  );
+}
+
+/**
+ * Channel award chip — one cell of the three-up awards strip. Just a
+ * coloured dot + bold label. The wrapping container handles the
+ * surface + dividers; the cell stays minimal so the three awards read
+ * as a unit, not three competing buttons.
+ */
+function AwardChip({
+  label,
+  dotClass,
+}: {
+  label: string;
+  dotClass: string;
+}) {
+  return (
+    <div className="px-3 py-4 flex items-center justify-center gap-2">
+      <span aria-hidden className={`block w-2 h-2 rounded-full ${dotClass}`} />
+      <span className="text-[13px] font-bold tracking-tight text-cheeze-ink">
+        {label}
+      </span>
+    </div>
   );
 }
 

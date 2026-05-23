@@ -36,11 +36,11 @@ export default function HeroCover({
   const slides = mode === "photo" ? photoSrcs : videoIds;
   const [idx, setIdx] = useState(0);
 
-  // 6s per slide. The new crossfade rides for 2.2s and the
-  // ken-burns drift covers the rest, so each slide gets ~3.8s of
-  // "settled" view plus 2.2s of overlap with the next — slow
-  // enough that the eye actually looks at the photo, fast enough
-  // that the slideshow doesn't feel stuck.
+  // 3s per slide. The cross-fade is ~900ms and the active slide
+  // simultaneously runs a 4.5s ken-burns zoom (see globals.css), so
+  // each slide gets ~2.1s of settled view + 900ms of overlap with
+  // the next. Bumped from 2s because the longer ken-burns wants more
+  // room — at 2s the zoom barely got started before the next swap.
   // Pause when the tab is hidden so the first slide the user sees
   // is the one we're currently on.
   useEffect(() => {
@@ -50,7 +50,7 @@ export default function HeroCover({
       if (t) return;
       t = setInterval(() => {
         setIdx((i) => (i + 1) % slides.length);
-      }, 6000);
+      }, 3000);
     };
     const stop = () => {
       if (t) clearInterval(t);
@@ -85,39 +85,51 @@ export default function HeroCover({
       <div className="group block v2-film">{props.children}</div>
     );
 
-  // Photos look right wide (cast line-ups, group shots). Videos use their
-  // native 16:9 thumbnail proportion — close enough to feel landscape too.
-  const aspectClass = mode === "photo" ? "aspect-[3/2]" : "aspect-[16/9]";
+  // Slightly wider aspect so the cover reads bigger on the home spread
+  // (was 3/2, now 5/3 for photos). Videos stay 16/9 since that matches
+  // the YouTube thumbnail.
+  const aspectClass = mode === "photo" ? "aspect-[5/3]" : "aspect-[16/9]";
 
   return (
     <Wrapper>
-      <InView className={`v2-mask ${aspectClass} relative bg-cheeze-charcoal`}>
-        {slides.map((src, i) => {
-          const active = i === idx;
-          const url =
-            mode === "photo"
-              ? src
-              : `https://i.ytimg.com/vi/${src}/maxresdefault.jpg`;
-          return (
-            <Image
-              key={src}
-              // `.is-active` (added when this slide's index === idx)
-              // drives the ken-burns keyframe defined in globals.css.
-              // Every flip to active restarts the animation from
-              // scale(1) → scale(1.07) over the full hold duration.
-              // Opacity uses a slow cubic-bezier fade so two
-              // consecutive slides bleed into each other for ~1.6s
-              // in the middle.
-              src={url}
-              alt={active ? "치즈필름 표지" : ""}
-              fill
-              sizes="(min-width: 1024px) 42vw, 100vw"
-              className={`hero-cover-img object-cover ${active ? "is-active" : ""}`}
-              priority={i === 0}
-              loading="eager"
-            />
-          );
-        })}
+      <InView className={`v2-mask ${aspectClass} relative bg-cheeze-charcoal overflow-hidden`}>
+        {/* Carousel track — a horizontal row of full-width slides.
+            We translate the whole row by -idx * 100% so the active
+            slide slides into view from the right (or out to the left
+            when we wrap from N-1 → 0). 700ms ease-out matches the rest
+            of the Toss transitions on the page.
+            Active slide also gets a subtle scale via .hero-cover-img,
+            which still styles each <Image> below. */}
+        <div
+          className="absolute inset-0 flex transition-transform duration-700 ease-out"
+          style={{ transform: `translateX(-${idx * 100}%)` }}
+        >
+          {slides.map((src, i) => {
+            const active = i === idx;
+            const url =
+              mode === "photo"
+                ? src
+                : `https://i.ytimg.com/vi/${src}/maxresdefault.jpg`;
+            return (
+              <div
+                key={src}
+                className="relative w-full h-full flex-shrink-0"
+                aria-hidden={!active}
+              >
+                <Image
+                  src={url}
+                  alt={active ? "치즈필름 표지" : ""}
+                  fill
+                  sizes="(min-width: 1024px) 50vw, 100vw"
+                  className="object-cover"
+                  priority={i === 0}
+                  loading="eager"
+                />
+              </div>
+            );
+          })}
+        </div>
+
         {/* Dim gradient over the bottom for legibility of the cover label. */}
         <div className="absolute inset-0 bg-gradient-to-t from-cheeze-charcoal/85 via-cheeze-charcoal/0 to-cheeze-charcoal/30 pointer-events-none" />
 

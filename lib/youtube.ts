@@ -49,6 +49,10 @@ export type VideoFetchResult = {
   source: "api" | "rss" | "none";
   /** Channel total upload count if known (API path only). */
   totalCount?: number;
+  /** Channel subscriber count if known (API path only). */
+  subscriberCount?: number;
+  /** Channel cumulative view count if known (API path only). */
+  viewCount?: number;
   error?: string;
 };
 
@@ -196,7 +200,11 @@ type ChannelsResponse = {
     contentDetails?: {
       relatedPlaylists?: { uploads?: string };
     };
-    statistics?: { videoCount?: string };
+    statistics?: {
+      videoCount?: string;
+      subscriberCount?: string;
+      viewCount?: string;
+    };
   }>;
 };
 
@@ -256,6 +264,8 @@ async function fetchDurations(
 async function fetchViaAPI(apiKey: string): Promise<{
   videos: Video[];
   totalCount?: number;
+  subscriberCount?: number;
+  viewCount?: number;
 }> {
   // 1) Look up the channel's uploads playlist.
   const chanRes = await fetch(
@@ -266,10 +276,13 @@ async function fetchViaAPI(apiKey: string): Promise<{
   const chanData = (await chanRes.json()) as ChannelsResponse;
   const uploadsId =
     chanData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
-  const totalCount = chanData.items?.[0]?.statistics?.videoCount
-    ? Number(chanData.items[0].statistics.videoCount)
+  const stats = chanData.items?.[0]?.statistics;
+  const totalCount = stats?.videoCount ? Number(stats.videoCount) : undefined;
+  const subscriberCount = stats?.subscriberCount
+    ? Number(stats.subscriberCount)
     : undefined;
-  if (!uploadsId) return { videos: [], totalCount };
+  const viewCount = stats?.viewCount ? Number(stats.viewCount) : undefined;
+  if (!uploadsId) return { videos: [], totalCount, subscriberCount, viewCount };
 
   // 2) Page through playlistItems.list.
   const out: Omit<Video, "isShort" | "durationSec">[] = [];
@@ -344,7 +357,7 @@ async function fetchViaAPI(apiKey: string): Promise<{
     return { ...v, durationSec: sec, isShort };
   });
 
-  return { videos: classified, totalCount };
+  return { videos: classified, totalCount, subscriberCount, viewCount };
 }
 
 // --- Public entry --------------------------------------------------------
@@ -376,13 +389,22 @@ export async function getAllVideos(): Promise<VideoFetchResult> {
       videos: Video[];
       source: "api" | "rss" | "none";
       totalCount?: number;
+      subscriberCount?: number;
+      viewCount?: number;
       error?: string;
     };
     if (apiKey) {
       try {
-        const { videos, totalCount } = await fetchViaAPI(apiKey);
+        const { videos, totalCount, subscriberCount, viewCount } =
+          await fetchViaAPI(apiKey);
         if (videos.length > 0) {
-          result = { videos, source: "api", totalCount };
+          result = {
+            videos,
+            source: "api",
+            totalCount,
+            subscriberCount,
+            viewCount,
+          };
         } else {
           throw new Error("API returned no videos");
         }

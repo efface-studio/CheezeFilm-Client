@@ -109,7 +109,13 @@ export async function POST(req: Request) {
   const role_preference = get("role_preference") || null;
   const intro = get("intro");
   const portfolio_url = get("portfolio_url") || null;
-  const photo = form.get("photo");
+  // Collect up to 3 photos. `photo` is the primary; `photo2` /
+  // `photo3` are optional. Filter to actual File entries (FormData
+  // includes empty File objects when the input was untouched).
+  const photoFiles: File[] = (["photo", "photo2", "photo3"] as const)
+    .map((k) => form.get(k))
+    .filter((v): v is File => v instanceof File && v.size > 0);
+  const photo = photoFiles[0] ?? null;
 
   // Listing — required. Submissions must target a specific open audition call.
   const listingIdRaw = get("listing_id");
@@ -153,26 +159,35 @@ export async function POST(req: Request) {
     );
   }
 
-  // Photo is now mandatory.
-  if (!(photo instanceof File) || photo.size === 0) {
+  // At least one photo required.
+  if (!photo) {
     return NextResponse.json(
-      { error: "프로필 사진을 첨부해주세요. (필수)" },
+      { error: "프로필 사진을 1장 이상 첨부해주세요." },
       { status: 400 },
     );
   }
 
-  let photo_url: string;
+  // Save every uploaded photo to Storage. Stops at 3 even if more
+  // somehow get through.
+  let photoKeys: string[];
   try {
-    photo_url = await savePhoto(photo);
+    photoKeys = await Promise.all(
+      photoFiles.slice(0, 3).map((f) => savePhoto(f)),
+    );
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "사진 저장 실패" },
       { status: 400 },
     );
   }
+  const photo_url = photoKeys[0];
 
   const sb = serverClient();
-  const { data, error } = await sb
+  // First attempt: insert with the new `photo_urls` array column so
+  // all 3 keys are preserved. If the column doesn't exist yet (admin
+  // hasn't run the schema migration), retry without it — single-photo
+  // workflows still work via the legacy `photo_url`.
+  let inserted = await sb
     .from("auditions")
     .insert({
       name,
@@ -186,10 +201,38 @@ export async function POST(req: Request) {
       intro,
       portfolio_url,
       photo_url,
+      photo_urls: photoKeys,
       listing_id,
     })
     .select("id")
     .single();
+  if (
+    inserted.error &&
+    /photo_urls/.test(inserted.error.message ?? "")
+  ) {
+    console.warn(
+      "[auditions.POST] photo_urls column missing — falling back to single-photo insert. Apply supabase/schema.sql migration.",
+    );
+    inserted = await sb
+      .from("auditions")
+      .insert({
+        name,
+        age,
+        birthdate,
+        gender,
+        phone,
+        email,
+        experience,
+        role_preference,
+        intro,
+        portfolio_url,
+        photo_url,
+        listing_id,
+      })
+      .select("id")
+      .single();
+  }
+  const { data, error } = inserted;
   if (error) {
     console.error("[auditions.POST]", error);
     return NextResponse.json(

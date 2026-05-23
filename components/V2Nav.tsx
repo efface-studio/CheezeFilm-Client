@@ -61,16 +61,42 @@ type NavItem = {
 // search or a deep link).
 const NAV: NavItem[] = [
   { num: "01", label: "소개",   labelEn: "About",   href: "/#issue",    sectionId: "issue" },
-  { num: "02", label: "영상",   labelEn: "Films",   href: "/#films",    sectionId: "films",   routeMatch: "/videos" },
-  { num: "03", label: "멤버",   labelEn: "Cast",    href: "/#cast",     sectionId: "cast",    routeMatch: "/members" },
+  { num: "02", label: "멤버",   labelEn: "Cast",    href: "/#cast",     sectionId: "cast",    routeMatch: "/members" },
+  { num: "03", label: "영상",   labelEn: "Films",   href: "/#films",    sectionId: "films",   routeMatch: "/videos" },
   { num: "04", label: "채용",   labelEn: "Careers", href: "/#careers",  sectionId: "careers", routeMatch: "/careers" },
 ];
+
+type OpenRoleType = "lead" | "support" | "extra" | "staff";
+
+/** Map the actual open role types to an accurate Korean status label.
+ *  We treat anything that's not "staff" as an audition role for label
+ *  purposes; if both buckets are open we show both, comma-separated. */
+function deriveOpenLabel(roleTypes: Set<OpenRoleType>): string {
+  const hasStaff = roleTypes.has("staff");
+  const hasAudition =
+    roleTypes.has("lead") ||
+    roleTypes.has("support") ||
+    roleTypes.has("extra");
+  if (hasStaff && hasAudition) return "오디션 · 스태프 모집 중";
+  if (hasAudition) return "오디션 모집 중";
+  if (hasStaff) return "스태프 모집 중";
+  // Sentinel: no openings, used by the caller to hide the row.
+  return "";
+}
 
 export default function V2Nav() {
   const pathname = usePathname();
   const isHome = pathname === "/";
   const [activeId, setActiveId] = useState<NavItem["sectionId"] | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Status label for the rail CTA — derived from what's actually open
+  // right now, not hard-coded. Defaults to empty string until the fetch
+  // resolves; the CTA falls back to a generic "지원 페이지로" caption
+  // while we don't know yet. Re-runs on path change so the label
+  // refreshes after the user navigates away from /support (admin may
+  // have flipped a listing open in another tab).
+  const [openLabel, setOpenLabel] = useState<string | null>(null);
 
   // Mark <html> as a V2 editorial route while mounted. Used by globals.css
   // to swap the canvas background to purple-deep so bottom rubber-band
@@ -84,6 +110,29 @@ export default function V2Nav() {
     html.classList.add("v2-editorial");
     return () => html.classList.remove("v2-editorial");
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/audition-listings")
+      .then((r) =>
+        r.json().catch(() => ({ listings: [] })) as Promise<{
+          listings: Array<{ role_type: OpenRoleType }>;
+        }>,
+      )
+      .then((d) => {
+        if (cancelled) return;
+        const roleTypes = new Set<OpenRoleType>(
+          (d.listings ?? []).map((l) => l.role_type),
+        );
+        setOpenLabel(deriveOpenLabel(roleTypes));
+      })
+      .catch(() => {
+        if (!cancelled) setOpenLabel("");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   // ── Scroll spy ────────────────────────────────────
   // rAF-throttled scroll listener instead of IntersectionObserver: gives us
@@ -208,35 +257,30 @@ export default function V2Nav() {
         aria-label="주 메뉴"
         className="hidden lg:flex fixed top-0 left-0 bottom-0 w-56 z-40 flex-col justify-between py-9 pl-7 pr-6"
       >
-        {/* Brand */}
+        {/* Brand — gentle hover wiggle:
+              - chip rotates -6° and scales up 5% (eases out for a
+                soft "pop")
+              - wordmark slides 2px to the right
+              Both share the same group/brand hover scope so they
+              animate in sync. */}
         <Link
           href="/"
-          className="group block focus:outline-none"
+          className="group/brand flex items-center gap-3 focus:outline-none"
           aria-label="치즈필름 홈으로"
         >
-          <div className="flex items-center gap-3">
-            <span className="inline-flex w-11 h-11 rounded-full bg-cheeze-purple overflow-hidden border border-cheeze-purple-deep transition-transform duration-300 ease-out group-hover:-rotate-[8deg] group-hover:scale-105">
-              <Image
-                src="/cheeze-logo.png"
-                alt=""
-                width={44}
-                height={44}
-                className="w-full h-full object-cover"
-                priority
-              />
-            </span>
-            <div className="leading-tight">
-              <div
-                className="text-xl text-cheeze-ink transition-colors group-hover:text-cheeze-purple-deep"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                치즈필름
-              </div>
-              <div className="text-[9px] tracking-[0.35em] uppercase text-cheeze-olive mt-1">
-                Editorial 02
-              </div>
-            </div>
-          </div>
+          <span className="inline-flex w-10 h-10 rounded-2xl bg-cheeze-purple overflow-hidden transition-transform duration-300 ease-out group-hover/brand:-rotate-6 group-hover/brand:scale-105">
+            <Image
+              src="/cheeze-logo.png"
+              alt=""
+              width={40}
+              height={40}
+              className="w-full h-full object-cover"
+              priority
+            />
+          </span>
+          <span className="text-[15px] font-bold text-cheeze-ink tracking-tight transition duration-300 ease-out group-hover/brand:translate-x-0.5 group-hover/brand:text-cheeze-purple-deep">
+            치즈필름
+          </span>
         </Link>
 
         {/* Nav list with scroll-spy marker.
@@ -278,44 +322,28 @@ export default function V2Nav() {
                           }
                         : undefined
                     }
-                    className={`relative grid grid-cols-[1.6rem_1fr] items-baseline gap-3 px-2 py-2 transition-colors ${
+                    className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] font-semibold transition-all ${
                       active
-                        ? "text-cheeze-ink"
-                        : "text-cheeze-olive/45 hover:text-cheeze-ink/70"
+                        ? "bg-cheeze-purple/10 text-cheeze-purple-deep"
+                        : "text-toss-500 hover:bg-toss-50 hover:text-cheeze-ink"
                     }`}
                   >
-                    {/* Yellow marker — width transitions so the highlight
-                        feels like it slides between items as activeId moves. */}
-                    <span
-                      aria-hidden
-                      className={`absolute -left-7 top-1/2 -translate-y-1/2 h-px bg-cheeze-yellow transition-all duration-500 ease-out ${
-                        active ? "w-7 opacity-100" : "w-2 opacity-30"
-                      }`}
-                    />
-                    {/* Pending state — fires on click before the next page
-                        renders. Gives instant feedback on slow dev routes. */}
                     <LinkPending />
                     <span
-                      className={`font-mono text-[10px] tracking-wider tabular-nums transition-colors pt-2 ${
-                        active ? "text-cheeze-ink/70" : "text-cheeze-olive/40"
+                      className={`text-[11px] font-mono tabular-nums transition-colors ${
+                        active ? "text-cheeze-purple" : "text-toss-300"
                       }`}
                     >
                       {item.num}
                     </span>
-                    <span className="flex items-baseline gap-2">
-                      <span
-                        className="text-3xl leading-none"
-                        style={{ fontFamily: "var(--font-display)" }}
-                      >
-                        {item.label}
-                      </span>
-                      <span
-                        className={`text-[10px] tracking-[0.3em] uppercase transition-colors ${
-                          active ? "text-cheeze-ink/55" : "text-cheeze-olive/40"
-                        }`}
-                      >
-                        {item.labelEn}
-                      </span>
+                    <span className="flex-1">{item.label}</span>
+                    <span
+                      aria-hidden
+                      className={`text-[10px] tracking-wider uppercase transition-opacity ${
+                        active ? "opacity-60" : "opacity-0"
+                      }`}
+                    >
+                      {item.labelEn}
                     </span>
                   </Link>
                 </li>
@@ -335,19 +363,29 @@ export default function V2Nav() {
             href="/support"
             className="group/cta block rounded-2xl bg-cheeze-purple-deep text-cheeze-cream hover:bg-cheeze-purple transition-colors px-4 py-3.5"
           >
-            {/* Small status row */}
-            <div className="flex items-center gap-1.5 text-[11px] text-cheeze-cream/75">
-              <span
-                aria-hidden
-                className="block w-1.5 h-1.5 rounded-full bg-cheeze-yellow v2-cta-pulse"
-              />
-              오디션 모집 중
-            </div>
+            {/* Status row — only renders when we have at least one open
+                listing. The label reflects the actual mix of role types
+                that are open right now (오디션 / 스태프 / 둘 다), so
+                we never tell the visitor "오디션 모집 중" when only
+                staff positions are actually accepting. */}
+            {openLabel && (
+              <div className="flex items-center gap-1.5 text-[11px] text-cheeze-cream/75">
+                <span
+                  aria-hidden
+                  className="block w-1.5 h-1.5 rounded-full bg-cheeze-yellow v2-cta-pulse"
+                />
+                {openLabel}
+              </div>
+            )}
 
             {/* Action row */}
-            <div className="mt-1 flex items-center justify-between gap-2">
+            <div
+              className={`flex items-center justify-between gap-2 ${
+                openLabel ? "mt-1" : ""
+              }`}
+            >
               <span className="text-[15px] font-semibold tracking-tight text-cheeze-cream">
-                지원하기
+                {openLabel ? "지원하기" : "지원 페이지로"}
               </span>
               <span
                 aria-hidden
@@ -406,7 +444,7 @@ export default function V2Nav() {
                 ←
               </span>
             )}
-            <span className="inline-flex w-9 h-9 rounded-full bg-cheeze-purple overflow-hidden border border-cheeze-purple-deep">
+            <span className="inline-flex w-9 h-9 rounded-2xl bg-cheeze-purple overflow-hidden transition-transform duration-300 ease-out group-hover/back:-rotate-6 group-hover/back:scale-105">
               <Image
                 src="/cheeze-logo.png"
                 alt=""
@@ -415,32 +453,46 @@ export default function V2Nav() {
                 className="w-full h-full object-cover"
               />
             </span>
-            <div className="flex flex-col leading-none">
-              <span className="font-bold text-sm tracking-tight">치즈필름</span>
+            <div className="flex flex-col leading-none transition duration-300 ease-out group-hover/back:translate-x-0.5">
+              <span className="font-bold text-sm tracking-tight text-cheeze-ink group-hover/back:text-cheeze-purple-deep transition-colors">
+                치즈필름
+              </span>
               <span className="text-[9px] tracking-[0.3em] text-cheeze-olive uppercase mt-0.5">
                 Editorial 02
               </span>
             </div>
           </Link>
           <div className="flex items-center gap-2">
+            {/* Hamburger: square rounded chip with three even lines. Soft
+                grey fill on hover/active, no bordered look. */}
             <button
               type="button"
               onClick={() => setMobileOpen((v) => !v)}
-              className="inline-flex items-center justify-center w-10 h-10 border border-cheeze-purple-deep/30 text-cheeze-purple-deep hover:bg-cheeze-purple-deep/5 transition-colors"
+              className="inline-flex items-center justify-center w-10 h-10 rounded-xl text-cheeze-ink hover:bg-toss-50 active:bg-toss-100 transition-colors"
               aria-expanded={mobileOpen}
               aria-controls="v2-mobile-menu"
               aria-label="메뉴"
             >
-              <span
+              <svg
                 aria-hidden
-                className="block w-4 h-px bg-current relative before:absolute before:left-0 before:right-0 before:-top-1.5 before:h-px before:bg-current after:absolute after:left-0 after:right-0 after:top-1.5 after:h-px after:bg-current"
-              />
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                <path d="M4 7h16M4 12h16M4 17h16" />
+              </svg>
             </button>
+            {/* 지원 CTA: matches the home hero's dark rounded button
+                pattern. Sentence-case Korean, single arrow glyph. */}
             <Link
               href="/support"
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-cheeze-purple-deep text-cheeze-yellow text-[11px] font-bold tracking-widest uppercase hover:bg-cheeze-purple transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cheeze-ink text-white text-[13px] font-semibold hover:bg-cheeze-ink-soft transition-colors"
             >
-              지원
+              지원하기
               <span aria-hidden>→</span>
             </Link>
           </div>

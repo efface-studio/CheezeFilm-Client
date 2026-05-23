@@ -89,28 +89,29 @@ function ListingPicker({
         </p>
       </div>
 
-      {/* Loading state — skeleton cards instead of "불러오는 중…" text.
-          Two soft rounded blocks read more like a Toss list placeholder. */}
+      {/* Loading state — skeleton cards. After the palette swap a soft
+          `bg-toss-100` fill reads as the canonical "list placeholder" tone. */}
       {listings === null && (
         <div className="space-y-3" aria-busy="true">
           {[0, 1].map((i) => (
             <div
               key={i}
-              className="rounded-2xl bg-cheeze-cream-deep/40 h-24 animate-pulse"
+              className="rounded-2xl bg-toss-100 h-24 animate-pulse"
             />
           ))}
         </div>
       )}
 
       {/* Empty state — Toss-style centered card with a soft icon, friendly
-          message, and a secondary CTA that hops to the fan tab. Sits on the
-          page's cream background, so we use a white-tinted fill + soft
-          border to read as "a card, not a band". */}
+          message, and a secondary CTA that hops to the fan tab. Uses
+          `bg-toss-50` so the card actually shows up against the new white
+          body bg (the previous `bg-white/70` was invisible after the
+          palette swap). */}
       {listings && listings.length === 0 && (
-        <div className="rounded-3xl bg-white/70 border border-cheeze-purple-deep/10 px-6 py-12 text-center">
+        <div className="rounded-3xl bg-toss-50 px-6 py-12 text-center">
           <div
             aria-hidden
-            className="mx-auto w-14 h-14 rounded-2xl bg-cheeze-cream-deep/70 flex items-center justify-center text-3xl mb-5"
+            className="mx-auto w-14 h-14 rounded-2xl bg-white flex items-center justify-center text-3xl mb-5 shadow-sm"
           >
             🎬
           </div>
@@ -125,7 +126,7 @@ function ListingPicker({
             <button
               type="button"
               onClick={onSwitchToFan}
-              className="mt-7 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-cheeze-ink text-cheeze-cream font-semibold text-[14px] hover:bg-cheeze-ink-soft transition-colors"
+              className="mt-7 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-cheeze-ink text-white font-semibold text-[14px] hover:bg-cheeze-ink-soft transition-colors"
             >
               응원 메시지 남기기
               <span aria-hidden>→</span>
@@ -141,7 +142,7 @@ function ListingPicker({
       )}
 
       {listings && listings.length > 0 && (
-        <ul className="divide-y divide-cheeze-purple-deep/20 border-t border-b border-cheeze-purple-deep/20">
+        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {listings.map((l, i) => (
             <ListingItem
               key={l.id}
@@ -158,14 +159,15 @@ function ListingPicker({
 }
 
 /**
- * One open call rendered as a call-sheet entry — magazine-style numbered
- * index in the left rail, big display title, animated yellow rule on hover.
- * Click-anywhere-to-apply makes the whole row a single ergonomic target.
+ * One open call — Toss-style card. A white surface with a hairline
+ * border that the whole row clicks, no inner cards, no purple-on-
+ * yellow chips, no yellow underline. Role pill + deadline + title +
+ * (optional) body sit in a single relaxed column; "지원하기 →"
+ * floats top-right so the title doesn't have to share the eye with
+ * a separate footer block.
  */
 function ListingItem({
   listing: l,
-  index,
-  total,
   onPick,
 }: {
   listing: Listing;
@@ -178,76 +180,60 @@ function ListingItem({
       <button
         type="button"
         onClick={onPick}
-        className="group block w-full text-left py-10 lg:grid lg:grid-cols-[80px_1fr_auto] lg:gap-10 lg:items-start hover:bg-cheeze-cream-deep/30 transition-colors px-2 -mx-2"
+        className="group relative block w-full text-left rounded-2xl bg-white border border-toss-200 hover:border-cheeze-purple/40 hover:shadow-[0_4px_20px_rgba(85,34,163,0.08)] transition-all p-5 sm:p-6"
       >
-        {/* Left rail — magazine-style index */}
-        <div className="hidden lg:block pt-2">
-          <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">
-            No.
-          </div>
-          <div
-            className="text-4xl text-cheeze-purple-deep mt-1 leading-none tabular-nums"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            {String(index).padStart(2, "0")}
-          </div>
-          <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive mt-2 tabular-nums">
-            / {String(total).padStart(2, "0")}
-          </div>
-        </div>
-
-        {/* Center — metadata + headline + body */}
-        <div className="min-w-0">
-          <div className="flex items-center gap-3 mb-3 flex-wrap">
-            <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 bg-cheeze-purple-deep text-cheeze-yellow font-bold">
-              {ROLE_LABEL[l.role_type]}
-            </span>
-            {l.deadline && (
-              <span className="text-[11px] uppercase tracking-wider text-cheeze-wine font-semibold inline-flex items-center gap-1.5">
-                <span className="w-1 h-1 rounded-full bg-cheeze-wine" />
-                {formatDeadlineLong(l.deadline)} 마감
-              </span>
-            )}
-          </div>
-          <h3
-            className="text-3xl md:text-4xl tracking-tight leading-[1.05] text-cheeze-ink"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            {l.title}
-          </h3>
-          {/* Yellow accent rule — grows on hover */}
-          <div className="mt-4 h-px w-12 bg-cheeze-yellow transition-[width] duration-500 group-hover:w-32" />
-
-          {l.description && (
-            <p className="mt-5 text-[15px] text-cheeze-ink-soft whitespace-pre-wrap leading-relaxed max-w-prose">
-              {l.description}
-            </p>
-          )}
-          {l.requirements && (
-            <div className="mt-5 border-l-2 border-cheeze-purple-deep/30 group-hover:border-cheeze-purple-deep pl-4 py-1 transition-colors">
-              <div className="text-[10px] uppercase tracking-widest text-cheeze-purple-deep font-bold mb-1">
-                지원 조건
-              </div>
-              <p className="text-sm text-cheeze-ink-soft/90 whitespace-pre-wrap leading-relaxed">
-                {l.requirements}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Right — call-to-action chip + arrow shift */}
-        <div className="lg:self-end mt-6 lg:mt-0 lg:pt-2 flex lg:justify-end">
-          <span className="inline-flex items-center gap-3 text-xs font-bold tracking-widest uppercase px-6 py-4 bg-cheeze-purple-deep text-cheeze-yellow group-hover:bg-cheeze-purple transition-colors">
-            지원하기
-            <span className="inline-block transition-transform group-hover:translate-x-1.5">
-              →
-            </span>
+        {/* Floating "지원하기 →" — top-right, only visible on hover so
+            the card feels calm at rest. */}
+        <span
+          aria-hidden
+          className="absolute top-5 right-5 sm:top-6 sm:right-6 inline-flex items-center gap-1 text-[13px] font-semibold text-cheeze-purple-deep opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          지원하기
+          <span className="transition-transform group-hover:translate-x-1">
+            →
           </span>
+        </span>
+
+        {/* Role pill + deadline */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="inline-flex items-center text-[11px] font-semibold px-2.5 py-1 rounded-full bg-cheeze-purple/10 text-cheeze-purple-deep">
+            {ROLE_LABEL[l.role_type]}
+          </span>
+          {l.deadline && (
+            <span className="text-[12px] text-cheeze-ink-soft inline-flex items-center gap-1.5">
+              <span aria-hidden className="w-1 h-1 rounded-full bg-rose-500" />
+              {formatDeadlineLong(l.deadline)} 마감
+            </span>
+          )}
         </div>
+
+        {/* Title — leaves headroom on the right for the floating CTA. */}
+        <h3 className="mt-3 pr-28 text-[20px] font-bold leading-snug text-cheeze-ink tracking-tight">
+          {l.title}
+        </h3>
+
+        {l.description && (
+          <p className="mt-2 text-[14px] text-cheeze-ink-soft whitespace-pre-wrap leading-relaxed">
+            {l.description}
+          </p>
+        )}
+
+        {l.requirements && (
+          <div className="mt-3">
+            <div className="text-[12px] font-semibold text-cheeze-ink-soft mb-1">
+              지원 조건
+            </div>
+            <p className="text-[13px] text-cheeze-ink-soft/85 whitespace-pre-wrap leading-relaxed">
+              {l.requirements}
+            </p>
+          </div>
+        )}
       </button>
     </li>
   );
 }
+
+type PhotoSlot = { file: File | null; preview: string | null };
 
 function ApplyForm({
   listing,
@@ -258,12 +244,39 @@ function ApplyForm({
 }) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [photos, setPhotos] = useState<PhotoSlot[]>([
+    { file: null, preview: null },
+    { file: null, preview: null },
+    { file: null, preview: null },
+  ]);
+  const fileInputRefs = [
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+  ];
 
-  function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    setPhotoPreview(file ? URL.createObjectURL(file) : null);
+  function onPickPhoto(slot: number, e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    setPhotos((prev) => {
+      const next = [...prev];
+      if (next[slot].preview) URL.revokeObjectURL(next[slot].preview);
+      next[slot] = {
+        file,
+        preview: file ? URL.createObjectURL(file) : null,
+      };
+      return next;
+    });
+  }
+
+  function clearSlot(slot: number) {
+    setPhotos((prev) => {
+      const next = [...prev];
+      if (next[slot].preview) URL.revokeObjectURL(next[slot].preview);
+      next[slot] = { file: null, preview: null };
+      return next;
+    });
+    const input = fileInputRefs[slot].current;
+    if (input) input.value = "";
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -272,12 +285,17 @@ function ApplyForm({
     setError("");
     const form = e.currentTarget;
     const fd = new FormData(form);
-    const photo = fd.get("photo");
-    if (!(photo instanceof File) || photo.size === 0) {
+
+    const filled = photos.filter((p) => p.file);
+    if (filled.length === 0) {
       setStatus("error");
-      setError("프로필 사진을 첨부해주세요. (필수)");
+      setError("프로필 사진을 1장 이상 첨부해주세요.");
       return;
     }
+
+    // FormData from the form already includes the file inputs by name
+    // (photo, photo2, photo3). Just append nothing extra — the slot
+    // state mirrors the inputs so no normalization needed here.
 
     try {
       const res = await fetch("/api/auditions", {
@@ -290,7 +308,14 @@ function ApplyForm({
       }
       setStatus("success");
       form.reset();
-      setPhotoPreview(null);
+      photos.forEach((p) => {
+        if (p.preview) URL.revokeObjectURL(p.preview);
+      });
+      setPhotos([
+        { file: null, preview: null },
+        { file: null, preview: null },
+        { file: null, preview: null },
+      ]);
     } catch (e) {
       setStatus("error");
       setError(e instanceof Error ? e.message : "오류가 발생했어요.");
@@ -299,25 +324,29 @@ function ApplyForm({
 
   if (status === "success") {
     return (
-      <div className="relative text-center py-16 border border-cheeze-purple-deep/40">
+      <div className="relative rounded-3xl bg-toss-50 px-6 py-16 text-center">
         <Confetti count={22} />
-        <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-purple mb-4">
-          — Take 1
+        <div
+          aria-hidden
+          className="mx-auto w-14 h-14 rounded-2xl bg-white flex items-center justify-center text-3xl mb-5 shadow-sm"
+        >
+          🎬
         </div>
-        <h3 className="text-4xl mb-3" style={{ fontFamily: "var(--font-display)" }}>
-          접수 완료.
+        <h3 className="text-[20px] font-bold text-cheeze-ink mb-2">
+          접수 완료!
         </h3>
-        <p className="text-cheeze-ink-soft max-w-sm mx-auto leading-relaxed">
-          <strong>{listing.title}</strong>
-          <br />에 지원해주셔서 감사합니다. 제작팀이 한 명씩 직접 읽고 빠르게
-          검토합니다.
+        <p className="text-[14px] text-cheeze-ink-soft max-w-sm mx-auto leading-relaxed">
+          <strong className="text-cheeze-ink">{listing.title}</strong>에
+          지원해주셔서 감사합니다. 제작팀이 직접 검토하고 1주 안에 회신
+          드릴게요.
         </p>
         <button
           type="button"
           onClick={onBack}
-          className="mt-8 text-xs font-bold tracking-widest uppercase px-5 py-3 bg-cheeze-purple-deep text-cheeze-yellow hover:bg-cheeze-purple transition-colors"
+          className="mt-8 inline-flex items-center gap-1.5 px-5 py-3 rounded-xl bg-cheeze-ink text-white text-[14px] font-semibold hover:bg-cheeze-ink-soft transition-colors"
         >
           다른 공고 보기
+          <span aria-hidden>→</span>
         </button>
       </div>
     );
@@ -325,25 +354,27 @@ function ApplyForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-8">
-      {/* Pinned listing header */}
-      <div className="border border-cheeze-purple-deep/40 p-4 flex items-start justify-between gap-4">
+      {/* Pinned listing header — Toss-style soft card.
+          Drops the bordered editorial frame + purple-on-yellow chip +
+          wine deadline. Eyebrow stacks above a clean role pill +
+          title + deadline row, and "다른 공고" is a quiet ghost
+          button on the right. */}
+      <div className="rounded-2xl bg-toss-50 px-5 py-4 flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <div className="text-[10px] uppercase tracking-widest text-cheeze-purple-deep mb-1">
+          <div className="text-[11px] font-semibold text-cheeze-ink-soft mb-1.5">
             지원할 공고
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 bg-cheeze-purple-deep text-cheeze-yellow">
+            <span className="inline-flex items-center text-[11px] font-semibold px-2.5 py-1 rounded-full bg-cheeze-purple/10 text-cheeze-purple-deep">
               {ROLE_LABEL[listing.role_type]}
             </span>
-            <h3
-              className="text-lg tracking-tight"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
+            <h3 className="text-[16px] font-bold tracking-tight text-cheeze-ink truncate">
               {listing.title}
             </h3>
             {listing.deadline && (
-              <span className="text-xs text-cheeze-wine">
-                ~ {formatDeadline(listing.deadline)}
+              <span className="text-[12px] text-cheeze-ink-soft inline-flex items-center gap-1.5">
+                <span aria-hidden className="w-1 h-1 rounded-full bg-rose-500" />
+                {formatDeadline(listing.deadline)} 마감
               </span>
             )}
           </div>
@@ -351,82 +382,105 @@ function ApplyForm({
         <button
           type="button"
           onClick={onBack}
-          className="shrink-0 text-xs underline text-cheeze-ink-soft hover:text-cheeze-ink"
+          className="shrink-0 inline-flex items-center gap-1 px-3 py-2 rounded-xl text-[13px] font-semibold text-cheeze-ink-soft hover:bg-white transition-colors"
         >
-          ← 다른 공고
+          <span aria-hidden>←</span>
+          다른 공고
         </button>
       </div>
       <input type="hidden" name="listing_id" value={listing.id} />
 
       <div>
-        <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-purple mb-2">
-          — Audition form
-        </div>
-        <h2 className="text-3xl tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
+        <h2 className="text-[24px] font-bold tracking-tight text-cheeze-ink">
           오디션 지원서
         </h2>
-        <p className="mt-2 text-sm text-cheeze-ink-soft">
+        <p className="mt-1.5 text-[14px] text-cheeze-ink-soft">
           정확한 검토를 위해 모든 항목을 솔직하게 작성해주세요.
         </p>
       </div>
 
-      <FieldGroup title="프로필 사진 *">
-        <div className="flex items-start gap-5">
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                fileInputRef.current?.click();
-              }
-            }}
-            className="w-32 h-40 border border-cheeze-purple-deep/40 hover:border-cheeze-purple-deep bg-cheeze-cream-deep/30 cursor-pointer overflow-hidden shrink-0 relative grid place-items-center transition-colors"
-          >
-            {photoPreview ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={photoPreview}
-                alt="미리보기"
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            ) : (
-              <div className="text-center px-2">
-                <div className="text-2xl mb-1">📷</div>
-                <div className="text-[10px] uppercase tracking-widest text-cheeze-olive">
-                  Click to upload
+      {/* Photo picker — 3-slot grid. First slot is required (the form
+          submit checks it), the other two are optional add-ons so the
+          applicant can include angle/full-body shots. */}
+      <FieldGroup
+        title="프로필 사진"
+        sublabel="최소 1장, 최대 3장 · 얼굴이 잘 보이는 사진 권장"
+      >
+        <ul className="grid grid-cols-3 gap-3">
+          {photos.map((p, i) => {
+            const isFirst = i === 0;
+            return (
+              <li key={i}>
+                <div
+                  onClick={() => fileInputRefs[i].current?.click()}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      fileInputRefs[i].current?.click();
+                    }
+                  }}
+                  className={`relative aspect-[3/4] rounded-2xl bg-white cursor-pointer overflow-hidden transition-all ${
+                    p.preview
+                      ? "ring-1 ring-toss-200"
+                      : "border-2 border-dashed border-toss-200 hover:border-cheeze-purple/50 hover:bg-toss-50/50"
+                  }`}
+                >
+                  {p.preview ? (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={p.preview}
+                        alt={`미리보기 ${i + 1}`}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          clearSlot(i);
+                        }}
+                        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-cheeze-ink/80 text-white text-[14px] hover:bg-cheeze-ink transition-colors"
+                        aria-label="사진 삭제"
+                      >
+                        ×
+                      </button>
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 grid place-items-center text-center px-2">
+                      <div>
+                        <div className="text-[24px] mb-1.5">＋</div>
+                        <div className="text-[12px] font-semibold text-cheeze-ink-soft">
+                          {isFirst ? "사진 추가 (필수)" : "사진 추가"}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
-          </div>
-          <div className="text-xs text-cheeze-ink-soft/80 leading-relaxed flex-1">
-            <p className="text-cheeze-purple-deep font-bold mb-1">필수 첨부 항목</p>
-            얼굴이 잘 보이는 프로필 사진 한 장. JPEG · PNG · WebP, 8MB 이하.
-          </div>
-        </div>
-        <input
-          ref={fileInputRef}
-          name="photo"
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/heic"
-          required
-          className="hidden"
-          onChange={onPickPhoto}
-        />
+                <input
+                  ref={fileInputRefs[i]}
+                  name={i === 0 ? "photo" : `photo${i + 1}`}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/heic"
+                  className="hidden"
+                  onChange={(e) => onPickPhoto(i, e)}
+                />
+              </li>
+            );
+          })}
+        </ul>
+        <p className="mt-3 text-[12px] text-cheeze-ink-soft">
+          JPEG · PNG · WebP / 8MB 이하
+        </p>
       </FieldGroup>
 
       <FieldGroup title="기본 정보">
-        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-4">
+        <div className="grid sm:grid-cols-2 gap-4">
           <Field label="이름" name="name" required maxLength={50} placeholder="홍길동" />
-          <label className="block">
-            <span className="text-xs tracking-widest uppercase text-cheeze-olive">
-              생년월일
-            </span>
-            <BirthdateInput
-              className="mt-1.5 w-full bg-transparent border-b border-cheeze-purple-deep/40 focus:border-cheeze-purple-deep outline-none py-2 text-sm placeholder:text-cheeze-olive/50"
-            />
-          </label>
+          <FieldShell label="생년월일">
+            <BirthdateInput className={FIELD_INPUT_CLASSES} />
+          </FieldShell>
           <SelectField label="성별" name="gender">
             <option value="">선택 안 함</option>
             <option value="female">여성</option>
@@ -448,16 +502,11 @@ function ApplyForm({
       </FieldGroup>
 
       <FieldGroup title="연락처">
-        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-4">
+        <div className="grid sm:grid-cols-2 gap-4">
           <Field label="이메일" name="email" type="email" required placeholder="you@example.com" />
-          <label className="block">
-            <span className="text-xs tracking-widest uppercase text-cheeze-olive">
-              연락처
-            </span>
-            <PhoneInput
-              className="mt-1.5 w-full bg-transparent border-b border-cheeze-purple-deep/40 focus:border-cheeze-purple-deep outline-none py-2 text-sm placeholder:text-cheeze-olive/50"
-            />
-          </label>
+          <FieldShell label="연락처">
+            <PhoneInput className={FIELD_INPUT_CLASSES} />
+          </FieldShell>
         </div>
       </FieldGroup>
 
@@ -480,33 +529,75 @@ function ApplyForm({
       </FieldGroup>
 
       {status === "error" && (
-        <div className="border border-cheeze-wine bg-cheeze-wine/5 px-4 py-3 text-sm text-cheeze-wine">
-          ⚠ {error}
+        <div className="rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-[14px] text-rose-700">
+          {error}
         </div>
       )}
 
-      <div className="flex items-center gap-4 pt-2 border-t border-cheeze-purple-deep/15">
+      <div className="flex items-center gap-4">
         <button
           type="submit"
           disabled={status === "submitting"}
-          className="text-sm font-bold tracking-widest uppercase px-6 py-3.5 bg-cheeze-purple-deep text-cheeze-yellow hover:bg-cheeze-purple disabled:bg-cheeze-olive/40 transition-colors"
+          className="inline-flex items-center gap-1.5 px-6 py-3.5 rounded-xl bg-cheeze-ink text-white text-[15px] font-semibold hover:bg-cheeze-ink-soft disabled:bg-toss-200 disabled:text-toss-500 disabled:cursor-not-allowed transition-colors"
         >
-          {status === "submitting" ? "전송 중..." : "Submit audition →"}
+          {status === "submitting" ? "전송 중…" : "지원서 제출하기"}
+          {status !== "submitting" && <span aria-hidden>→</span>}
         </button>
-        <span className="text-xs text-cheeze-olive">필수 항목은 *로 표시됩니다.</span>
+        <span className="text-[12px] text-cheeze-ink-soft">
+          필수 항목은 *로 표시됩니다.
+        </span>
       </div>
     </form>
   );
 }
 
-function FieldGroup({ title, children }: { title: string; children: React.ReactNode }) {
+// ─── Field components ─────────────────────────────────────────
+// Toss-style: each field group is a rounded soft card with a small
+// title row and the fields inside as pill-style filled inputs.
+
+const FIELD_INPUT_CLASSES =
+  "w-full bg-white rounded-xl px-4 py-3 text-[15px] text-cheeze-ink placeholder:text-toss-300 outline-none focus:ring-2 focus:ring-cheeze-purple/30 transition";
+
+function FieldGroup({
+  title,
+  sublabel,
+  children,
+}: {
+  title: string;
+  sublabel?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="grid lg:grid-cols-[160px_1fr] gap-x-8 gap-y-5 pt-6 border-t border-cheeze-purple-deep/15">
-      <div className="text-[10px] tracking-[0.35em] uppercase text-cheeze-purple-deep">
-        {title}
+    <div className="rounded-2xl bg-toss-50 p-5 space-y-4">
+      <div>
+        <div className="text-[13px] font-semibold text-cheeze-ink">
+          {title}
+        </div>
+        {sublabel && (
+          <div className="text-[12px] text-cheeze-ink-soft mt-0.5">
+            {sublabel}
+          </div>
+        )}
       </div>
-      <div className="space-y-4">{children}</div>
+      <div className="space-y-3">{children}</div>
     </div>
+  );
+}
+
+function FieldShell({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block">
+      <div className="text-[13px] font-semibold text-cheeze-ink mb-1.5">
+        {label}
+      </div>
+      {children}
+    </label>
   );
 }
 
@@ -527,17 +618,17 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-xs tracking-widest uppercase text-cheeze-olive">
+      <div className="text-[13px] font-semibold text-cheeze-ink mb-1.5">
         {label}
         {required && <span className="text-cheeze-purple ml-1">*</span>}
-      </span>
+      </div>
       <input
         name={name}
         type={type}
         required={required}
         placeholder={placeholder}
         maxLength={maxLength}
-        className="mt-1.5 w-full bg-transparent border-b border-cheeze-purple-deep/40 focus:border-cheeze-purple-deep outline-none py-2 text-sm placeholder:text-cheeze-olive/50"
+        className={FIELD_INPUT_CLASSES}
       />
     </label>
   );
@@ -556,10 +647,12 @@ function SelectField({
 }) {
   return (
     <label className="block">
-      <span className="text-xs tracking-widest uppercase text-cheeze-olive">{label}</span>
+      <div className="text-[13px] font-semibold text-cheeze-ink mb-1.5">
+        {label}
+      </div>
       <select
         name={name}
-        className="mt-1.5 w-full bg-transparent border-b border-cheeze-purple-deep/40 focus:border-cheeze-purple-deep outline-none py-2 text-sm"
+        className={FIELD_INPUT_CLASSES}
         defaultValue={defaultValue}
       >
         {children}
@@ -585,17 +678,17 @@ function TextareaField({
 }) {
   return (
     <label className="block">
-      <span className="text-xs tracking-widest uppercase text-cheeze-olive">
+      <div className="text-[13px] font-semibold text-cheeze-ink mb-1.5">
         {label}
         {required && <span className="text-cheeze-purple ml-1">*</span>}
-      </span>
+      </div>
       <textarea
         name={name}
         rows={rows}
         required={required}
         placeholder={placeholder}
         maxLength={maxLength}
-        className="mt-1.5 w-full bg-transparent border border-cheeze-purple-deep/30 focus:border-cheeze-purple-deep outline-none p-3 text-sm placeholder:text-cheeze-olive/50"
+        className={FIELD_INPUT_CLASSES}
       />
     </label>
   );

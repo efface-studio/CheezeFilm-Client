@@ -177,15 +177,13 @@ export default async function AdminPage({
           </SectionHeader>
           <SectionHeader
             title="표지 영상 (폴백)"
-            subtitle="표지 사진이 한 장도 없을 때만 표시되는 유튜브 표지 영상 3개"
+            subtitle="표지 사진이 한 장도 없을 때만 표시되는 유튜브 표지 영상 (최대 10개)"
           >
             <IssueCoverPicker
               videos={pickerVideos}
-              initial={[
-                getContent(contentMap, "works.1.videoId").trim(),
-                getContent(contentMap, "works.2.videoId").trim(),
-                getContent(contentMap, "works.3.videoId").trim(),
-              ]}
+              initial={Array.from({ length: 10 }, (_, i) =>
+                getContent(contentMap, `works.${i + 1}.videoId`).trim(),
+              )}
             />
           </SectionHeader>
         </div>
@@ -615,8 +613,12 @@ function AuditionsTable({ items }: { items: Audition[] }) {
  *   - Right column: 자기소개 quote → 경력 → 포트폴리오, with editorial section dividers
  *   - Bottom: full-width status actions bar
  */
-function AuditionDetail({ audition: a }: { audition: Audition }) {
-  const listing = listingSummary(a.listing_id);
+async function AuditionDetail({ audition: a }: { audition: Audition }) {
+  // listingSummary hits Supabase, so it returns a Promise. The previous
+  // sync version stored the Promise in `listing` and React happened to
+  // print [object Promise] / nothing depending on the moment — fixed
+  // by awaiting it now.
+  const listing = await listingSummary(a.listing_id);
   const submitted = new Date(a.created_at);
   const submittedStr = `${submitted.getFullYear()}.${String(submitted.getMonth() + 1).padStart(2, "0")}.${String(submitted.getDate()).padStart(2, "0")} ${String(submitted.getHours()).padStart(2, "0")}:${String(submitted.getMinutes()).padStart(2, "0")}`;
   return (
@@ -650,15 +652,16 @@ function AuditionDetail({ audition: a }: { audition: Audition }) {
             </div>
           </div>
 
-          {/* Facts */}
-          <dl className="rounded-md border border-zinc-200 bg-white divide-y divide-zinc-100 text-xs">
+          {/* Facts — Toss-style soft card. Dropped the bordered table
+              look, swapped the broken ▣-prefixed purple link for a
+              proper tinted pill, and used softer dividers. */}
+          <dl className="rounded-xl bg-zinc-50 divide-y divide-zinc-200/60 text-xs overflow-hidden">
             <FactRow label="제출일" value={submittedStr} mono />
             <FactRow
               label="지원 공고"
               value={
                 listing ? (
-                  <span className="inline-flex items-center gap-1 text-purple-700 font-medium">
-                    <span aria-hidden>▣</span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[11px] font-semibold max-w-full">
                     <span className="truncate">{listing}</span>
                   </span>
                 ) : (
@@ -710,15 +713,13 @@ function AuditionDetail({ audition: a }: { audition: Audition }) {
             </div>
           </div>
 
-          {/* 자기소개 */}
+          {/* 자기소개 — Toss-style soft card. The previous version drew a
+              4px purple bar with a floating dot at the top; for a
+              short intro (e.g. "dwd") that bar looked oversized and
+              the dot poked out of the card visually. A plain rounded
+              fill scales with the content. */}
           <DetailSection eyebrow="자기소개">
-            <blockquote className="relative border-l-4 border-purple-400 pl-5 pr-3 py-1 text-[15px] text-zinc-800 whitespace-pre-wrap leading-relaxed">
-              {/* Tiny corner mark instead of a giant typographic quote —
-                  guarantees a clean render across fallback fonts. */}
-              <span
-                aria-hidden
-                className="absolute -left-[3px] -top-2 w-2 h-2 rounded-full bg-purple-400"
-              />
+            <blockquote className="rounded-xl bg-zinc-50 px-4 py-3 text-[14px] text-zinc-800 whitespace-pre-wrap leading-relaxed">
               {a.intro}
             </blockquote>
           </DetailSection>

@@ -62,12 +62,24 @@ create table if not exists public.auditions (
   role_preference  text,
   intro            text not null,
   portfolio_url    text,
+  -- Primary photo (legacy column — kept so the admin's existing
+  -- single-photo render path keeps working). The first slot of the
+  -- new multi-photo upload also writes here.
   photo_url        text,
+  -- All photo storage keys for an applicant (1-3 entries). Code
+  -- prefers this array; falls back to `photo_url` when empty for
+  -- historical rows.
+  photo_urls       text[] not null default '{}'::text[],
   status           text not null default 'pending',
   listing_id       bigint references public.audition_listings(id) on delete set null,
   birthdate        text,
   created_at       timestamptz not null default now()
 );
+
+-- Forward-compat: ensure the `photo_urls` column exists on databases
+-- that were created before this migration.
+alter table public.auditions
+  add column if not exists photo_urls text[] not null default '{}'::text[];
 create index if not exists idx_auditions_created on public.auditions(created_at desc);
 create index if not exists idx_auditions_listing on public.auditions(listing_id);
 

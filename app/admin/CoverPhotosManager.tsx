@@ -5,6 +5,10 @@ import { useEffect, useRef, useState } from "react";
 
 type Cover = { name: string; url: string; size: number };
 
+/** Mirrors `MAX_COVERS` in `app/api/admin/covers/route.ts` — only used
+ *  as a fallback before the GET response lands with the real cap. */
+const DEFAULT_MAX_COVERS = 10;
+
 /**
  * Admin UI for V2 hero cover photos.
  *
@@ -15,18 +19,23 @@ type Cover = { name: string; url: string; size: number };
  */
 export default function CoverPhotosManager() {
   const [covers, setCovers] = useState<Cover[]>([]);
+  const [maxCovers, setMaxCovers] = useState<number>(DEFAULT_MAX_COVERS);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [dragHot, setDragHot] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
+  const atCap = covers.length >= maxCovers;
+  const remaining = Math.max(0, maxCovers - covers.length);
+
   async function refresh() {
     try {
       const res = await fetch("/api/admin/covers", { cache: "no-store" });
       if (!res.ok) throw new Error(`list failed (${res.status})`);
-      const data = (await res.json()) as { files: Cover[] };
+      const data = (await res.json()) as { files: Cover[]; maxCovers?: number };
       setCovers(data.files);
+      if (typeof data.maxCovers === "number") setMaxCovers(data.maxCovers);
     } catch (e) {
       setError(e instanceof Error ? e.message : "list failed");
     } finally {
@@ -87,32 +96,44 @@ export default function CoverPhotosManager() {
   return (
     <div className="space-y-5">
       <div className="text-[13px] text-cheeze-ink-soft leading-relaxed">
-        V2 홈 hero에 표시되는 표지 사진을 관리합니다. 가로형 사진 권장 (3:2 / 16:9
-        / 16:10). 여러 장 올리면 2초마다 자연스럽게 넘어가요. 파일 비어있으면
-        위쪽 "표지 영상"이 폴백으로 뜹니다.
+        홈 hero에 표시되는 표지 사진을 관리합니다. 가로형 사진 권장 (3:2 / 16:9
+        / 16:10). 여러 장 올리면 자동으로 넘어가요. 파일 비어있으면 위쪽 "표지
+        영상"이 폴백으로 뜹니다.{" "}
+        <strong className="text-cheeze-ink">최대 {maxCovers}장</strong>까지 등록
+        가능해요.
       </div>
 
-      {/* Drop zone */}
+      {/* Drop zone — disabled at the per-bucket cap so the user can't even
+          start an upload. Visual gets a muted look + status caption. */}
       <div
         onDragEnter={(e) => {
+          if (atCap) return;
           e.preventDefault();
           setDragHot(true);
         }}
         onDragOver={(e) => {
+          if (atCap) return;
           e.preventDefault();
           setDragHot(true);
         }}
         onDragLeave={() => setDragHot(false)}
         onDrop={(e) => {
+          if (atCap) return;
           e.preventDefault();
           setDragHot(false);
           if (e.dataTransfer.files) upload(e.dataTransfer.files);
         }}
-        onClick={() => inputRef.current?.click()}
-        className={`relative border-2 border-dashed rounded-md p-8 text-center cursor-pointer transition-colors ${
-          dragHot
-            ? "border-cheeze-purple bg-cheeze-purple/5"
-            : "border-cheeze-purple-deep/25 hover:border-cheeze-purple-deep/45 bg-white"
+        onClick={() => {
+          if (atCap) return;
+          inputRef.current?.click();
+        }}
+        aria-disabled={atCap}
+        className={`relative border-2 border-dashed rounded-md p-8 text-center transition-colors ${
+          atCap
+            ? "border-cheeze-purple-deep/15 bg-cheeze-cream-deep/30 cursor-not-allowed opacity-70"
+            : dragHot
+              ? "border-cheeze-purple bg-cheeze-purple/5 cursor-pointer"
+              : "border-cheeze-purple-deep/25 hover:border-cheeze-purple-deep/45 bg-white cursor-pointer"
         }`}
       >
         <input
@@ -120,6 +141,7 @@ export default function CoverPhotosManager() {
           type="file"
           accept="image/jpeg,image/png,image/webp"
           multiple
+          disabled={atCap}
           className="hidden"
           onChange={(e) => {
             if (e.target.files) upload(e.target.files);
@@ -127,10 +149,16 @@ export default function CoverPhotosManager() {
           }}
         />
         <div className="text-sm font-bold text-cheeze-ink mb-1">
-          {uploading ? "올리는 중…" : "사진을 여기로 드래그하거나, 눌러서 선택"}
+          {atCap
+            ? `한도 도달 · ${maxCovers}장 모두 사용 중`
+            : uploading
+              ? "올리는 중…"
+              : "사진을 여기로 드래그하거나, 눌러서 선택"}
         </div>
         <div className="text-xs text-cheeze-ink-soft">
-          JPG · PNG · WebP / 최대 10MB / 여러 장 동시 업로드 OK
+          {atCap
+            ? "새 표지를 올리려면 아래에서 기존 사진을 먼저 삭제해주세요."
+            : `JPG · PNG · WebP / 최대 10MB / 한 번에 ${remaining}장까지 (전체 한도 ${maxCovers}장)`}
         </div>
       </div>
 
@@ -143,7 +171,7 @@ export default function CoverPhotosManager() {
       {/* Current list */}
       <div>
         <div className="text-[11px] uppercase tracking-[0.2em] text-cheeze-olive mb-3">
-          현재 표지 사진 · {covers.length}장
+          현재 표지 사진 · {covers.length} / {maxCovers}장
         </div>
         {loading ? (
           <div className="text-sm text-cheeze-ink-soft">불러오는 중…</div>

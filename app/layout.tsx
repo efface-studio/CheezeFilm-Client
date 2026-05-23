@@ -114,7 +114,7 @@ export default function RootLayout({
         viewport instead of using the full max-w-6xl. Block flow lets sections
         naturally take the body width and then mx-auto centers within max-w.
       */}
-      <body className="min-h-screen vignette">
+      <body className="min-h-screen">
         <CursorSpotlight />
         <PageTransition>{children}</PageTransition>
       </body>

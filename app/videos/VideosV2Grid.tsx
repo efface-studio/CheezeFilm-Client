@@ -62,30 +62,30 @@ export default function VideosV2Grid({
 
   return (
     <>
-      {/* Filter strip — editorial pill buttons */}
+      {/* Filter strip — Toss-style pill segmented control. */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-10 pb-6 border-b border-cheeze-purple-deep/15">
-        <div className="flex items-center gap-1 text-sm">
+        <div className="inline-flex items-center gap-1 p-1 rounded-full bg-toss-100">
           <button
             type="button"
             onClick={() => switchKind("longform")}
-            className={`px-4 py-2 tracking-widest uppercase text-xs font-bold border transition-colors ${
+            className={`px-4 py-2 rounded-full text-[13px] font-semibold transition-all ${
               kind === "longform"
-                ? "bg-cheeze-purple-deep text-cheeze-yellow border-cheeze-purple-deep"
-                : "border-cheeze-purple-deep/40 text-cheeze-purple-deep hover:bg-cheeze-purple-deep/10"
+                ? "bg-white text-cheeze-ink shadow-sm"
+                : "text-cheeze-ink-soft/70 hover:text-cheeze-ink"
             }`}
           >
-            Longform · {longform.length}
+            롱폼 · {longform.length}
           </button>
           <button
             type="button"
             onClick={() => switchKind("shorts")}
-            className={`px-4 py-2 tracking-widest uppercase text-xs font-bold border transition-colors ${
+            className={`px-4 py-2 rounded-full text-[13px] font-semibold transition-all ${
               kind === "shorts"
-                ? "bg-cheeze-purple-deep text-cheeze-yellow border-cheeze-purple-deep"
-                : "border-cheeze-purple-deep/40 text-cheeze-purple-deep hover:bg-cheeze-purple-deep/10"
+                ? "bg-white text-cheeze-ink shadow-sm"
+                : "text-cheeze-ink-soft/70 hover:text-cheeze-ink"
             }`}
           >
-            Shorts · {shorts.length}
+            쇼츠 · {shorts.length}
           </button>
         </div>
 
@@ -175,7 +175,12 @@ export default function VideosV2Grid({
 
   function ShortsGrid({ videos, onOpen }: { videos: Video[]; onOpen: (v: Video) => void }) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      // 2 / 3 / 4 columns. Was lg:grid-cols-5 — with the 9:16 portraits
+      // the cards were rendering ~245px wide and felt cramped on the
+      // big editorial container. 4-col on lg lands each card at ~370px
+      // (much closer to the YouTube Shorts feed look), and the title
+      // / SHORTS chip have room to breathe.
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
         {videos.map((v) => (
           <button
             key={v.id}
@@ -183,24 +188,25 @@ export default function VideosV2Grid({
             onClick={() => onOpen(v)}
             className="group text-left v2-film"
           >
-            <div className="aspect-[9/16] relative overflow-hidden bg-cheeze-charcoal">
+            <div className="aspect-[9/16] relative overflow-hidden rounded-2xl bg-cheeze-charcoal">
               <Image
                 src={v.thumbnail}
                 alt={v.title}
                 fill
-                sizes="(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw"
+                sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
                 className="object-cover"
                 loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-cheeze-charcoal/85 to-transparent" />
-              <span className="absolute top-2 left-2 bg-cheeze-yellow text-cheeze-purple-deep text-[9px] font-bold tracking-widest px-1.5 py-0.5">
+              <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-white/90 text-cheeze-ink text-[10px] font-bold px-2.5 py-1">
+                <span aria-hidden className="block w-1.5 h-1.5 rounded-full bg-red-500" />
                 SHORTS
               </span>
-              <div className="absolute inset-x-2 bottom-2 text-[11px] leading-snug text-cheeze-cream line-clamp-2">
+              <div className="absolute inset-x-3 bottom-3 text-[13px] font-semibold leading-snug text-cheeze-cream line-clamp-2">
                 {v.title}
               </div>
             </div>
-            <div className="mt-2 text-[10px] tracking-widest uppercase text-cheeze-olive">
+            <div className="mt-2 px-1 text-[12px] text-cheeze-ink-soft">
               {formatDate(v.publishedAt)}
             </div>
           </button>
@@ -269,16 +275,18 @@ function PlayerModal({ video, onClose }: { video: Video; onClose: () => void }) 
                 href={video.url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs font-bold uppercase tracking-widest px-3 py-2 border border-cheeze-purple-deep hover:bg-cheeze-purple-deep hover:text-cheeze-yellow transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-toss-50 text-cheeze-ink text-[13px] font-semibold hover:bg-toss-100 transition-colors"
               >
-                YouTube ↗
+                YouTube
+                <span aria-hidden>↗</span>
               </a>
               <button
                 type="button"
                 onClick={onClose}
-                className="text-xs font-bold uppercase tracking-widest px-3 py-2 bg-cheeze-purple-deep text-cheeze-yellow"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cheeze-ink text-white text-[13px] font-semibold hover:bg-cheeze-ink-soft transition-colors"
               >
-                ✕ 닫기
+                <span aria-hidden>✕</span>
+                닫기
               </button>
             </div>
           </div>

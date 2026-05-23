@@ -101,7 +101,7 @@ export default async function V2CareersPage() {
             <InView className="v2-fade-up mt-8 flex flex-wrap gap-3">
               <Link
                 href={APPLY_HREF}
-                className="group/cta inline-flex items-center gap-2 text-sm font-bold tracking-widest uppercase px-6 py-3.5 bg-cheeze-purple-deep text-cheeze-yellow hover:bg-cheeze-purple transition-colors"
+                className="group/cta inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-cheeze-ink text-white text-[14px] font-semibold hover:bg-cheeze-ink-soft transition-colors"
               >
                 지원하기
                 <span
@@ -113,9 +113,10 @@ export default async function V2CareersPage() {
               </Link>
               <a
                 href="#roles"
-                className="inline-flex items-center gap-2 text-sm font-bold tracking-widest uppercase px-6 py-3.5 border border-cheeze-purple-deep text-cheeze-purple-deep hover:bg-cheeze-purple-deep hover:text-cheeze-yellow transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-toss-50 text-cheeze-ink text-[14px] font-semibold hover:bg-toss-100 transition-colors"
               >
-                포지션 보기 ↓
+                포지션 보기
+                <span aria-hidden>↓</span>
               </a>
             </InView>
           </div>
@@ -271,9 +272,10 @@ export default async function V2CareersPage() {
                   </ul>
                   <Link
                     href={APPLY_HREF}
-                    className="mt-2 inline-flex items-center gap-2 self-start text-[12px] font-bold tracking-widest uppercase px-4 py-2.5 bg-cheeze-purple-deep text-cheeze-yellow hover:bg-cheeze-purple transition-colors"
+                    className="mt-2 inline-flex items-center gap-1.5 self-start px-4 py-2.5 rounded-xl bg-cheeze-purple-deep text-white text-[13px] font-semibold hover:bg-cheeze-purple transition-colors"
                   >
-                    배우로 지원하기 →
+                    배우로 지원하기
+                    <span aria-hidden>→</span>
                   </Link>
                 </div>
               </InView>
