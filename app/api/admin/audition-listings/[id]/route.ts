@@ -8,6 +8,7 @@ import {
   updateListing,
 } from "@/lib/auditionListings";
 import type { AuditionListing } from "@/lib/db";
+import { bumpListings } from "@/lib/revalidate";
 
 export const runtime = "nodejs";
 
@@ -26,7 +27,7 @@ export async function PATCH(
   if (!Number.isFinite(numericId)) {
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
-  if (!findListing(numericId)) {
+  if (!(await findListing(numericId))) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -45,7 +46,8 @@ export async function PATCH(
     return NextResponse.json({ error: "제목은 비울 수 없습니다." }, { status: 400 });
   }
 
-  updateListing(numericId, body);
+  await updateListing(numericId, body);
+  bumpListings();
   return NextResponse.json({ ok: true });
 }
 
@@ -62,8 +64,9 @@ export async function DELETE(
   if (!Number.isFinite(numericId)) {
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
-  if (!deleteListing(numericId)) {
+  if (!(await deleteListing(numericId))) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+  bumpListings();
   return NextResponse.json({ ok: true });
 }

@@ -8,7 +8,18 @@ import { findMember, getMembers } from "@/lib/members";
 import { storageUrl } from "@/lib/db";
 import { getAllVideos } from "@/lib/youtube";
 
-export const dynamic = "force-dynamic";
+// `[slug]` is a dynamic segment but the page data (`findMember`,
+// `getAllVideos`, `getMembers`) is all cross-request cached. With
+// `revalidate` we let Next.js prerender the known slugs at build /
+// on-demand and serve them from the edge cache thereafter. Unknown
+// slugs still resolve at request time via `dynamicParams = true`
+// (Next.js default for an exported `generateStaticParams`).
+export const revalidate = 300;
+
+export async function generateStaticParams() {
+  const all = await getMembers();
+  return all.map((m) => ({ slug: m.slug }));
+}
 
 function photoUrlFor(photoPath?: string) {
   return photoPath ? storageUrl("members", photoPath) : null;

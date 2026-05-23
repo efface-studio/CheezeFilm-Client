@@ -5,7 +5,12 @@ import V2SupportTabs from "./V2SupportTabs";
 
 type SearchParams = Promise<{ tab?: string }>;
 
-export const dynamic = "force-dynamic";
+// `searchParams.tab` forces this page into dynamic rendering — we can't
+// statically cache the HTML. The data layer is cached though: the
+// content map comes from `unstable_cache(["content:all"])` and the
+// audition listings tab fetches its own cached list client-side via
+// the inner tabs component.
+export const revalidate = 60;
 
 export const metadata = {
   title: "지원 · Apply",

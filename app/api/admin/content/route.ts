@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { setContent, resetContent, CONTENT_REGISTRY } from "@/lib/content";
+import { bumpContent } from "@/lib/revalidate";
 
 export const runtime = "nodejs";
 
@@ -20,7 +21,8 @@ export async function PUT(req: Request) {
   }
 
   if (body.reset) {
-    resetContent(key);
+    await resetContent(key);
+    bumpContent();
     return NextResponse.json({ ok: true, action: "reset" });
   }
 
@@ -34,6 +36,7 @@ export async function PUT(req: Request) {
       { status: 400 },
     );
   }
-  setContent(key, value);
+  await setContent(key, value);
+  bumpContent();
   return NextResponse.json({ ok: true, action: "set" });
 }

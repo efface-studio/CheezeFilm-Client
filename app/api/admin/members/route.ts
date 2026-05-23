@@ -5,6 +5,7 @@ import {
   findMember,
   type Member,
 } from "@/lib/members";
+import { bumpMembers } from "@/lib/revalidate";
 
 export const runtime = "nodejs";
 
@@ -74,5 +75,6 @@ export async function POST(req: Request) {
   };
 
   await createMember(member);
+  bumpMembers();
   return NextResponse.json({ ok: true, slug }, { status: 201 });
 }

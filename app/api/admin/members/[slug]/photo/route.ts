@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { findMember, updateMember } from "@/lib/members";
 import { serverClient, storageUrl } from "@/lib/db";
+import { bumpMembers } from "@/lib/revalidate";
 
 export const runtime = "nodejs";
 
@@ -92,6 +93,7 @@ export async function POST(
     return NextResponse.json({ error: upErr.message }, { status: 500 });
   }
   await updateMember(slug, { photoPath: key });
+  bumpMembers();
 
   return NextResponse.json({
     ok: true,
@@ -115,5 +117,6 @@ export async function DELETE(
   }
   await deleteExistingPhoto(member.photoPath);
   await updateMember(slug, { photoPath: undefined });
+  bumpMembers();
   return NextResponse.json({ ok: true });
 }

@@ -5,7 +5,9 @@ import { InView } from "@/components/Stagger";
 import { getMembers } from "@/lib/members";
 import { storageUrl } from "@/lib/db";
 
-export const dynamic = "force-dynamic";
+// Members rarely change; the cached list comes from `getMembers()`
+// (unstable_cache, tag: "members"). Admin writes flush via revalidateTag.
+export const revalidate = 300;
 export const metadata = {
   title: "캐스트 · The Cast",
   description:
