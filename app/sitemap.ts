@@ -62,7 +62,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Google Image can crawl them.
   let members: MetadataRoute.Sitemap = [];
   try {
-    members = getMembers().map((m) => ({
+    const allMembers = await getMembers();
+    members = allMembers.map((m) => ({
       url: `${SITE_URL}/v2/members/${encodeURIComponent(m.slug)}`,
       lastModified: now,
       changeFrequency: "monthly",
@@ -77,7 +78,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Audition listings — only ones still visible publicly.
   let listings: MetadataRoute.Sitemap = [];
   try {
-    listings = getAllListings()
+    const allListings = await getAllListings();
+    listings = allListings
       .filter((l) => l.status === "open")
       .map((l) => ({
         url: `${SITE_URL}/support?listing=${l.id}`,

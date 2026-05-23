@@ -1,12 +1,11 @@
+import crypto from "node:crypto";
 import { NextResponse } from "next/server";
-import fs from "node:fs/promises";
-import path from "node:path";
 import { getSession } from "@/lib/auth";
-import { findMember } from "@/lib/members";
+import { findMember, updateMember } from "@/lib/members";
+import { serverClient, storageUrl } from "@/lib/db";
 
 export const runtime = "nodejs";
 
-const MEMBERS_DIR = path.join(process.cwd(), "public", "members");
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 
 const MIME_TO_EXT: Record<string, string> = {
@@ -16,14 +15,21 @@ const MIME_TO_EXT: Record<string, string> = {
   "image/webp": "webp",
 };
 
-async function deleteExistingPhotos(slug: string) {
-  await fs.mkdir(MEMBERS_DIR, { recursive: true });
-  const entries = await fs.readdir(MEMBERS_DIR).catch(() => [] as string[]);
-  await Promise.all(
-    entries
-      .filter((name) => name.startsWith(`${slug}.`))
-      .map((name) => fs.unlink(path.join(MEMBERS_DIR, name))),
-  );
+/**
+ * Storage keys must be ASCII. Korean slugs get hashed into `m-<sha1>`
+ * which matches the convention the migration script established.
+ */
+function safeKey(slug: string, ext: string): string {
+  const safe = /^[a-zA-Z0-9._-]+$/.test(slug)
+    ? slug
+    : `m-${crypto.createHash("sha1").update(slug).digest("hex").slice(0, 16)}`;
+  return `${safe}.${ext}`;
+}
+
+async function deleteExistingPhoto(currentPath: string | undefined) {
+  if (!currentPath) return;
+  const sb = serverClient();
+  await sb.storage.from("members").remove([currentPath]);
 }
 
 export async function POST(
@@ -35,7 +41,8 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { slug } = await params;
-  if (!findMember(slug)) {
+  const member = await findMember(slug);
+  if (!member) {
     return NextResponse.json({ error: "Unknown member" }, { status: 404 });
   }
 
@@ -68,14 +75,28 @@ export async function POST(
     );
   }
 
+  // Replace any older variant for this member first (key may differ if the
+  // previous upload was a different extension).
+  await deleteExistingPhoto(member.photoPath);
+
+  const sb = serverClient();
+  const key = safeKey(slug, ext);
   const buffer = Buffer.from(await file.arrayBuffer());
-  await deleteExistingPhotos(slug); // remove any older variants
-  const dest = path.join(MEMBERS_DIR, `${slug}.${ext}`);
-  await fs.writeFile(dest, buffer);
+  const { error: upErr } = await sb.storage
+    .from("members")
+    .upload(key, buffer, {
+      contentType: file.type,
+      upsert: true,
+    });
+  if (upErr) {
+    return NextResponse.json({ error: upErr.message }, { status: 500 });
+  }
+  await updateMember(slug, { photoPath: key });
 
   return NextResponse.json({
     ok: true,
-    photoUrl: `/members/${slug}.${ext}?t=${Date.now()}`,
+    // Append a timestamp so the admin UI's <img> reloads without cache.
+    photoUrl: `${storageUrl("members", key)}?t=${Date.now()}`,
   });
 }
 
@@ -88,9 +109,11 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { slug } = await params;
-  if (!findMember(slug)) {
+  const member = await findMember(slug);
+  if (!member) {
     return NextResponse.json({ error: "Unknown member" }, { status: 404 });
   }
-  await deleteExistingPhotos(slug);
+  await deleteExistingPhoto(member.photoPath);
+  await updateMember(slug, { photoPath: undefined });
   return NextResponse.json({ ok: true });
 }

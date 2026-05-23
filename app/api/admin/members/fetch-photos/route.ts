@@ -1,16 +1,14 @@
+import crypto from "node:crypto";
 import { NextResponse } from "next/server";
-import fs from "node:fs/promises";
-import path from "node:path";
 import { getSession } from "@/lib/auth";
-import { getMembers } from "@/lib/members";
+import { getMembers, updateMember, type Member } from "@/lib/members";
+import { serverClient } from "@/lib/db";
 import { fetchInstagramProfilePic } from "@/lib/instagramFetch";
 
 export const runtime = "nodejs";
 // Could take 30+s for many handles, allow more headroom.
 export const maxDuration = 120;
 
-const MEMBERS_DIR = path.join(process.cwd(), "public", "members");
-const PHOTO_EXTS = [".jpg", ".jpeg", ".png", ".webp"];
 /** 저화질로 판정하는 컷오프 — 작은 인스타 아바타가 보통 8-12KB 정도라
  *  15KB 미만이면 더 큰 화질 시도해볼 가치가 있습니다. */
 const LOW_QUALITY_BYTES = 15_000;
@@ -29,42 +27,43 @@ const LOW_QUALITY_BYTES = 15_000;
 
 const CONCURRENCY = 4;
 
+function safeKey(slug: string, ext: string): string {
+  const safe = /^[a-zA-Z0-9._-]+$/.test(slug)
+    ? slug
+    : `m-${crypto.createHash("sha1").update(slug).digest("hex").slice(0, 16)}`;
+  return `${safe}.${ext}`;
+}
+
 async function pMapLimit<T, R>(
   items: T[],
   limit: number,
   fn: (item: T, i: number) => Promise<R>,
 ): Promise<R[]> {
-  const results: R[] = new Array(items.length);
-  let cursor = 0;
-  async function worker() {
+  const out: R[] = new Array(items.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
     while (true) {
-      const i = cursor++;
+      const i = next++;
       if (i >= items.length) return;
-      results[i] = await fn(items[i], i);
+      out[i] = await fn(items[i], i);
     }
-  }
-  const n = Math.min(limit, items.length);
-  await Promise.all(Array.from({ length: n }, () => worker()));
-  return results;
+  });
+  await Promise.all(workers);
+  return out;
 }
 
-/** Returns existing photo's size in bytes, or -1 if none. */
-async function existingPhotoSize(slug: string): Promise<number> {
-  for (const ext of PHOTO_EXTS) {
-    try {
-      const stat = await fs.stat(path.join(MEMBERS_DIR, `${slug}${ext}`));
-      return stat.size;
-    } catch {
-      // continue
-    }
-  }
-  return -1;
+async function existingPhotoSize(m: Member): Promise<number> {
+  if (!m.photoPath) return -1;
+  const sb = serverClient();
+  const { data } = await sb.storage.from("members").download(m.photoPath);
+  if (!data) return -1;
+  return data.size;
 }
 
-async function removeOldPhotos(slug: string) {
-  for (const ext of PHOTO_EXTS) {
-    await fs.unlink(path.join(MEMBERS_DIR, `${slug}${ext}`)).catch(() => {});
-  }
+async function removeOldPhoto(m: Member) {
+  if (!m.photoPath) return;
+  const sb = serverClient();
+  await sb.storage.from("members").remove([m.photoPath]);
 }
 
 export async function POST(req: Request) {
@@ -76,44 +75,33 @@ export async function POST(req: Request) {
   const overwrite = searchParams.get("overwrite") === "1";
   const retryLowQuality = searchParams.get("retryLowQuality") === "1";
 
-  await fs.mkdir(MEMBERS_DIR, { recursive: true });
-
-  const members = getMembers();
-  // Only consider members with an Instagram handle.
+  const members = await getMembers();
   const candidates = members.filter((m) => m.instagram && m.instagram.trim());
 
-  // Selection:
-  //   · overwrite=1            → 무조건 다시 시도
-  //   · retryLowQuality=1      → 기존 사진이 너무 작으면 다시 시도
-  //   · 그 외                  → 사진 없는 멤버만
-  const targets: typeof candidates = [];
+  // Selection
+  const targets: Member[] = [];
   for (const m of candidates) {
     if (overwrite) {
       targets.push(m);
       continue;
     }
-    const size = await existingPhotoSize(m.slug);
+    const size = await existingPhotoSize(m);
     if (size < 0) {
-      targets.push(m); // 없음
+      targets.push(m);
     } else if (retryLowQuality && size < LOW_QUALITY_BYTES) {
-      targets.push(m); // 화질 낮음
+      targets.push(m);
     }
   }
 
+  const sb = serverClient();
   const results = await pMapLimit(targets, CONCURRENCY, async (m) => {
-    // Light jitter so requests don't fire in lockstep.
     await new Promise((r) => setTimeout(r, Math.random() * 400));
-    const oldSize = await existingPhotoSize(m.slug);
+    const oldSize = await existingPhotoSize(m);
     const pic = await fetchInstagramProfilePic(m.instagram!);
     if (!pic) {
-      // overwrite means "I want fresh Instagram pics". If Instagram fails
-      // for this member, the stale photo on disk is likely a YouTube
-      // thumbnail from an earlier run — and worse, the same video
-      // thumbnail can be reused across multiple cast members. Wipe it so
-      // the row falls back to a plain initial instead of mis-attributing
-      // a face to the wrong person.
       if (overwrite && oldSize >= 0) {
-        await removeOldPhotos(m.slug);
+        await removeOldPhoto(m);
+        await updateMember(m.slug, { photoPath: undefined });
         return {
           slug: m.slug,
           name: m.name,
@@ -123,12 +111,6 @@ export async function POST(req: Request) {
       }
       return { slug: m.slug, name: m.name, ok: false as const };
     }
-
-    // Downgrade prevention only when NOT overwriting. When the user
-    // explicitly asked for overwrite (e.g. to replace placeholder YouTube
-    // thumbnails with real Instagram pics), respect that — file size
-    // alone can mislead since YT thumbs are 1280×720 (~50-100KB) while
-    // Instagram avatars are smaller in bytes but actually correct.
     if (!overwrite && oldSize >= 0 && pic.buffer.length <= oldSize) {
       return {
         slug: m.slug,
@@ -139,11 +121,21 @@ export async function POST(req: Request) {
         kept: true,
       };
     }
-    await removeOldPhotos(m.slug);
-    await fs.writeFile(
-      path.join(MEMBERS_DIR, `${m.slug}.${pic.ext}`),
-      pic.buffer,
-    );
+    await removeOldPhoto(m);
+    const key = safeKey(m.slug, pic.ext);
+    const contentType =
+      pic.ext === "png"
+        ? "image/png"
+        : pic.ext === "webp"
+          ? "image/webp"
+          : "image/jpeg";
+    const { error } = await sb.storage
+      .from("members")
+      .upload(key, pic.buffer, { contentType, upsert: true });
+    if (error) {
+      return { slug: m.slug, name: m.name, ok: false as const };
+    }
+    await updateMember(m.slug, { photoPath: key });
     return {
       slug: m.slug,
       name: m.name,
@@ -183,12 +175,12 @@ export async function GET() {
   if (!session)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const members = getMembers();
+  const members = await getMembers();
   const withInstagram = members.filter((m) => m.instagram && m.instagram.trim());
   let missingPhoto = 0;
   let lowQuality = 0;
   for (const m of withInstagram) {
-    const size = await existingPhotoSize(m.slug);
+    const size = await existingPhotoSize(m);
     if (size < 0) missingPhoto++;
     else if (size < LOW_QUALITY_BYTES) lowQuality++;
   }
@@ -197,6 +189,5 @@ export async function GET() {
     withInstagram: withInstagram.length,
     missingPhoto,
     lowQuality,
-    haveBoth: withInstagram.length - missingPhoto - lowQuality,
   });
 }

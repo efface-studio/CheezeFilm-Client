@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getAllVideos } from "@/lib/youtube";
-import { getContent } from "@/lib/content";
-import { members } from "@/lib/members";
+import { getContent, loadContentMap } from "@/lib/content";
+import { getMembers } from "@/lib/members";
 import { InView, StaggerText } from "@/components/Stagger";
 import HeroCover from "@/components/HeroCover";
 import CountUp from "@/components/CountUp";
@@ -32,12 +32,17 @@ export const metadata = {
 };
 
 export default async function HomeV2() {
-  const { longform, shorts } = await getAllVideos();
-  const c = (key: string) => getContent(key);
-  // Hero cover: prefer landscape group/cast photos from /public/covers/
-  // (drop files in, they auto-rotate). Falls back to the 3 featured video
-  // thumbnails configured in admin → "이번 호 표지" when no photos exist.
-  const coverPhotos = getCoverPhotos();
+  const [{ longform, shorts }, contentMap, members, coverPhotos] =
+    await Promise.all([
+      getAllVideos(),
+      loadContentMap(),
+      getMembers(),
+      // Hero cover: prefer landscape group/cast photos from the Supabase
+      // `covers` Storage bucket. Falls back to the 3 featured video
+      // thumbnails configured in admin → "이번 호 표지" when empty.
+      getCoverPhotos(),
+    ]);
+  const c = (key: string) => getContent(contentMap, key);
   const heroVideos = [
     c("works.1.videoId").trim() || longform[0]?.id || "",
     c("works.2.videoId").trim() || longform[1]?.id || "",
@@ -672,8 +677,10 @@ export function V2Header() {
   return <V2Nav />;
 }
 
-export function V2Footer() {
+export async function V2Footer() {
   const year = new Date().getFullYear();
+  const contentMap = await loadContentMap();
+  const c = (key: string) => getContent(contentMap, key);
   return (
     // `lg:-ml-56` cancels the `lg:pl-56` we add on <main> for the side-rail
     // gutter, then `lg:pl-56` is re-applied to the *inner* content so the
@@ -707,7 +714,7 @@ export function V2Footer() {
             </div>
           </div>
           <p className="mt-5 max-w-sm text-sm leading-relaxed text-cheeze-cream/75 whitespace-pre-line">
-            {getContent("footer.tagline")}
+            {c("footer.tagline")}
           </p>
           <div className="mt-5 flex items-center gap-2">
             <a
@@ -785,7 +792,7 @@ export function V2Footer() {
           <h4 className="text-[10px] tracking-[0.4em] uppercase text-cheeze-yellow font-bold">
             Studio Info
           </h4>
-          <V2CompanyStrip />
+          <V2CompanyStrip contentMap={contentMap} />
         </div>
       </div>
 
@@ -793,7 +800,7 @@ export function V2Footer() {
       <div className="border-t border-cheeze-cream/12">
         <div className="mx-auto max-w-[100rem] px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-cheeze-cream/70">
           <div>
-            © {year} {getContent("company.name") || "(주)스튜디오 치즈"}. All rights reserved.
+            © {year} {c("company.name") || "(주)스튜디오 치즈"}. All rights reserved.
           </div>
           <div className="flex items-center gap-2">
             <span className="opacity-60">Crafted by</span>
@@ -818,16 +825,17 @@ export function V2Footer() {
 
 /** 한국 푸터 컨벤션 — 상호·대표·사업자등록번호 등을 footer 4-col 안에
  *  맞춰 세로 리스트로. 좁은 영역에 가로 wrap 으로 흩뿌리면 가독성 떨어짐. */
-function V2CompanyStrip() {
+function V2CompanyStrip({ contentMap }: { contentMap: Map<string, string> }) {
+  const c = (key: string) => getContent(contentMap, key);
   const items = [
-    { label: "상호", value: getContent("company.name") },
-    { label: "대표", value: getContent("company.ceo") },
-    { label: "사업자등록번호", value: getContent("company.business_no") },
-    { label: "통신판매업신고", value: getContent("company.commerce_no") },
-    { label: "직업정보제공사업", value: getContent("company.job_info_no") },
-    { label: "MCN", value: getContent("company.network") },
-    { label: "주소", value: getContent("company.address") },
-    { label: "고객센터", value: getContent("company.phone") },
+    { label: "상호", value: c("company.name") },
+    { label: "대표", value: c("company.ceo") },
+    { label: "사업자등록번호", value: c("company.business_no") },
+    { label: "통신판매업신고", value: c("company.commerce_no") },
+    { label: "직업정보제공사업", value: c("company.job_info_no") },
+    { label: "MCN", value: c("company.network") },
+    { label: "주소", value: c("company.address") },
+    { label: "고객센터", value: c("company.phone") },
   ].filter((it) => it.value && it.value !== "—");
   return (
     <dl className="mt-5 grid grid-cols-[5.5rem_1fr] gap-x-3 gap-y-2 text-[12px]">

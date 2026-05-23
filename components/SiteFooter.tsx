@@ -1,9 +1,11 @@
 import Link from "next/link";
-import { getContent } from "@/lib/content";
+import { getContent, loadContentMap } from "@/lib/content";
 
-export default function SiteFooter() {
+export default async function SiteFooter() {
   const year = new Date().getFullYear();
-  const copyrightTemplate = getContent("footer.copyright");
+  const contentMap = await loadContentMap();
+  const c = (key: string) => getContent(contentMap, key);
+  const copyrightTemplate = c("footer.copyright");
   const copyright = copyrightTemplate.replace("{year}", String(year));
 
   return (
@@ -31,7 +33,7 @@ export default function SiteFooter() {
             </div>
           </div>
           <p className="mt-4 text-sm leading-relaxed text-cheeze-cream/80 whitespace-pre-line">
-            {getContent("footer.tagline")}
+            {c("footer.tagline")}
           </p>
           <div className="mt-5 flex items-center gap-3">
             <a
@@ -101,19 +103,19 @@ export default function SiteFooter() {
             <li>
               <div className="text-cheeze-cream/55 text-xs">비즈니스</div>
               <a
-                href={`mailto:${getContent("contact.business")}`}
+                href={`mailto:${c("contact.business")}`}
                 className="hover:text-cheeze-yellow break-all"
               >
-                {getContent("contact.business")}
+                {c("contact.business")}
               </a>
             </li>
             <li>
               <div className="text-cheeze-cream/55 text-xs">오디션·캐스팅</div>
               <a
-                href={`mailto:${getContent("contact.audition")}`}
+                href={`mailto:${c("contact.audition")}`}
                 className="hover:text-cheeze-yellow break-all"
               >
-                {getContent("contact.audition")}
+                {c("contact.audition")}
               </a>
             </li>
           </ul>
@@ -123,7 +125,7 @@ export default function SiteFooter() {
       {/* Single bottom strip: company info inline + copyright + credit. One line on desktop. */}
       <div className="border-t border-cheeze-cream/15">
         <div className="mx-auto max-w-6xl px-5 py-5 text-[11px] text-cheeze-cream/65 leading-relaxed">
-          <CompanyInline />
+          <CompanyInline contentMap={contentMap} />
           <div className="mt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-cheeze-cream/70">
             <div>{copyright}</div>
             <div className="flex items-center gap-2">
@@ -153,15 +155,16 @@ export default function SiteFooter() {
  *   상호 (주)스튜디오 치즈 · 대표 김은하 · 사업자등록번호 — · 통신판매업신고 — · 주소 ... · TEL —
  * Each "—" is editable via /admin → 사이트 콘텐츠.
  */
-function CompanyInline() {
+function CompanyInline({ contentMap }: { contentMap: Map<string, string> }) {
+  const c = (key: string) => getContent(contentMap, key);
   const items = [
-    { label: "상호", value: getContent("company.name") },
-    { label: "대표", value: getContent("company.ceo") },
-    { label: "사업자등록번호", value: getContent("company.business_no") },
-    { label: "통신판매업신고", value: getContent("company.commerce_no") },
-    { label: "MCN", value: getContent("company.network") },
-    { label: "주소", value: getContent("company.address") },
-    { label: "TEL", value: getContent("company.phone") },
+    { label: "상호", value: c("company.name") },
+    { label: "대표", value: c("company.ceo") },
+    { label: "사업자등록번호", value: c("company.business_no") },
+    { label: "통신판매업신고", value: c("company.commerce_no") },
+    { label: "MCN", value: c("company.network") },
+    { label: "주소", value: c("company.address") },
+    { label: "TEL", value: c("company.phone") },
   ];
   return (
     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">

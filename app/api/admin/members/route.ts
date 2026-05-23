@@ -43,7 +43,7 @@ export async function POST(req: Request) {
   // Avoid collisions — bump with a numeric suffix if taken
   let attempt = slug;
   let i = 1;
-  while (findMember(attempt)) {
+  while (await findMember(attempt)) {
     attempt = `${slug}-${++i}`;
   }
   slug = attempt;
@@ -73,6 +73,6 @@ export async function POST(req: Request) {
     uncertain: Boolean(body.uncertain),
   };
 
-  createMember(member);
+  await createMember(member);
   return NextResponse.json({ ok: true, slug }, { status: 201 });
 }

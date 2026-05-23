@@ -7,7 +7,7 @@ import CountUp from "@/components/CountUp";
 import Typewriter from "@/components/Typewriter";
 import TiltCard from "@/components/TiltCard";
 import { getAllVideos } from "@/lib/youtube";
-import { getContent } from "@/lib/content";
+import { getContent, loadContentMap } from "@/lib/content";
 
 export const revalidate = 3600;
 
@@ -54,7 +54,8 @@ export default async function Home() {
   const recentShorts = shorts.slice(0, 12);
 
   // All site copy reads from the editable content store
-  const c = (key: string) => getContent(key);
+  const contentMap = await loadContentMap();
+  const c = (key: string) => getContent(contentMap, key);
 
   // Each work card pulls its thumbnail from a YouTube videoId. Admins can
   // override per-card via the content tab; if blank, fall back to the latest

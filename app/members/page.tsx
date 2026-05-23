@@ -3,7 +3,7 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import MemberPolaroid from "@/components/MemberPolaroid";
 import Reveal from "@/components/Reveal";
-import { members } from "@/lib/members";
+import { getMembers } from "@/lib/members";
 
 export const metadata = {
   title: "멤버 | 치즈필름",
@@ -15,7 +15,8 @@ export const metadata = {
 // a new photo into the folder reflects immediately without a rebuild.
 export const dynamic = "force-dynamic";
 
-export default function MembersPage() {
+export default async function MembersPage() {
+  const members = await getMembers();
   // Stable but visually varied rotations so it feels hand-pinned to a wall.
   const rotations = [-3, 2, -1.5, 3, -2.5, 1.5, -3.5, 2.5];
 

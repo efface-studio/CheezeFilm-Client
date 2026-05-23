@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { db, type Audition } from "@/lib/db";
+import { serverClient, type Audition } from "@/lib/db";
 import { listingSummary } from "@/lib/auditionListings";
 import AutoPrint from "../../AutoPrint";
 import PrintButton from "../../PrintButton";
@@ -46,9 +46,20 @@ export default async function PrintPage() {
   const session = await getSession();
   if (!session) redirect("/admin/login");
 
-  const rows = db
-    .prepare("SELECT * FROM auditions ORDER BY created_at DESC")
-    .all() as Audition[];
+  const sb = serverClient();
+  const { data: rowsData } = await sb
+    .from("auditions")
+    .select("*")
+    .order("created_at", { ascending: false });
+  const rows = (rowsData ?? []) as Audition[];
+  // Pre-resolve listing summaries so the JSX stays sync.
+  const listingSummaries = new Map<number, string>();
+  for (const a of rows) {
+    if (a.listing_id != null && !listingSummaries.has(a.listing_id)) {
+      const s = await listingSummary(a.listing_id);
+      if (s) listingSummaries.set(a.listing_id, s);
+    }
+  }
   const today = new Date();
   const printDate = formatDate(today.toISOString());
 
@@ -114,7 +125,7 @@ export default async function PrintPage() {
               <td>
                 {a.role_preference ? ROLE_KO[a.role_preference] ?? a.role_preference : "—"}
               </td>
-              <td className="break">{listingSummary(a.listing_id) ?? "—"}</td>
+              <td className="break">{a.listing_id != null ? listingSummaries.get(a.listing_id) ?? "—" : "—"}</td>
               <td className="break">
                 {a.intro.length > 120 ? a.intro.slice(0, 120) + "…" : a.intro}
               </td>

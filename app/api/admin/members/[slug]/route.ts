@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import fs from "node:fs/promises";
-import path from "node:path";
 import { getSession } from "@/lib/auth";
+import { serverClient } from "@/lib/db";
 import {
   deleteMember,
   findMember,
@@ -13,7 +12,6 @@ export const runtime = "nodejs";
 
 const ACCENTS = ["purple", "yellow", "wine", "charcoal", "olive", "cream"] as const;
 const ROLES = ["lead", "actor", "writer", "director"] as const;
-const PHOTO_EXTS = [".jpg", ".jpeg", ".png", ".webp"];
 
 type PatchBody = Partial<Member>;
 
@@ -26,7 +24,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { slug } = await params;
-  if (!findMember(slug)) {
+  if (!(await findMember(slug))) {
     return NextResponse.json({ error: "존재하지 않는 멤버입니다." }, { status: 404 });
   }
 
@@ -46,7 +44,7 @@ export async function PATCH(
     return NextResponse.json({ error: "works는 배열이어야 합니다." }, { status: 400 });
   }
 
-  updateMember(slug, body);
+  await updateMember(slug, body);
   return NextResponse.json({ ok: true });
 }
 
@@ -59,24 +57,18 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { slug } = await params;
-  if (!findMember(slug)) {
+  const member = await findMember(slug);
+  if (!member) {
     return NextResponse.json({ error: "존재하지 않는 멤버입니다." }, { status: 404 });
   }
 
-  // Best-effort wipe of the uploaded photo file too — otherwise the
-  // public/members/<slug>.* would be a dangling reference to a deleted row.
-  const dir = path.join(process.cwd(), "public", "members");
-  await Promise.all(
-    PHOTO_EXTS.map(async (ext) => {
-      const f = path.join(dir, `${slug}${ext}`);
-      try {
-        await fs.unlink(f);
-      } catch {
-        /* file didn't exist — fine */
-      }
-    }),
-  );
+  // Best-effort wipe of the uploaded photo too so we don't leave an
+  // orphaned object in Storage.
+  if (member.photoPath) {
+    const sb = serverClient();
+    await sb.storage.from("members").remove([member.photoPath]);
+  }
 
-  deleteMember(slug);
+  await deleteMember(slug);
   return NextResponse.json({ ok: true });
 }

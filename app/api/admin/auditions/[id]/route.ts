@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { serverClient } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 
 export const runtime = "nodejs";
@@ -31,10 +31,14 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
-  const result = db
-    .prepare("UPDATE auditions SET status = ? WHERE id = ?")
-    .run(status, numericId);
-  if (result.changes === 0) {
+  const sb = serverClient();
+  const { error, count } = await sb
+    .from("auditions")
+    .update({ status }, { count: "exact" })
+    .eq("id", numericId);
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  if ((count ?? 0) === 0) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -55,8 +59,14 @@ export async function DELETE(
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
 
-  const result = db.prepare("DELETE FROM auditions WHERE id = ?").run(numericId);
-  if (result.changes === 0) {
+  const sb = serverClient();
+  const { error, count } = await sb
+    .from("auditions")
+    .delete({ count: "exact" })
+    .eq("id", numericId);
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  if ((count ?? 0) === 0) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   return NextResponse.json({ ok: true });

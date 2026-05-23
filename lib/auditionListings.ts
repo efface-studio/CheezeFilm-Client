@@ -2,9 +2,11 @@
  * Audition listings — the "job board" layer that sits in front of the
  * audition submission form. Admins post calls; the public picks one;
  * submissions are tied to the chosen listing.
+ *
+ * Supabase-backed. All accessors are async.
  */
 
-import { db, type AuditionListing } from "./db";
+import { serverClient, type AuditionListing } from "./db";
 import { parseDeadline, formatDeadline } from "./deadline";
 
 export { parseDeadline, formatDeadline };
@@ -32,93 +34,119 @@ function isOpenForApplications(l: AuditionListing): boolean {
   return true;
 }
 
+const COLS =
+  "id,title,description,role_type,requirements,deadline,status,created_at,updated_at";
+
 /** All listings, admin-side. */
-export function getAllListings(): AuditionListing[] {
-  return db
-    .prepare("SELECT * FROM audition_listings ORDER BY created_at DESC")
-    .all() as AuditionListing[];
+export async function getAllListings(): Promise<AuditionListing[]> {
+  const sb = serverClient();
+  const { data, error } = await sb
+    .from("audition_listings")
+    .select(COLS)
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.error("[listings.getAllListings]", error);
+    return [];
+  }
+  return data as AuditionListing[];
 }
 
 /** Public-facing list — only ones admins have marked open AND not past deadline. */
-export function getOpenListings(): AuditionListing[] {
-  const rows = db
-    .prepare(
-      "SELECT * FROM audition_listings WHERE status = 'open' ORDER BY created_at DESC",
-    )
-    .all() as AuditionListing[];
-  return rows.filter(isOpenForApplications);
+export async function getOpenListings(): Promise<AuditionListing[]> {
+  const sb = serverClient();
+  const { data, error } = await sb
+    .from("audition_listings")
+    .select(COLS)
+    .eq("status", "open")
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.error("[listings.getOpenListings]", error);
+    return [];
+  }
+  return (data as AuditionListing[]).filter(isOpenForApplications);
 }
 
-export function findListing(id: number): AuditionListing | undefined {
-  return db
-    .prepare("SELECT * FROM audition_listings WHERE id = ?")
-    .get(id) as AuditionListing | undefined;
+export async function findListing(
+  id: number,
+): Promise<AuditionListing | undefined> {
+  const sb = serverClient();
+  const { data, error } = await sb
+    .from("audition_listings")
+    .select(COLS)
+    .eq("id", id)
+    .maybeSingle();
+  if (error) {
+    console.error("[listings.findListing]", error);
+    return undefined;
+  }
+  return (data as AuditionListing | null) ?? undefined;
 }
 
-export function isAcceptingApplications(id: number): boolean {
-  const l = findListing(id);
+export async function isAcceptingApplications(id: number): Promise<boolean> {
+  const l = await findListing(id);
   return l ? isOpenForApplications(l) : false;
 }
 
 type CreateInput = Omit<AuditionListing, "id" | "created_at" | "updated_at">;
 
-export function createListing(input: CreateInput): number {
-  const res = db
-    .prepare(
-      `INSERT INTO audition_listings
-        (title, description, role_type, requirements, deadline, status)
-       VALUES (@title, @description, @role_type, @requirements, @deadline, @status)`,
-    )
-    .run({
+export async function createListing(input: CreateInput): Promise<number> {
+  const sb = serverClient();
+  const { data, error } = await sb
+    .from("audition_listings")
+    .insert({
       title: input.title,
       description: input.description ?? "",
       role_type: input.role_type,
       requirements: input.requirements ?? "",
       deadline: input.deadline ?? null,
       status: input.status,
-    });
-  return Number(res.lastInsertRowid);
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return (data as { id: number }).id;
 }
 
-export function updateListing(
+export async function updateListing(
   id: number,
   patch: Partial<CreateInput>,
-): boolean {
-  const fields: string[] = [];
-  const params: Record<string, unknown> = { id };
-  const map: Record<string, string> = {
-    title: "title",
-    description: "description",
-    role_type: "role_type",
-    requirements: "requirements",
-    deadline: "deadline",
-    status: "status",
-  };
-  for (const [k, v] of Object.entries(patch)) {
-    const col = map[k];
-    if (!col) continue;
-    fields.push(`${col} = @${col}`);
-    params[col] = v;
+): Promise<boolean> {
+  const sb = serverClient();
+  const update: Record<string, unknown> = {};
+  for (const k of [
+    "title",
+    "description",
+    "role_type",
+    "requirements",
+    "deadline",
+    "status",
+  ] as const) {
+    if (k in patch) update[k] = (patch as Record<string, unknown>)[k];
   }
-  if (fields.length === 0) return false;
-  fields.push("updated_at = datetime('now')");
-  const res = db
-    .prepare(`UPDATE audition_listings SET ${fields.join(", ")} WHERE id = @id`)
-    .run(params);
-  return res.changes > 0;
+  if (Object.keys(update).length === 0) return false;
+  const { error, count } = await sb
+    .from("audition_listings")
+    .update(update, { count: "exact" })
+    .eq("id", id);
+  if (error) throw error;
+  return (count ?? 0) > 0;
 }
 
-export function deleteListing(id: number): boolean {
-  const res = db
-    .prepare("DELETE FROM audition_listings WHERE id = ?")
-    .run(id);
-  return res.changes > 0;
+export async function deleteListing(id: number): Promise<boolean> {
+  const sb = serverClient();
+  const { error, count } = await sb
+    .from("audition_listings")
+    .delete({ count: "exact" })
+    .eq("id", id);
+  if (error) throw error;
+  return (count ?? 0) > 0;
 }
 
 /** A small helper for the admin audition detail view. */
-export function listingSummary(id: number | null): string | null {
+export async function listingSummary(
+  id: number | null,
+): Promise<string | null> {
   if (id === null) return null;
-  const l = findListing(id);
+  const l = await findListing(id);
   return l ? `#${l.id} · ${l.title}` : null;
 }
-

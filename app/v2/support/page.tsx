@@ -1,5 +1,5 @@
 import { V2Header, V2Footer } from "../page";
-import { getContent } from "@/lib/content";
+import { getContent, loadContentMap } from "@/lib/content";
 import { InView } from "@/components/Stagger";
 import V2SupportTabs from "./V2SupportTabs";
 
@@ -23,6 +23,7 @@ export const metadata = {
 export default async function V2SupportPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const initialTab = params.tab === "fan" ? "fan" : "audition";
+  const contentMap = await loadContentMap();
 
   return (
     <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial lg:pl-56">
@@ -41,10 +42,10 @@ export default async function V2SupportPage({ searchParams }: { searchParams: Se
               className="text-5xl md:text-7xl tracking-[-0.02em] leading-[0.95]"
               style={{ fontFamily: "var(--font-display)" }}
             >
-              {getContent("support.title")}
+              {getContent(contentMap, "support.title")}
             </h1>
             <p className="mt-5 text-cheeze-ink-soft max-w-xl whitespace-pre-line">
-              {getContent("support.subtitle")}
+              {getContent(contentMap, "support.subtitle")}
             </p>
           </InView>
           <InView className="v2-fade-up lg:col-span-3 lg:text-right text-[11px] tracking-widest uppercase text-cheeze-olive leading-relaxed">

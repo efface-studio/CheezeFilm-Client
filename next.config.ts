@@ -18,6 +18,9 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "i.ytimg.com" },
       { protocol: "https", hostname: "img.youtube.com" },
       { protocol: "https", hostname: "**.cdninstagram.com" },
+      // Supabase Storage — every member portrait, cover photo, and reel
+      // mp4 thumbnail is served from a project-specific subdomain.
+      { protocol: "https", hostname: "*.supabase.co" },
     ],
     // AVIF first → WebP → JPEG fallback. AVIF is 30-50% smaller than
     // WebP for photo content; both supported by all modern browsers.
@@ -50,10 +53,10 @@ const nextConfig: NextConfig = {
               "font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com",
               // Instagram CDN added so member portraits can render even when
               // we fall back to remote URLs during dev.
-              "img-src 'self' data: blob: https://i.ytimg.com https://yt3.ggpht.com https://yt3.googleusercontent.com https://*.cdninstagram.com",
-              "media-src 'self'",
+              "img-src 'self' data: blob: https://i.ytimg.com https://yt3.ggpht.com https://yt3.googleusercontent.com https://*.cdninstagram.com https://*.supabase.co",
+              "media-src 'self' https://*.supabase.co",
               "frame-src https://www.youtube.com https://www.youtube-nocookie.com https://www.instagram.com",
-              "connect-src 'self' https://www.youtube.com https://www.googleapis.com",
+              "connect-src 'self' https://www.youtube.com https://www.googleapis.com https://*.supabase.co",
               "frame-ancestors 'self'",
               "base-uri 'self'",
               "form-action 'self'",

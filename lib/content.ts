@@ -15,7 +15,8 @@
  *   3. The admin's 콘텐츠 tab will pick it up automatically.
  */
 
-import { db } from "./db";
+import { cache } from "react";
+import { serverClient } from "./db";
 
 export type ContentType = "text" | "longtext";
 
@@ -314,42 +315,55 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
 type ContentRow = { key: string; value: string };
 
 /**
- * Synchronously read all overrides into a Map. Called once per request — cheap
- * thanks to SQLite + a Next.js cache layer above this function.
+ * Load all DB overrides as a Map. Wrapped with `cache()` so a single
+ * server request only hits Supabase once even if many components call it.
  */
-function readAllOverrides(): Map<string, string> {
-  const rows = db
-    .prepare("SELECT key, value FROM site_content")
-    .all() as ContentRow[];
+export const loadContentMap = cache(async (): Promise<Map<string, string>> => {
+  const sb = serverClient();
+  const { data, error } = await sb
+    .from("site_content")
+    .select("key,value");
+  if (error) {
+    console.error("[content.loadContentMap]", error);
+    return new Map();
+  }
   const out = new Map<string, string>();
-  for (const r of rows) out.set(r.key, r.value);
+  for (const r of (data ?? []) as ContentRow[]) out.set(r.key, r.value);
   return out;
-}
+});
 
 /**
- * Resolve a single content key to its current value: the DB override if it
- * exists, otherwise the fallback in the registry.
+ * Sync lookup against a previously loaded Map. Pages/components:
+ *
+ *   const content = await loadContentMap();
+ *   const c = (key: string) => getContent(content, key);
+ *
+ * That pattern keeps the rest of the page synchronous — no `await` in
+ * every JSX expression. Returns the registry fallback when the key is
+ * unknown or the DB has no override.
  */
-export function getContent(key: string): string {
+export function getContent(
+  map: Map<string, string>,
+  key: string,
+): string {
   const entry = CONTENT_REGISTRY.find((e) => e.key === key);
   if (!entry) {
     if (process.env.NODE_ENV !== "production") {
       console.warn(`[content] Unknown key: ${key}`);
     }
-    return "";
+    return map.get(key) ?? "";
   }
-  const row = db
-    .prepare("SELECT value FROM site_content WHERE key = ?")
-    .get(key) as ContentRow | undefined;
-  return row?.value ?? entry.fallback;
+  return map.get(key) ?? entry.fallback;
 }
 
 /**
  * Resolve every registered key. Used for batch operations (e.g. the admin
  * editor that lists every key with its current value).
  */
-export function getAllContent(): Array<ContentEntry & { value: string }> {
-  const overrides = readAllOverrides();
+export async function getAllContent(): Promise<
+  Array<ContentEntry & { value: string }>
+> {
+  const overrides = await loadContentMap();
   return CONTENT_REGISTRY.map((e) => ({
     ...e,
     value: overrides.get(e.key) ?? e.fallback,
@@ -357,19 +371,21 @@ export function getAllContent(): Array<ContentEntry & { value: string }> {
 }
 
 /** Set or update a single key. */
-export function setContent(key: string, value: string) {
+export async function setContent(key: string, value: string): Promise<void> {
   // Reject unknown keys so we don't accumulate orphaned rows.
   if (!CONTENT_REGISTRY.find((e) => e.key === key)) {
     throw new Error(`Unknown content key: ${key}`);
   }
-  db.prepare(
-    `INSERT INTO site_content (key, value, updated_at)
-     VALUES (?, ?, datetime('now'))
-     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')`,
-  ).run(key, value);
+  const sb = serverClient();
+  const { error } = await sb
+    .from("site_content")
+    .upsert({ key, value }, { onConflict: "key" });
+  if (error) throw error;
 }
 
 /** Reset a key back to its registry fallback (delete the override row). */
-export function resetContent(key: string) {
-  db.prepare("DELETE FROM site_content WHERE key = ?").run(key);
+export async function resetContent(key: string): Promise<void> {
+  const sb = serverClient();
+  const { error } = await sb.from("site_content").delete().eq("key", key);
+  if (error) throw error;
 }

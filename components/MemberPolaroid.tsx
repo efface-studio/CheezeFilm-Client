@@ -1,29 +1,7 @@
-import fs from "node:fs";
-import path from "node:path";
 import Image from "next/image";
 import type { Member } from "@/lib/members";
 import { getRoleColorClass } from "@/lib/members";
-
-const IMAGE_EXTS = [".jpg", ".jpeg", ".png", ".webp"];
-
-/**
- * Look for /public/members/<slug>.{jpg|jpeg|png|webp}. Returns the public URL
- * if found, with a cache-busting `?v=<mtime>` query so admin uploads reflect
- * immediately without manual cache clear.
- */
-function resolvePhoto(slug: string) {
-  const dir = path.join(process.cwd(), "public", "members");
-  for (const ext of IMAGE_EXTS) {
-    const file = path.join(dir, `${slug}${ext}`);
-    if (fs.existsSync(file)) {
-      // No cache-bust query — Next/Image rejects them on local URLs.
-      // The /members/* Cache-Control header (max-age=3600 + SWR=86400)
-      // serves fresh content within 1 hour anyway.
-      return `/members/${slug}${ext}`;
-    }
-  }
-  return null;
-}
+import { storageUrl } from "@/lib/db";
 
 export default function MemberPolaroid({
   member,
@@ -34,7 +12,9 @@ export default function MemberPolaroid({
   rotateDeg?: number;
   size?: "md" | "lg";
 }) {
-  const photo = resolvePhoto(member.slug);
+  const photo = member.photoPath
+    ? storageUrl("members", member.photoPath)
+    : null;
   const initial = member.name.charAt(0);
 
   // size config
