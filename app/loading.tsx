@@ -1,49 +1,102 @@
 /**
- * V2 route-group loading state.
+ * Route-group loading state.
  *
- * Shown automatically by Next.js between the click of a rail link and the
- * new page's first paint. In dev that gap can be 5–15s on a cold route, so
- * we render a minimal cream-colored skeleton with a pulsing accent line —
- * enough to confirm "click registered, page is loading" without trying to
- * mimic the destination layout (which would just look broken when it
- * resolves to something different).
+ * Shown automatically by Next.js between the click of a rail link and
+ * the new page's first paint. In dev that gap can be 5–15s on a cold
+ * route, so we render a minimal full-viewport overlay — enough to
+ * confirm "click registered, page is loading" without mimicking the
+ * destination layout.
+ *
+ * The Toss redesign swapped the previous translucent display-font
+ * text for a centered, brand-coloured composition:
+ *   - the cheese-logo chip sits in the middle and gently breathes,
+ *   - two yellow halos pulse outward from it on staggered delays,
+ *     reading as the studio "굽는 중" (literally "baking"),
+ *   - a small status line + helper sit below.
  */
 export default function V2Loading() {
   return (
-    <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial flex flex-col relative">
-      {/* Top progress bar — slow horizontal sweep, very visible */}
-      <div
-        aria-hidden
-        className="fixed top-0 inset-x-0 z-50 h-[2px] bg-cheeze-purple-deep/10 overflow-hidden lg:left-56"
-      >
-        <span className="block h-full w-1/3 bg-cheeze-yellow v2-loading-bar" />
-      </div>
-
-      {/* Centered status */}
-      <div className="min-h-[60vh] grid place-items-center">
-        <div className="flex flex-col items-center gap-3 text-cheeze-olive">
-          <span className="flex items-center gap-1.5">
-            <span className="v2-pulse-dot" />
-            <span className="text-[10px] tracking-[0.4em] uppercase">
-              Loading
-            </span>
-          </span>
-          <div
-            className="text-3xl text-cheeze-purple-deep/40"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            굽는 중…
-          </div>
+    <main className="min-h-screen bg-white text-cheeze-ink flex flex-col items-center justify-center px-6">
+      {/* Logo + halo. The halos are absolutely-positioned siblings that
+          scale-fade outward, staggered 700ms apart so a second pulse
+          starts before the first finishes — feels like a heat
+          shimmer / dough rising loop rather than a "wait spinner". */}
+      <div className="relative w-20 h-20 grid place-items-center">
+        <span
+          aria-hidden
+          className="absolute inset-0 rounded-3xl bg-cheeze-yellow/40 v2-loading-halo"
+        />
+        <span
+          aria-hidden
+          className="absolute inset-0 rounded-3xl bg-cheeze-yellow/40 v2-loading-halo"
+          style={{ animationDelay: "700ms" }}
+        />
+        <div className="relative w-16 h-16 rounded-3xl bg-cheeze-purple overflow-hidden shadow-lg shadow-cheeze-purple/20 v2-loading-breathe">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/cheeze-logo.png"
+            alt=""
+            className="w-full h-full object-cover"
+          />
         </div>
       </div>
 
+      <div className="mt-10 text-center">
+        {/* Three orbiting dots. Each dot bounces with a staggered
+            animation-delay so the row reads as "loading…" without us
+            actually rendering an ellipsis. */}
+        <div
+          aria-hidden
+          className="inline-flex items-center gap-1.5 mb-4"
+        >
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className="block w-1.5 h-1.5 rounded-full bg-cheeze-purple/50 v2-loading-dot"
+              style={{ animationDelay: `${i * 150}ms` }}
+            />
+          ))}
+        </div>
+        <h2 className="text-[20px] font-bold tracking-tight text-cheeze-ink">
+          굽는 중
+        </h2>
+        <p className="mt-1.5 text-[14px] text-cheeze-ink-soft">
+          잠시만 기다려주세요
+        </p>
+      </div>
+
       <style>{`
-        @keyframes v2-loading-bar {
-          0%   { transform: translateX(-100%); }
-          100% { transform: translateX(400%); }
+        @keyframes v2-loading-halo {
+          0%   { transform: scale(0.92); opacity: 0; }
+          25%  { opacity: 0.55; }
+          100% { transform: scale(1.9);  opacity: 0; }
         }
-        .v2-loading-bar {
-          animation: v2-loading-bar 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        .v2-loading-halo {
+          animation: v2-loading-halo 1800ms cubic-bezier(0.22, 0.8, 0.4, 1) infinite;
+        }
+
+        @keyframes v2-loading-breathe {
+          0%, 100% { transform: scale(1); }
+          50%      { transform: scale(1.03); }
+        }
+        .v2-loading-breathe {
+          animation: v2-loading-breathe 1800ms cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes v2-loading-dot {
+          0%, 80%, 100% { transform: translateY(0);    opacity: 0.4; }
+          40%           { transform: translateY(-4px); opacity: 1;   }
+        }
+        .v2-loading-dot {
+          animation: v2-loading-dot 1100ms ease-in-out infinite;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .v2-loading-halo,
+          .v2-loading-breathe,
+          .v2-loading-dot {
+            animation: none !important;
+          }
         }
       `}</style>
     </main>
