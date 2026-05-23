@@ -16,7 +16,16 @@
  */
 
 import { cache } from "react";
-import { serverClient } from "./db";
+import { unstable_cache } from "next/cache";
+import { hasSupabaseServerEnv, serverClient } from "./db";
+
+/**
+ * Cross-request cache window for the content map. Admin write endpoints
+ * call `revalidateTag(CONTENT_TAG)` so edits show up immediately; in the
+ * absence of an edit, public pages share this cached map for the TTL.
+ */
+export const CONTENT_TAG = "site_content";
+const CONTENT_TTL = 300; // 5 min
 
 export type ContentType = "text" | "longtext";
 
@@ -315,20 +324,34 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
 type ContentRow = { key: string; value: string };
 
 /**
- * Load all DB overrides as a Map. Wrapped with `cache()` so a single
- * server request only hits Supabase once even if many components call it.
+ * Underlying Supabase fetch — cached across requests by `unstable_cache`
+ * with the `CONTENT_TAG` tag (admin invalidates on write). Returns a
+ * plain object since Map/Set can't survive Next.js's cache serializer.
+ */
+const _fetchContentEntries = unstable_cache(
+  async (): Promise<ContentRow[]> => {
+    if (!hasSupabaseServerEnv()) return [];
+    const sb = serverClient();
+    const { data, error } = await sb.from("site_content").select("key,value");
+    if (error) {
+      console.error("[content.loadContentMap]", error);
+      return [];
+    }
+    return (data ?? []) as ContentRow[];
+  },
+  ["content:all"],
+  { tags: [CONTENT_TAG], revalidate: CONTENT_TTL },
+);
+
+/**
+ * Public API. The outer `cache()` dedupes within a single request (so
+ * many `await loadContentMap()` calls share one Map instance), and the
+ * inner `unstable_cache` shares the underlying rows across requests.
  */
 export const loadContentMap = cache(async (): Promise<Map<string, string>> => {
-  const sb = serverClient();
-  const { data, error } = await sb
-    .from("site_content")
-    .select("key,value");
-  if (error) {
-    console.error("[content.loadContentMap]", error);
-    return new Map();
-  }
+  const rows = await _fetchContentEntries();
   const out = new Map<string, string>();
-  for (const r of (data ?? []) as ContentRow[]) out.set(r.key, r.value);
+  for (const r of rows) out.set(r.key, r.value);
   return out;
 });
 

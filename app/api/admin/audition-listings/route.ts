@@ -6,6 +6,7 @@ import {
   STATUSES,
 } from "@/lib/auditionListings";
 import type { AuditionListing } from "@/lib/db";
+import { bumpListings } from "@/lib/revalidate";
 
 export const runtime = "nodejs";
 
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
     ? (body.status as AuditionListing["status"])
     : "draft";
 
-  const id = createListing({
+  const id = await createListing({
     title,
     description: (body.description ?? "").toString(),
     role_type,
@@ -37,5 +38,6 @@ export async function POST(req: Request) {
     deadline: body.deadline ? String(body.deadline) : null,
     status,
   });
+  bumpListings();
   return NextResponse.json({ ok: true, id }, { status: 201 });
 }

@@ -4,8 +4,10 @@ import { InView } from "@/components/Stagger";
 import { getContent, loadContentMap } from "@/lib/content";
 import CareersReel from "@/components/CareersReel";
 
-export const revalidate = 3600;
-export const dynamic = "force-dynamic";
+// Static-ish editorial page; only thing that changes is the `careers.*`
+// content keys, which we flush via `revalidateTag("site_content")` from
+// the admin content editor.
+export const revalidate = 300;
 
 export const metadata = {
   title: "채용 · Careers",

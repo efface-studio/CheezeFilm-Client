@@ -11,8 +11,12 @@ import V2SnapScroller from "@/components/V2SnapScroller";
 import CareersReel from "@/components/CareersReel";
 import { getCoverPhotos } from "@/lib/coverPhotos";
 
-export const revalidate = 3600;
-export const dynamic = "force-dynamic";
+// ISR — the home pulls Supabase content, members, videos, and cover photos.
+// All of those are also wrapped in `unstable_cache` keyed by content/members/
+// listings/covers tags, so admin writes use `revalidateTag` to flush
+// immediately. The page-level revalidate caps how long a fully cold edit
+// path can lag if a tag invalidation is missed.
+export const revalidate = 300;
 // Page-level metadata — `title.absolute` bypasses the layout's "%s | 치즈필름"
 // template since the brand is already in the V2 home title. `og:image` is
 // re-stated per page because page-level `openGraph` replaces the layout

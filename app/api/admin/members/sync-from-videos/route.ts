@@ -12,6 +12,7 @@ import {
   suggestSlug,
   type CastEntry,
 } from "@/lib/castSync";
+import { bumpMembers } from "@/lib/revalidate";
 
 export const runtime = "nodejs";
 
@@ -124,7 +125,7 @@ export async function POST() {
   const failed: Array<{ name: string; error: string }> = [];
   for (const m of plan) {
     try {
-      createMember(m);
+      await createMember(m);
       added.push(m.slug);
     } catch (e) {
       failed.push({
@@ -133,6 +134,7 @@ export async function POST() {
       });
     }
   }
+  if (added.length > 0) bumpMembers();
 
   return NextResponse.json({
     dryRun: false,

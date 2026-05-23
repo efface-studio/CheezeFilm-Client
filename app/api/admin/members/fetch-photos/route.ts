@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { getMembers, updateMember, type Member } from "@/lib/members";
 import { serverClient } from "@/lib/db";
 import { fetchInstagramProfilePic } from "@/lib/instagramFetch";
+import { bumpMembers } from "@/lib/revalidate";
 
 export const runtime = "nodejs";
 // Could take 30+s for many handles, allow more headroom.
@@ -153,6 +154,9 @@ export async function POST(req: Request) {
   const cleanedUp = fail.filter(
     (r) => "cleanedUp" in r && r.cleanedUp === true,
   ).length;
+
+  // Bump only when something actually changed — pure "kept" runs are no-ops.
+  if (upgraded > 0 || cleanedUp > 0) bumpMembers();
 
   return NextResponse.json({
     eligibleMembers: candidates.length,

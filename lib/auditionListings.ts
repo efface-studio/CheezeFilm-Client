@@ -6,10 +6,19 @@
  * Supabase-backed. All accessors are async.
  */
 
-import { serverClient, type AuditionListing } from "./db";
+import { unstable_cache } from "next/cache";
+import {
+  hasSupabaseServerEnv,
+  serverClient,
+  type AuditionListing,
+} from "./db";
 import { parseDeadline, formatDeadline } from "./deadline";
 
 export { parseDeadline, formatDeadline };
+
+/** Tag we invalidate from admin writes so public listing pages refresh. */
+export const LISTINGS_TAG = "audition_listings";
+const LISTINGS_TTL = 60; // 1 min — open/closed flips need to feel fresh
 
 export const ROLE_TYPES = ["lead", "support", "extra", "staff"] as const;
 export const STATUSES = ["draft", "open", "closed"] as const;
@@ -38,49 +47,62 @@ const COLS =
   "id,title,description,role_type,requirements,deadline,status,created_at,updated_at";
 
 /** All listings, admin-side. */
-export async function getAllListings(): Promise<AuditionListing[]> {
-  const sb = serverClient();
-  const { data, error } = await sb
-    .from("audition_listings")
-    .select(COLS)
-    .order("created_at", { ascending: false });
-  if (error) {
-    console.error("[listings.getAllListings]", error);
-    return [];
-  }
-  return data as AuditionListing[];
-}
+export const getAllListings = unstable_cache(
+  async (): Promise<AuditionListing[]> => {
+    if (!hasSupabaseServerEnv()) return [];
+    const sb = serverClient();
+    const { data, error } = await sb
+      .from("audition_listings")
+      .select(COLS)
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("[listings.getAllListings]", error);
+      return [];
+    }
+    return data as AuditionListing[];
+  },
+  ["listings:all"],
+  { tags: [LISTINGS_TAG], revalidate: LISTINGS_TTL },
+);
 
 /** Public-facing list — only ones admins have marked open AND not past deadline. */
-export async function getOpenListings(): Promise<AuditionListing[]> {
-  const sb = serverClient();
-  const { data, error } = await sb
-    .from("audition_listings")
-    .select(COLS)
-    .eq("status", "open")
-    .order("created_at", { ascending: false });
-  if (error) {
-    console.error("[listings.getOpenListings]", error);
-    return [];
-  }
-  return (data as AuditionListing[]).filter(isOpenForApplications);
-}
+export const getOpenListings = unstable_cache(
+  async (): Promise<AuditionListing[]> => {
+    if (!hasSupabaseServerEnv()) return [];
+    const sb = serverClient();
+    const { data, error } = await sb
+      .from("audition_listings")
+      .select(COLS)
+      .eq("status", "open")
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("[listings.getOpenListings]", error);
+      return [];
+    }
+    return (data as AuditionListing[]).filter(isOpenForApplications);
+  },
+  ["listings:open"],
+  { tags: [LISTINGS_TAG], revalidate: LISTINGS_TTL },
+);
 
-export async function findListing(
-  id: number,
-): Promise<AuditionListing | undefined> {
-  const sb = serverClient();
-  const { data, error } = await sb
-    .from("audition_listings")
-    .select(COLS)
-    .eq("id", id)
-    .maybeSingle();
-  if (error) {
-    console.error("[listings.findListing]", error);
-    return undefined;
-  }
-  return (data as AuditionListing | null) ?? undefined;
-}
+export const findListing = unstable_cache(
+  async (id: number): Promise<AuditionListing | undefined> => {
+    if (!hasSupabaseServerEnv()) return undefined;
+    const sb = serverClient();
+    const { data, error } = await sb
+      .from("audition_listings")
+      .select(COLS)
+      .eq("id", id)
+      .maybeSingle();
+    if (error) {
+      console.error("[listings.findListing]", error);
+      return undefined;
+    }
+    return (data as AuditionListing | null) ?? undefined;
+  },
+  ["listings:byid"],
+  { tags: [LISTINGS_TAG], revalidate: LISTINGS_TTL },
+);
 
 export async function isAcceptingApplications(id: number): Promise<boolean> {
   const l = await findListing(id);

@@ -7,6 +7,7 @@ import {
   updateMember,
   type Member,
 } from "@/lib/members";
+import { bumpMembers } from "@/lib/revalidate";
 
 export const runtime = "nodejs";
 
@@ -45,6 +46,7 @@ export async function PATCH(
   }
 
   await updateMember(slug, body);
+  bumpMembers();
   return NextResponse.json({ ok: true });
 }
 
@@ -70,5 +72,6 @@ export async function DELETE(
   }
 
   await deleteMember(slug);
+  bumpMembers();
   return NextResponse.json({ ok: true });
 }

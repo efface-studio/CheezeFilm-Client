@@ -2,6 +2,7 @@ import path from "node:path";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { serverClient } from "@/lib/db";
+import { bumpCovers } from "@/lib/revalidate";
 
 export const runtime = "nodejs";
 
@@ -30,5 +31,6 @@ export async function DELETE(
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+  bumpCovers();
   return NextResponse.json({ deleted: decoded });
 }

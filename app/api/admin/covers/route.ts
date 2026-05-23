@@ -2,6 +2,7 @@ import path from "node:path";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { serverClient, storageUrl } from "@/lib/db";
+import { bumpCovers } from "@/lib/revalidate";
 
 export const runtime = "nodejs";
 
@@ -108,5 +109,6 @@ export async function POST(req: Request) {
     }
   }
 
+  if (results.some((r) => r.saved)) bumpCovers();
   return NextResponse.json({ results });
 }

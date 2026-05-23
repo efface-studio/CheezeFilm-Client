@@ -1,5 +1,5 @@
-import { cache } from "react";
-import { serverClient, storageUrl } from "./db";
+import { unstable_cache } from "next/cache";
+import { hasSupabaseServerEnv, serverClient, storageUrl } from "./db";
 
 /**
  * Returns the public URLs of every landscape cover photo in the
@@ -11,27 +11,36 @@ import { serverClient, storageUrl } from "./db";
  * control it). Files starting with `_` or `.` are skipped — handy
  * for hiding WIP shots without deleting them.
  *
- * Wrapped in `cache()` so multiple components on the same request share
- * one Storage list call.
+ * Wrapped in `unstable_cache` so the Storage list call is shared across
+ * requests. Admin cover uploads/deletes call
+ * `revalidateTag(COVERS_TAG)` to flush this list immediately.
  */
 const ALLOWED_EXTS = [".jpg", ".jpeg", ".png", ".webp"];
 
-export const getCoverPhotos = cache(async (): Promise<string[]> => {
-  const sb = serverClient();
-  const { data, error } = await sb.storage.from("covers").list("", {
-    limit: 100,
-    sortBy: { column: "name", order: "asc" },
-  });
-  if (error) {
-    console.error("[coverPhotos]", error);
-    return [];
-  }
-  return (data ?? [])
-    .filter((f) => {
-      const name = f.name;
-      if (!name) return false;
-      if (name.startsWith("_") || name.startsWith(".")) return false;
-      return ALLOWED_EXTS.some((ext) => name.toLowerCase().endsWith(ext));
-    })
-    .map((f) => storageUrl("covers", f.name));
-});
+export const COVERS_TAG = "covers";
+const COVERS_TTL = 300; // 5 min
+
+export const getCoverPhotos = unstable_cache(
+  async (): Promise<string[]> => {
+    if (!hasSupabaseServerEnv()) return [];
+    const sb = serverClient();
+    const { data, error } = await sb.storage.from("covers").list("", {
+      limit: 100,
+      sortBy: { column: "name", order: "asc" },
+    });
+    if (error) {
+      console.error("[coverPhotos]", error);
+      return [];
+    }
+    return (data ?? [])
+      .filter((f) => {
+        const name = f.name;
+        if (!name) return false;
+        if (name.startsWith("_") || name.startsWith(".")) return false;
+        return ALLOWED_EXTS.some((ext) => name.toLowerCase().endsWith(ext));
+      })
+      .map((f) => storageUrl("covers", f.name));
+  },
+  ["covers:list"],
+  { tags: [COVERS_TAG], revalidate: COVERS_TTL },
+);

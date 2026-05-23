@@ -13,7 +13,17 @@
  *     `await getMembers()` instead.
  */
 
-import { serverClient } from "./db";
+import { unstable_cache } from "next/cache";
+import { hasSupabaseServerEnv, serverClient } from "./db";
+
+/**
+ * Cache tags + revalidate windows for cross-request caching. The admin
+ * write endpoints call `revalidateTag("members")` after mutations so
+ * edits flush immediately; otherwise public reads share the cached
+ * result for `MEMBERS_TTL` seconds and don't hit Supabase per request.
+ */
+export const MEMBERS_TAG = "members";
+const MEMBERS_TTL = 300; // 5 min
 
 export type MemberRole = "lead" | "actor" | "writer" | "director";
 
@@ -91,37 +101,47 @@ function normalizeWorks(w: Row["works"]): string[] {
 
 // ─── public API ─────────────────────────────────────────────
 
-export async function getMembers(): Promise<Member[]> {
-  const sb = serverClient();
-  const { data, error } = await sb
-    .from("members")
-    .select(
-      "slug,name,name_en,role,role_label,highlight,bio,works,joined_note,instagram,source_url,accent,uncertain,sort_order,photo_path",
-    )
-    .order("sort_order", { ascending: true })
-    .order("slug", { ascending: true });
-  if (error) {
-    console.error("[members.getMembers]", error);
-    return [];
-  }
-  return (data as Row[]).map(rowToMember);
-}
+export const getMembers = unstable_cache(
+  async (): Promise<Member[]> => {
+    if (!hasSupabaseServerEnv()) return [];
+    const sb = serverClient();
+    const { data, error } = await sb
+      .from("members")
+      .select(
+        "slug,name,name_en,role,role_label,highlight,bio,works,joined_note,instagram,source_url,accent,uncertain,sort_order,photo_path",
+      )
+      .order("sort_order", { ascending: true })
+      .order("slug", { ascending: true });
+    if (error) {
+      console.error("[members.getMembers]", error);
+      return [];
+    }
+    return (data as Row[]).map(rowToMember);
+  },
+  ["members:all"],
+  { tags: [MEMBERS_TAG], revalidate: MEMBERS_TTL },
+);
 
-export async function findMember(slug: string): Promise<Member | undefined> {
-  const sb = serverClient();
-  const { data, error } = await sb
-    .from("members")
-    .select(
-      "slug,name,name_en,role,role_label,highlight,bio,works,joined_note,instagram,source_url,accent,uncertain,sort_order,photo_path",
-    )
-    .eq("slug", slug)
-    .maybeSingle();
-  if (error) {
-    console.error("[members.findMember]", error);
-    return undefined;
-  }
-  return data ? rowToMember(data as Row) : undefined;
-}
+export const findMember = unstable_cache(
+  async (slug: string): Promise<Member | undefined> => {
+    if (!hasSupabaseServerEnv()) return undefined;
+    const sb = serverClient();
+    const { data, error } = await sb
+      .from("members")
+      .select(
+        "slug,name,name_en,role,role_label,highlight,bio,works,joined_note,instagram,source_url,accent,uncertain,sort_order,photo_path",
+      )
+      .eq("slug", slug)
+      .maybeSingle();
+    if (error) {
+      console.error("[members.findMember]", error);
+      return undefined;
+    }
+    return data ? rowToMember(data as Row) : undefined;
+  },
+  ["members:byslug"],
+  { tags: [MEMBERS_TAG], revalidate: MEMBERS_TTL },
+);
 
 // ─── mutations (admin only — call sites must enforce auth) ──
 
