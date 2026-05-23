@@ -52,14 +52,18 @@ type NavItem = {
   routeMatch?: string;
 };
 
+// The rail is the "table of contents" for the V2 home spread, so every
+// item scrolls within `/v2` instead of jumping to a separate route. The
+// dedicated detail pages (`/v2/videos`, `/v2/members`, `/v2/careers`)
+// are still reachable — each home section has a "더 보기 →" CTA into
+// them. Keeping `routeMatch` around so the rail still highlights the
+// right item when a visitor lands on a detail page directly (e.g. from
+// search or a deep link).
 const NAV: NavItem[] = [
-  { num: "01", label: "소개",   labelEn: "About",   href: "/v2#issue",   sectionId: "issue" },
-  { num: "02", label: "영상",   labelEn: "Films",   href: "/v2/videos",  sectionId: "films",  routeMatch: "/v2/videos" },
-  { num: "03", label: "멤버",   labelEn: "Cast",    href: "/v2/members", sectionId: "cast",   routeMatch: "/v2/members" },
-  // 04 used to be #contact (an anchor on the home page). Replaced with the
-  // standalone Careers page — hiring is a separate flow from "send us a fan
-  // letter", and giving it its own route lets us link to it externally.
-  { num: "04", label: "채용",   labelEn: "Careers", href: "/v2/careers", sectionId: "careers", routeMatch: "/v2/careers" },
+  { num: "01", label: "소개",   labelEn: "About",   href: "/v2#issue",    sectionId: "issue" },
+  { num: "02", label: "영상",   labelEn: "Films",   href: "/v2#films",    sectionId: "films",   routeMatch: "/v2/videos" },
+  { num: "03", label: "멤버",   labelEn: "Cast",    href: "/v2#cast",     sectionId: "cast",    routeMatch: "/v2/members" },
+  { num: "04", label: "채용",   labelEn: "Careers", href: "/v2#careers",  sectionId: "careers", routeMatch: "/v2/careers" },
 ];
 
 export default function V2Nav() {
@@ -241,10 +245,11 @@ export default function V2Nav() {
                     // anchor presses — sliding the whole viewport for them
                     // adds 300–600ms of perceived lag before the user lands.
                     data-no-vt
-                    // Hash links on the home page (#issue / #contact) should
-                    // jump instantly rather than animate via the browser's
-                    // smooth-scroll fallback. We use scrollIntoView with
-                    // `behavior: "auto"` for a single-frame focus.
+                    // In-page hash links (every rail item on the home spread
+                    // now points at #issue / #films / #cast / #careers). We
+                    // animate the scroll instead of teleporting so the user
+                    // *sees* the page travelling — the rail is part of the
+                    // spread, not a route switcher.
                     onClick={
                       isHash && isHome
                         ? (e) => {
@@ -253,7 +258,7 @@ export default function V2Nav() {
                             if (!el) return;
                             e.preventDefault();
                             el.scrollIntoView({
-                              behavior: "auto",
+                              behavior: "smooth",
                               block: "start",
                             });
                             history.replaceState(null, "", item.href);
