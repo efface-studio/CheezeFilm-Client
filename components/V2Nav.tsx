@@ -72,6 +72,19 @@ export default function V2Nav() {
   const [activeId, setActiveId] = useState<NavItem["sectionId"] | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Mark <html> as a V2 editorial route while mounted. Used by globals.css
+  // to swap the canvas background to purple-deep so bottom rubber-band
+  // doesn't expose a cream stripe under the footer. We can't use
+  // `html:has(main.editorial)` — Tailwind v4's Lightning CSS silently
+  // drops the `:has()` rule from the build — so we toggle a class
+  // instead. V2Nav is rendered on every V2 page, so this fires on
+  // home + every subpage.
+  useEffect(() => {
+    const html = document.documentElement;
+    html.classList.add("v2-editorial");
+    return () => html.classList.remove("v2-editorial");
+  }, []);
+
   // ── Scroll spy ────────────────────────────────────
   // rAF-throttled scroll listener instead of IntersectionObserver: gives us
   // the same "active section follows the centerline" behavior, but fires
