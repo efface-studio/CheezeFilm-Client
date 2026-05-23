@@ -9,6 +9,15 @@ export const runtime = "nodejs";
 const ALLOWED_EXTS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 
+/**
+ * Hard cap on how many cover photos can live in the bucket at once.
+ * The home hero's slideshow is built to cycle through them all, so
+ * shipping more makes the rotation too slow and pads page weight
+ * with unused preloads. Admin upload refuses anything that would
+ * push the total over this number.
+ */
+const MAX_COVERS = 10;
+
 const BUCKET = "covers";
 
 /** List current cover photos from Supabase Storage. */
@@ -38,7 +47,7 @@ export async function GET() {
       url: storageUrl(BUCKET, f.name),
       size: f.metadata?.size ?? 0,
     }));
-  return NextResponse.json({ files });
+  return NextResponse.json({ files, maxCovers: MAX_COVERS });
 }
 
 /**
@@ -63,8 +72,44 @@ export async function POST(req: Request) {
   }
 
   const sb = serverClient();
+
+  // Probe the current bucket count before starting. The per-file save
+  // loop also re-checks `taken` against existing names for collisions,
+  // but the *cap* needs to be checked up front so we never even start
+  // saving when the user is over the limit.
+  const { data: existingBefore } = await sb.storage.from(BUCKET).list("", {
+    limit: 200,
+  });
+  const existingCovers = (existingBefore ?? []).filter((f) => {
+    const name = f.name;
+    if (!name || name.startsWith(".") || name.startsWith("_")) return false;
+    return ALLOWED_EXTS.has(path.extname(name).toLowerCase());
+  });
+  const remainingSlots = Math.max(0, MAX_COVERS - existingCovers.length);
+  if (remainingSlots === 0) {
+    return NextResponse.json(
+      {
+        error: `이미 ${MAX_COVERS}장이 등록되어 있어요. 새 표지를 올리려면 먼저 기존 사진을 삭제해주세요.`,
+        currentCount: existingCovers.length,
+        maxCovers: MAX_COVERS,
+      },
+      { status: 400 },
+    );
+  }
+
   const results: Array<{ name: string; saved: boolean; reason?: string }> = [];
+  let savedSoFar = 0;
   for (const file of files) {
+    // Stop accepting more uploads once we'd cross the cap, even if the
+    // user dropped more files than there's room for.
+    if (savedSoFar >= remainingSlots) {
+      results.push({
+        name: file.name || "upload",
+        saved: false,
+        reason: `한 번에 ${remainingSlots}장까지만 추가 가능 (전체 한도 ${MAX_COVERS}장)`,
+      });
+      continue;
+    }
     const origName = file.name || "upload";
     const ext = path.extname(origName).toLowerCase();
     if (!ALLOWED_EXTS.has(ext)) {
@@ -106,9 +151,14 @@ export async function POST(req: Request) {
       results.push({ name: origName, saved: false, reason: error.message });
     } else {
       results.push({ name: finalName, saved: true });
+      savedSoFar += 1;
     }
   }
 
   if (results.some((r) => r.saved)) bumpCovers();
-  return NextResponse.json({ results });
+  return NextResponse.json({
+    results,
+    maxCovers: MAX_COVERS,
+    currentCount: existingCovers.length + savedSoFar,
+  });
 }
