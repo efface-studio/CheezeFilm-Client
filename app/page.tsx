@@ -83,23 +83,17 @@ export default async function HomeV2() {
               tall, which sits comfortably alongside the headline + CTA
               stack on the left without crushing either side. */}
           <div className="lg:col-span-7">
+            {/* Toss-style eyebrow: small label pill with a status dot. */}
             <InView className="v2-fade-up">
-              <div className="text-[11px] tracking-[0.45em] uppercase text-cheeze-purple font-mono mb-6 flex items-center gap-2">
-                <span className="v2-pulse-dot" /> A K-WEB-DRAMA STUDIO
-              </div>
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-toss-50 text-cheeze-purple text-[12px] font-semibold">
+                <span aria-hidden className="block w-1.5 h-1.5 rounded-full bg-cheeze-purple" />
+                웹드라마 스튜디오
+              </span>
             </InView>
-            {/* Character-by-character typewriter for the hero. The big
-                display type rides in one syllable at a time on load.
-                Line 2 picks up its --li offset from line 1's length so
-                the second line types AFTER the first finishes instead
-                of in parallel. */}
             <InView
               as="h1"
-              className="v2-typewriter v2-title leading-[0.92] tracking-[-0.02em]"
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "clamp(2.8rem, 7.5vw, 6rem)",
-              }}
+              className="v2-typewriter mt-5 leading-[1.1] tracking-tight font-extrabold text-cheeze-ink"
+              style={{ fontSize: "clamp(2.4rem, 6vw, 4.5rem)" }}
             >
               <StaggerText text={c("hero.title.line1")} mode="character" />
               <br />
@@ -109,9 +103,6 @@ export default async function HomeV2() {
                   mode="character"
                   // Continue --li from where line 1 left off so line 2
                   // types AFTER line 1 finishes instead of in parallel.
-                  // Inlined instead of imported from the client component
-                  // (`countStaggerCharacters` lives in a "use client" file
-                  // and can't be called from the server).
                   startIndex={
                     Array.from(c("hero.title.line1")).filter(
                       (ch) => ch !== " ",
@@ -122,28 +113,30 @@ export default async function HomeV2() {
             </InView>
             <InView className="v2-fade-up" rootMargin="0px 0px -5% 0px">
               <p
-                className="mt-10 max-w-xl text-base sm:text-lg leading-relaxed text-cheeze-ink-soft whitespace-pre-line"
+                className="mt-8 max-w-xl text-[15px] sm:text-[16px] leading-relaxed text-cheeze-ink-soft whitespace-pre-line"
                 style={{ transitionDelay: "300ms" }}
               >
                 {c("hero.subtitle")}
               </p>
               <div
-                className="mt-10 flex flex-wrap gap-3"
+                className="mt-8 flex flex-wrap gap-3"
                 style={{ transitionDelay: "450ms" }}
               >
                 <a
                   href="https://www.youtube.com/@CheezeFilmz"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-sm font-bold tracking-widest uppercase px-5 py-3 bg-cheeze-purple-deep text-cheeze-yellow hover:bg-cheeze-purple transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-cheeze-ink text-white font-semibold text-[14px] hover:bg-cheeze-ink-soft transition-colors"
                 >
-                  ▸ Watch on YouTube
+                  YouTube에서 보기
+                  <span aria-hidden>↗</span>
                 </a>
                 <Link
                   href="/support"
-                  className="text-sm font-bold tracking-widest uppercase px-5 py-3 border border-cheeze-purple-deep text-cheeze-purple-deep hover:bg-cheeze-purple-deep hover:text-cheeze-yellow transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-toss-50 text-cheeze-ink font-semibold text-[14px] hover:bg-toss-100 transition-colors"
                 >
-                  Audition →
+                  오디션 지원
+                  <span aria-hidden>→</span>
                 </Link>
               </div>
             </InView>
@@ -154,10 +147,8 @@ export default async function HomeV2() {
               thumbnails configured in admin. */}
           <aside className="lg:col-span-5 flex flex-col gap-4">
             <HeroCover photoSrcs={coverPhotos} videoIds={heroVideos} />
-            <InView className="v2-fade-up text-[10px] tracking-[0.3em] uppercase text-cheeze-olive flex justify-between">
-              <span>FILE</span>
-              <span>EDITION 02</span>
-            </InView>
+            {/* FILE · EDITION 02 caption removed — magazine masthead
+                language doesn't fit the new clean surface. */}
           </aside>
         </div>
 
@@ -172,28 +163,9 @@ export default async function HomeV2() {
         </div>
       </section>
 
-      {/* ── MARQUEE ──────────────────────────────────── */}
-      <div
-        data-nav-section="issue"
-        className="border-b border-cheeze-purple-deep/15 v2-marquee-stage overflow-hidden"
-      >
-        <div className="v2-marquee py-4 text-cheeze-purple-deep tracking-[0.3em] uppercase text-sm">
-          {Array.from({ length: 2 }).map((_, k) => (
-            <span key={k} className="inline-flex items-center gap-12 px-6">
-              <span>Studio Cheeze</span>
-              <span className="text-cheeze-olive">/</span>
-              <span>치즈필름</span>
-              <span className="text-cheeze-olive">/</span>
-              <span>Web Drama Since 2017</span>
-              <span className="text-cheeze-olive">/</span>
-              <span>Sandbox Network Partner</span>
-              <span className="text-cheeze-olive">/</span>
-              <span>{c("stats.subscribers")}{c("stats.subscribers.suffix")} subscribers</span>
-              <span className="text-cheeze-olive">/</span>
-            </span>
-          ))}
-        </div>
-      </div>
+      {/* Marquee removed in the Toss redesign — endless-scroll editorial
+          ribbons don't fit the new clean surface. Keeping the section
+          divider so the hero/stats band still hands off visually. */}
 
       {/* "RECENT UPLOADS" used to live here as its own section but it was
           basically a smaller-scale duplicate of FILMS below. Merged into
@@ -907,13 +879,10 @@ function Stat({
 }) {
   return (
     <InView className="v2-fade-up px-4 first:pl-0">
-      <div
-        className="text-3xl md:text-4xl text-cheeze-purple-deep tabular-nums"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
+      <div className="text-[28px] md:text-[32px] font-extrabold text-cheeze-ink tracking-tight tabular-nums leading-none">
         <CountUp value={value} suffix={suffix} fallback={fallback} decimals={decimals} duration={1400} />
       </div>
-      <div className="mt-1 text-[10px] tracking-[0.3em] uppercase text-cheeze-olive">
+      <div className="mt-2 text-[12px] text-cheeze-ink-soft">
         {label}
       </div>
     </InView>

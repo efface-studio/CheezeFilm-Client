@@ -16,26 +16,43 @@
 */
 
 :root {
-  /* Brand palette — measured from the actual channel art */
+  /* Brand palette — original V2 editorial values kept for places we
+     still call them out as accents (logo chip, footer band, etc.). The
+     Toss-redesign pass introduced new semantic neutrals below that
+     replace cream/ink/olive across most of the site. */
   --cheeze-purple: #5522a3;
   --cheeze-purple-deep: #3a1474;
   --cheeze-purple-soft: #7140c9;
 
   --cheeze-yellow: #fabe4b; /* 로고 그라데이션 메인 */
-  --cheeze-yellow-deep: #fca230; /* 로고 그라데이션 하이라이트 */
+  --cheeze-yellow-deep: #fca230;
 
-  --cheeze-charcoal: #1b1d2f; /* 썸네일 차콜 */
-  --cheeze-wine: #853635; /* 썸네일 와인 */
+  --cheeze-charcoal: #1b1d2f;
+  --cheeze-wine: #853635;
 
-  --cheeze-cream: #f5ece0;
-  --cheeze-cream-deep: #e6d6bc;
-  --cheeze-ink: #161020; /* 더 보랏빛이 도는 잉크 */
-  --cheeze-ink-soft: #2b2438;
-  --cheeze-olive: #6a5b8a; /* 보라 톤이 도는 muted */
+  /* These four are aliased to the new neutrals so existing class names
+     keep working — class names like `bg-cheeze-cream` now actually mean
+     "Toss off-white" everywhere outside the explicit editorial moments. */
+  --cheeze-cream: #ffffff;          /* was #f5ece0 — now pure white surface */
+  --cheeze-cream-deep: #f7f8fa;     /* was #e6d6bc — now Toss bg-50 */
+  --cheeze-ink: #111827;            /* was #161020 — Toss-style ink (cool grey-black) */
+  --cheeze-ink-soft: #4b5563;       /* was #2b2438 — body grey */
+  --cheeze-olive: #9ca3af;          /* was #6a5b8a — muted label grey */
 
   /* semantic */
-  --background: var(--cheeze-cream);
+  --background: #ffffff;
   --foreground: var(--cheeze-ink);
+
+  /* Toss neutral palette aliases — referenced by the new card / button /
+     input styles. Mirror Tailwind's zinc scale so adopting them feels
+     natural in JSX (`bg-toss-50`, etc.). */
+  --toss-50: #f7f8fa;
+  --toss-100: #f1f3f5;
+  --toss-200: #e5e7eb;
+  --toss-300: #d1d5db;
+  --toss-500: #6b7280;
+  --toss-700: #374151;
+  --toss-900: #111827;
 }
 
 @theme inline {
@@ -55,9 +72,37 @@
   --color-cheeze-olive: var(--cheeze-olive);
   /* 호환용 alias — 기존 cheeze-brick 참조가 남아있어도 와인색으로 자연스럽게 대체 */
   --color-cheeze-brick: var(--cheeze-wine);
-  --font-sans: var(--font-gowun-dodum), system-ui, sans-serif;
-  --font-display: var(--font-black-han-sans), serif;
+  --color-toss-50: var(--toss-50);
+  --color-toss-100: var(--toss-100);
+  --color-toss-200: var(--toss-200);
+  --color-toss-300: var(--toss-300);
+  --color-toss-500: var(--toss-500);
+  --color-toss-700: var(--toss-700);
+  --color-toss-900: var(--toss-900);
+
+  /* Pretendard is now the default body font (was Gowun Dodum + Black
+     Han Sans). The Toss redesign also remaps `--font-display` to
+     Pretendard so every JSX call site that hard-codes
+     `style={{ fontFamily: "var(--font-display)" }}` automatically
+     renders in a clean sans-serif instead of the old chunky display
+     face — no JSX changes required across the codebase. */
+  --font-sans:
+    "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont,
+    system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --font-display:
+    "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont,
+    system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", monospace;
+}
+
+/* Anything tagged with `var(--font-display)` should also feel like a
+   Toss heading — drop in the heavier weight + tighter tracking. The
+   attribute substring selector catches every existing
+   `style={{ fontFamily: "var(--font-display)" }}` call site without
+   the JSX needing to change. */
+[style*="var(--font-display)"] {
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 html,
@@ -65,8 +110,10 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  font-feature-settings: "ss01", "tnum";
+  letter-spacing: -0.011em;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden; /* polaroid rotations should not create horizontal scroll */
+  overflow-x: hidden;
 }
 
 /* Overscroll handling for V2 routes.
@@ -91,6 +138,27 @@ body {
  */
 html.v2-editorial {
   overscroll-behavior-y: none;
+}
+
+/* Toss-redesign palette overrides for the heavy editorial chrome.
+ *
+ * The cheeze-* class names still ship across every page, so we
+ * remap the few that drive the visual weight of the old editorial
+ * surface — section dividers and underline accents — to the new
+ * Toss neutrals. Means we get a sitewide flattening without having
+ * to touch every JSX call site. */
+.border-cheeze-purple-deep\/15,
+.border-cheeze-purple-deep\/20 {
+  border-color: var(--toss-100) !important;
+}
+.border-cheeze-purple-deep\/30,
+.border-cheeze-purple-deep\/40 {
+  border-color: var(--toss-200) !important;
+}
+.divide-cheeze-purple-deep\/10 > * + *,
+.divide-cheeze-purple-deep\/15 > * + *,
+.divide-cheeze-purple-deep\/20 > * + * {
+  border-color: var(--toss-100) !important;
 }
 
 /* Pretendard utility — applied only inside the admin shell.
@@ -140,13 +208,11 @@ body:not(:has(.admin-shell)) textarea {
   }
 }
 
-/* Subtle paper grain on the whole page — pure CSS, no images */
+/* Paper-grain body background removed in the Toss redesign — kept the
+   property as an empty rule so any descendant `.vignette` overlays
+   below still find the body box to attach to. */
 body {
-  background-image:
-    radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
-    radial-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px);
-  background-size: 3px 3px, 7px 7px;
-  background-position: 0 0, 1px 1px;
+  background-image: none;
 }
 
 /* V1-era utility classes (.film-strip, .tape, .stamp, .sprocket-row,
@@ -339,22 +405,11 @@ body {
 }
 .v2-hrule[data-revealed="true"] { transform: scaleX(1); }
 
-/* Editorial title: a thin gold strike-through draws in beneath the line on reveal. */
-.v2-title {
-  position: relative;
-  display: inline-block;
-}
-.v2-title::after {
-  content: "";
-  position: absolute;
-  left: 0; right: 0; bottom: -10px;
-  height: 3px;
-  background: var(--cheeze-yellow);
-  transform-origin: left center;
-  transform: scaleX(0);
-  transition: transform 900ms cubic-bezier(0.65, 0, 0.35, 1) 200ms;
-}
-.v2-title[data-revealed="true"]::after { transform: scaleX(1); }
+/* Editorial title underline: removed in the Toss redesign — the gold
+   strike-through reads as theatrical chrome. Rule is kept as no-op so
+   any `.v2-title` JSX still mounts cleanly. */
+.v2-title { display: inline-block; }
+.v2-title::after { display: none; }
 
 /* Image mask reveal — opens like a curtain on scroll-in.
    The wrapper clips, and the inner img scales down slightly so the
@@ -505,21 +560,10 @@ body {
   .v2-marquee, .v2-pulse-dot, .v2-cta-pulse { animation: none !important; }
 }
 
-/* Vignette around viewport edges — gives a projected-screen feel.
-   Suppressed on admin pages where it reads as visual noise instead. */
+/* Vignette: removed in the Toss redesign (the projected-screen feel
+   doesn't match the new clean white surface). Class kept as a no-op
+   so existing call sites in `app/layout.tsx` don't have to change. */
 .vignette::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(
-    ellipse at center,
-    transparent 55%,
-    rgba(22, 16, 32, 0.18) 100%
-  );
-  z-index: 3;
-}
-body:has(.admin-shell).vignette::before {
   display: none;
 }
 

@@ -211,32 +211,22 @@ export default function V2Nav() {
         {/* Brand */}
         <Link
           href="/"
-          className="group block focus:outline-none"
+          className="group flex items-center gap-3 focus:outline-none"
           aria-label="치즈필름 홈으로"
         >
-          <div className="flex items-center gap-3">
-            <span className="inline-flex w-11 h-11 rounded-full bg-cheeze-purple overflow-hidden border border-cheeze-purple-deep transition-transform duration-300 ease-out group-hover:-rotate-[8deg] group-hover:scale-105">
-              <Image
-                src="/cheeze-logo.png"
-                alt=""
-                width={44}
-                height={44}
-                className="w-full h-full object-cover"
-                priority
-              />
-            </span>
-            <div className="leading-tight">
-              <div
-                className="text-xl text-cheeze-ink transition-colors group-hover:text-cheeze-purple-deep"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                치즈필름
-              </div>
-              <div className="text-[9px] tracking-[0.35em] uppercase text-cheeze-olive mt-1">
-                Editorial 02
-              </div>
-            </div>
-          </div>
+          <span className="inline-flex w-10 h-10 rounded-2xl bg-cheeze-purple overflow-hidden">
+            <Image
+              src="/cheeze-logo.png"
+              alt=""
+              width={40}
+              height={40}
+              className="w-full h-full object-cover"
+              priority
+            />
+          </span>
+          <span className="text-[15px] font-bold text-cheeze-ink tracking-tight">
+            치즈필름
+          </span>
         </Link>
 
         {/* Nav list with scroll-spy marker.
@@ -278,44 +268,28 @@ export default function V2Nav() {
                           }
                         : undefined
                     }
-                    className={`relative grid grid-cols-[1.6rem_1fr] items-baseline gap-3 px-2 py-2 transition-colors ${
+                    className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] font-semibold transition-all ${
                       active
-                        ? "text-cheeze-ink"
-                        : "text-cheeze-olive/45 hover:text-cheeze-ink/70"
+                        ? "bg-toss-50 text-cheeze-ink"
+                        : "text-toss-500 hover:bg-toss-50 hover:text-cheeze-ink"
                     }`}
                   >
-                    {/* Yellow marker — width transitions so the highlight
-                        feels like it slides between items as activeId moves. */}
-                    <span
-                      aria-hidden
-                      className={`absolute -left-7 top-1/2 -translate-y-1/2 h-px bg-cheeze-yellow transition-all duration-500 ease-out ${
-                        active ? "w-7 opacity-100" : "w-2 opacity-30"
-                      }`}
-                    />
-                    {/* Pending state — fires on click before the next page
-                        renders. Gives instant feedback on slow dev routes. */}
                     <LinkPending />
                     <span
-                      className={`font-mono text-[10px] tracking-wider tabular-nums transition-colors pt-2 ${
-                        active ? "text-cheeze-ink/70" : "text-cheeze-olive/40"
+                      className={`text-[11px] font-mono tabular-nums transition-colors ${
+                        active ? "text-cheeze-purple" : "text-toss-300"
                       }`}
                     >
                       {item.num}
                     </span>
-                    <span className="flex items-baseline gap-2">
-                      <span
-                        className="text-3xl leading-none"
-                        style={{ fontFamily: "var(--font-display)" }}
-                      >
-                        {item.label}
-                      </span>
-                      <span
-                        className={`text-[10px] tracking-[0.3em] uppercase transition-colors ${
-                          active ? "text-cheeze-ink/55" : "text-cheeze-olive/40"
-                        }`}
-                      >
-                        {item.labelEn}
-                      </span>
+                    <span className="flex-1">{item.label}</span>
+                    <span
+                      aria-hidden
+                      className={`text-[10px] tracking-wider uppercase transition-opacity ${
+                        active ? "opacity-50" : "opacity-0"
+                      }`}
+                    >
+                      {item.labelEn}
                     </span>
                   </Link>
                 </li>
