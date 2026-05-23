@@ -325,64 +325,36 @@ export default function V2Nav() {
         </nav>
 
         {/* CTA + social row.
-            Editorial micro-poster: "NOW CASTING" status pip with a
-            pulsing dot up top, big display-font CTA, yellow accent
-            stripe on the left so the whole block reads as a poster
-            tacked to the rail rather than a flat button. */}
+            Toss-style: clean rounded card, one small status label, one
+            clear action. No yellow stripe, no film-perf dots, no mono
+            sub-label — those were over-decorating a 220px-wide button.
+            The whole rail is already editorial; the CTA's job is just
+            to feel inviting and tappable. */}
         <div className="space-y-4">
           <Link
             href="/v2/support"
-            className="group/cta relative block overflow-hidden bg-cheeze-purple-deep text-cheeze-cream hover:bg-cheeze-purple transition-colors"
+            className="group/cta block rounded-2xl bg-cheeze-purple-deep text-cheeze-cream hover:bg-cheeze-purple transition-colors px-4 py-3.5"
           >
-            {/* Left accent stripe in brand yellow */}
-            <span
-              aria-hidden
-              className="absolute top-0 bottom-0 left-0 w-1 bg-cheeze-yellow"
-            />
-            {/* Subtle film-strip dots along the right edge — matches
-                the .v2-film treatment used elsewhere on V2. */}
-            <span
-              aria-hidden
-              className="absolute top-2 bottom-2 right-1.5 w-px flex flex-col justify-between"
-            >
-              {Array.from({ length: 4 }).map((_, i) => (
-                <span
-                  key={i}
-                  className="block w-1 h-1 -mr-px rounded-full bg-cheeze-cream/25"
-                />
-              ))}
-            </span>
+            {/* Small status row */}
+            <div className="flex items-center gap-1.5 text-[11px] text-cheeze-cream/75">
+              <span
+                aria-hidden
+                className="block w-1.5 h-1.5 rounded-full bg-cheeze-yellow v2-cta-pulse"
+              />
+              오디션 모집 중
+            </div>
 
-            <div className="pl-4 pr-5 py-3.5">
-              {/* Status pip */}
-              <div className="flex items-center gap-1.5 text-[9px] tracking-[0.4em] uppercase text-cheeze-yellow/90 font-mono mb-1.5">
-                <span
-                  aria-hidden
-                  className="block w-1.5 h-1.5 rounded-full bg-cheeze-yellow v2-cta-pulse"
-                />
-                Now casting · 모집중
-              </div>
-
-              {/* Action row */}
-              <div className="flex items-baseline justify-between gap-2">
-                <span
-                  className="text-[1.05rem] leading-none tracking-tight text-cheeze-cream"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  오디션 지원
-                </span>
-                <span
-                  aria-hidden
-                  className="text-cheeze-yellow text-base leading-none transition-transform duration-300 group-hover/cta:translate-x-1"
-                >
-                  →
-                </span>
-              </div>
-
-              {/* Sub-label */}
-              <div className="mt-1.5 text-[9px] tracking-[0.35em] uppercase text-cheeze-cream/55 font-mono">
-                Audition · apply
-              </div>
+            {/* Action row */}
+            <div className="mt-1 flex items-center justify-between gap-2">
+              <span className="text-[15px] font-semibold tracking-tight text-cheeze-cream">
+                지원하기
+              </span>
+              <span
+                aria-hidden
+                className="text-cheeze-cream/80 text-[15px] leading-none transition-transform duration-300 group-hover/cta:translate-x-1"
+              >
+                →
+              </span>
             </div>
           </Link>
 
