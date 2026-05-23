@@ -69,27 +69,28 @@ body {
   overflow-x: hidden; /* polaroid rotations should not create horizontal scroll */
 }
 
-/* Overscroll color match for V2 routes.
+/* Overscroll handling for V2 routes.
  *
- * When the user rubber-bands past the bottom of the page on iOS/macOS,
- * the browser exposes the <html> element's background — *not* the
- * footer's. With `html { background: cream }` the user saw a cream
- * stripe peeking out below the purple footer, which broke the
- * editorial feel.
+ * Rubber-band exposes the <html> background as a colored stripe past
+ * either edge of the page. We tried two prior fixes — both failed:
+ *   1. `html:has(main.editorial)` swap to purple — Tailwind v4's
+ *      Lightning CSS silently dropped the `:has()` rule from the
+ *      production bundle (CSS chunks didn't contain it).
+ *   2. `html.v2-editorial { background: purple }` — landed, but the
+ *      *top* rubber-band also turned purple, which broke the cream
+ *      hero band.
  *
- * Solution: V2Nav toggles `html.v2-editorial` on mount, and we swap
- * the canvas to the footer's purple while that class is on. Originally
- * tried `html:has(main.editorial)` but Tailwind v4's Lightning CSS
- * silently drops `:has()` rules from the build, so the rule never
- * shipped. Class-based selector is well-supported and survives the
- * minifier.
+ * Cleanest answer: disable the rubber-band entirely on V2 routes.
+ * Editorial sites do this all the time — the page stops crisply at
+ * the footer instead of revealing canvas. Cream stays cream, purple
+ * stays purple, no flash on either end.
  *
- * Admin and other surfaces don't get the class, so their canvas
- * stays cream. Yes, the *top* rubber-band also picks up the purple,
- * but cheaper visually than the cream gap that motivated this fix.
+ * `overscroll-behavior` applied to <html> turns off the bounce for
+ * the document. V2Nav toggles `.v2-editorial` on mount, so admin
+ * and other surfaces keep their native bounce.
  */
 html.v2-editorial {
-  background: var(--cheeze-purple-deep);
+  overscroll-behavior-y: none;
 }
 
 /* Pretendard utility — applied only inside the admin shell.
