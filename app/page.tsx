@@ -241,8 +241,11 @@ export default async function HomeV2() {
         </div>
       </section>
 
-      {/* ── FILMS ───────────────────────────────────── */}
-      <section id="films" className="border-b border-cheeze-purple-deep/15">
+      {/* ── CAST ──────────────────────────────────────
+          Moved above the films block per user request — the cast
+          spread is the primary identity moment, so it earns the
+          first slot after the about/story intro. */}
+      <section id="cast" className="border-b border-cheeze-purple-deep/15">
         <div className="mx-auto max-w-[100rem] px-6 py-24">
           <div className="grid lg:grid-cols-12 mb-12 items-end">
             <InView className="v2-fade-up lg:col-span-2">
@@ -252,6 +255,98 @@ export default async function HomeV2() {
                 style={{ fontFamily: "var(--font-display)" }}
               >
                 02
+              </div>
+            </InView>
+            <InView className="v2-fade-up v2-title lg:col-span-7">
+              <h2
+                className="text-4xl md:text-5xl tracking-tight"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                The Cast.
+              </h2>
+              <p className="mt-3 text-cheeze-ink-soft">
+                카메라 앞과 뒤, 함께 굽는 사람들.
+              </p>
+            </InView>
+            <Link
+              href="/members"
+              className="lg:col-span-3 lg:text-right text-sm font-bold tracking-widest uppercase text-cheeze-purple hover:text-cheeze-purple-deep mt-4 lg:mt-0"
+            >
+              전체 멤버 →
+            </Link>
+          </div>
+
+          {/* Cast grid — Toss-style photo cards.
+              Editorial pick: a hand-curated set of six members shown on
+              the home spread. Order in `FEATURED_CAST_NAMES` is the
+              order they appear; only entries with an uploaded portrait
+              actually render. The full roster (everyone, photo or not)
+              is still at /members via the "전체 멤버 →" link above. */}
+          {(() => {
+            const FEATURED_CAST_NAMES = [
+              "조효민",
+              "조채윤",
+              "다솜",
+              "민지",
+              "선경",
+              "유덕",
+            ] as const;
+            const byName = new Map(members.map((m) => [m.name, m]));
+            const featured = FEATURED_CAST_NAMES.map((n) => byName.get(n))
+              .filter((m): m is NonNullable<typeof m> => Boolean(m?.photoPath));
+            return (
+              <ol className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5">
+                {featured.map((m, i) => (
+                  <InView
+                    key={m.slug}
+                    as="li"
+                    className="v2-fade-up"
+                    style={{ transitionDelay: `${i * 60}ms` } as React.CSSProperties}
+                  >
+                    <Link
+                      href={`/members/${encodeURIComponent(m.slug)}`}
+                      className="group block"
+                    >
+                      <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-toss-100">
+                        {/* photoPath is required to enter this list, so
+                            we know `m.photoPath` is set — the `!` is
+                            informational, not assertive. */}
+                        <Image
+                          src={storageUrl("members", m.photoPath!)}
+                          alt={m.name}
+                          fill
+                          sizes="(min-width: 1024px) 16vw, (min-width: 768px) 32vw, 50vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      </div>
+                      <div className="mt-3 px-1">
+                        <div className="text-[15px] font-bold text-cheeze-ink tracking-tight truncate">
+                          {m.name}
+                        </div>
+                        <div className="mt-0.5 text-[12px] text-cheeze-ink-soft truncate">
+                          {m.roleLabel}
+                        </div>
+                      </div>
+                    </Link>
+                  </InView>
+                ))}
+              </ol>
+            );
+          })()}
+        </div>
+      </section>
+
+      {/* ── FILMS ───────────────────────────────────── */}
+      <section id="films" className="border-b border-cheeze-purple-deep/15">
+        <div className="mx-auto max-w-[100rem] px-6 py-24">
+          <div className="grid lg:grid-cols-12 mb-12 items-end">
+            <InView className="v2-fade-up lg:col-span-2">
+              <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">— Section 03</div>
+              <div
+                className="mt-3 text-[3rem] leading-none text-cheeze-purple"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                03
               </div>
             </InView>
             <InView as="div" className="v2-fade-up v2-title lg:col-span-7">
@@ -447,98 +542,6 @@ export default async function HomeV2() {
           </div>
         </section>
       )}
-
-      {/* ── CAST ────────────────────────────────────── */}
-      <section id="cast" className="border-b border-cheeze-purple-deep/15">
-        <div className="mx-auto max-w-[100rem] px-6 py-24">
-          <div className="grid lg:grid-cols-12 mb-12 items-end">
-            <InView className="v2-fade-up lg:col-span-2">
-              <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">— Section 04</div>
-              <div
-                className="mt-3 text-[3rem] leading-none text-cheeze-purple"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                03
-              </div>
-            </InView>
-            <InView className="v2-fade-up v2-title lg:col-span-7">
-              <h2
-                className="text-4xl md:text-5xl tracking-tight"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                The Cast.
-              </h2>
-              <p className="mt-3 text-cheeze-ink-soft">
-                카메라 앞과 뒤, 함께 굽는 사람들.
-              </p>
-            </InView>
-            <Link
-              href="/members"
-              className="lg:col-span-3 lg:text-right text-sm font-bold tracking-widest uppercase text-cheeze-purple hover:text-cheeze-purple-deep mt-4 lg:mt-0"
-            >
-              전체 멤버 →
-            </Link>
-          </div>
-
-          {/* Cast grid — Toss-style photo cards.
-              Editorial pick: a hand-curated set of six members shown on
-              the home spread. Order in `FEATURED_CAST_NAMES` is the
-              order they appear; only entries with an uploaded portrait
-              actually render. The full roster (everyone, photo or not)
-              is still at /members via the "전체 멤버 →" link above. */}
-          {(() => {
-            const FEATURED_CAST_NAMES = [
-              "조효민",
-              "조채윤",
-              "다솜",
-              "민지",
-              "선경",
-              "유덕",
-            ] as const;
-            const byName = new Map(members.map((m) => [m.name, m]));
-            const featured = FEATURED_CAST_NAMES.map((n) => byName.get(n))
-              .filter((m): m is NonNullable<typeof m> => Boolean(m?.photoPath));
-            return (
-              <ol className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5">
-                {featured.map((m, i) => (
-                  <InView
-                    key={m.slug}
-                    as="li"
-                    className="v2-fade-up"
-                    style={{ transitionDelay: `${i * 60}ms` } as React.CSSProperties}
-                  >
-                    <Link
-                      href={`/members/${encodeURIComponent(m.slug)}`}
-                      className="group block"
-                    >
-                      <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-toss-100">
-                        {/* photoPath is required to enter this list, so
-                            we know `m.photoPath` is set — the `!` is
-                            informational, not assertive. */}
-                        <Image
-                          src={storageUrl("members", m.photoPath!)}
-                          alt={m.name}
-                          fill
-                          sizes="(min-width: 1024px) 16vw, (min-width: 768px) 32vw, 50vw"
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                      </div>
-                      <div className="mt-3 px-1">
-                        <div className="text-[15px] font-bold text-cheeze-ink tracking-tight truncate">
-                          {m.name}
-                        </div>
-                        <div className="mt-0.5 text-[12px] text-cheeze-ink-soft truncate">
-                          {m.roleLabel}
-                        </div>
-                      </div>
-                    </Link>
-                  </InView>
-                ))}
-              </ol>
-            );
-          })()}
-        </div>
-      </section>
 
       {/* ── CAREERS teaser ──────────────────────────── */}
       {/* Compact preview of the full careers page so users don't have to

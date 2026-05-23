@@ -61,8 +61,8 @@ type NavItem = {
 // search or a deep link).
 const NAV: NavItem[] = [
   { num: "01", label: "소개",   labelEn: "About",   href: "/#issue",    sectionId: "issue" },
-  { num: "02", label: "영상",   labelEn: "Films",   href: "/#films",    sectionId: "films",   routeMatch: "/videos" },
-  { num: "03", label: "멤버",   labelEn: "Cast",    href: "/#cast",     sectionId: "cast",    routeMatch: "/members" },
+  { num: "02", label: "멤버",   labelEn: "Cast",    href: "/#cast",     sectionId: "cast",    routeMatch: "/members" },
+  { num: "03", label: "영상",   labelEn: "Films",   href: "/#films",    sectionId: "films",   routeMatch: "/videos" },
   { num: "04", label: "채용",   labelEn: "Careers", href: "/#careers",  sectionId: "careers", routeMatch: "/careers" },
 ];
 

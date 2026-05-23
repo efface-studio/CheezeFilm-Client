@@ -219,10 +219,14 @@ function ListingItem({
         )}
 
         {l.requirements && (
-          <p className="mt-3 text-[13px] text-cheeze-ink-soft/85 whitespace-pre-wrap leading-relaxed">
-            <span className="font-semibold text-cheeze-ink-soft">지원 조건 · </span>
-            {l.requirements}
-          </p>
+          <div className="mt-3">
+            <div className="text-[12px] font-semibold text-cheeze-ink-soft mb-1">
+              지원 조건
+            </div>
+            <p className="text-[13px] text-cheeze-ink-soft/85 whitespace-pre-wrap leading-relaxed">
+              {l.requirements}
+            </p>
+          </div>
         )}
       </button>
     </li>
