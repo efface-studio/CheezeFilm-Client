@@ -613,8 +613,12 @@ function AuditionsTable({ items }: { items: Audition[] }) {
  *   - Right column: 자기소개 quote → 경력 → 포트폴리오, with editorial section dividers
  *   - Bottom: full-width status actions bar
  */
-function AuditionDetail({ audition: a }: { audition: Audition }) {
-  const listing = listingSummary(a.listing_id);
+async function AuditionDetail({ audition: a }: { audition: Audition }) {
+  // listingSummary hits Supabase, so it returns a Promise. The previous
+  // sync version stored the Promise in `listing` and React happened to
+  // print [object Promise] / nothing depending on the moment — fixed
+  // by awaiting it now.
+  const listing = await listingSummary(a.listing_id);
   const submitted = new Date(a.created_at);
   const submittedStr = `${submitted.getFullYear()}.${String(submitted.getMonth() + 1).padStart(2, "0")}.${String(submitted.getDate()).padStart(2, "0")} ${String(submitted.getHours()).padStart(2, "0")}:${String(submitted.getMinutes()).padStart(2, "0")}`;
   return (
@@ -648,15 +652,16 @@ function AuditionDetail({ audition: a }: { audition: Audition }) {
             </div>
           </div>
 
-          {/* Facts */}
-          <dl className="rounded-md border border-zinc-200 bg-white divide-y divide-zinc-100 text-xs">
+          {/* Facts — Toss-style soft card. Dropped the bordered table
+              look, swapped the broken ▣-prefixed purple link for a
+              proper tinted pill, and used softer dividers. */}
+          <dl className="rounded-xl bg-zinc-50 divide-y divide-zinc-200/60 text-xs overflow-hidden">
             <FactRow label="제출일" value={submittedStr} mono />
             <FactRow
               label="지원 공고"
               value={
                 listing ? (
-                  <span className="inline-flex items-center gap-1 text-purple-700 font-medium">
-                    <span aria-hidden>▣</span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[11px] font-semibold max-w-full">
                     <span className="truncate">{listing}</span>
                   </span>
                 ) : (
