@@ -270,7 +270,7 @@ export default function V2Nav() {
                     }
                     className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] font-semibold transition-all ${
                       active
-                        ? "bg-toss-50 text-cheeze-ink"
+                        ? "bg-cheeze-purple/10 text-cheeze-purple-deep"
                         : "text-toss-500 hover:bg-toss-50 hover:text-cheeze-ink"
                     }`}
                   >
@@ -286,7 +286,7 @@ export default function V2Nav() {
                     <span
                       aria-hidden
                       className={`text-[10px] tracking-wider uppercase transition-opacity ${
-                        active ? "opacity-50" : "opacity-0"
+                        active ? "opacity-60" : "opacity-0"
                       }`}
                     >
                       {item.labelEn}
