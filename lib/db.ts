@@ -106,6 +106,12 @@ function createDb(): Database.Database {
       "CREATE INDEX IF NOT EXISTS idx_auditions_listing ON auditions(listing_id)",
     );
   }
+  if (!auditionCols.some((c) => c.name === "birthdate")) {
+    // YYYY-MM-DD — replaces the older `age` integer (which we keep around
+    // for legacy rows). The submission API derives age from birthdate at
+    // ingest so older rows that only have `age` keep working too.
+    conn.exec("ALTER TABLE auditions ADD COLUMN birthdate TEXT");
+  }
 
   return conn;
 }
@@ -138,6 +144,9 @@ export type Audition = {
   id: number;
   name: string;
   age: number | null;
+  /** ISO date `YYYY-MM-DD` — newer submissions carry this; older rows
+   *  may only have `age`. */
+  birthdate: string | null;
   gender: string | null;
   phone: string | null;
   email: string;

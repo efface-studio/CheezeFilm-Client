@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Confetti from "@/components/Confetti";
+import BirthdateInput from "@/components/BirthdateInput";
+import PhoneInput from "@/components/PhoneInput";
+import { formatDeadline, formatDeadlineLong } from "@/lib/deadline";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -116,59 +119,111 @@ function ListingPicker({
       )}
 
       {listings && listings.length > 0 && (
-        <ul className="grid gap-6">
-          {listings.map((l) => (
-            <li
+        <ul className="divide-y divide-cheeze-purple-deep/20 border-t border-b border-cheeze-purple-deep/20">
+          {listings.map((l, i) => (
+            <ListingItem
               key={l.id}
-              className="border border-cheeze-purple-deep/30 hover:border-cheeze-purple-deep p-6 transition-colors"
-            >
-              <div className="flex items-start justify-between gap-6">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 bg-cheeze-purple-deep text-cheeze-yellow">
-                      {ROLE_LABEL[l.role_type]}
-                    </span>
-                    {l.deadline && (
-                      <span className="text-[10px] uppercase tracking-widest text-cheeze-wine">
-                        ~ {l.deadline}
-                      </span>
-                    )}
-                  </div>
-                  <h3
-                    className="text-2xl tracking-tight"
-                    style={{ fontFamily: "var(--font-display)" }}
-                  >
-                    {l.title}
-                  </h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onPick(l)}
-                  className="shrink-0 text-xs font-bold tracking-widest uppercase px-5 py-3 bg-cheeze-purple-deep text-cheeze-yellow hover:bg-cheeze-purple transition-colors"
-                >
-                  지원하기 →
-                </button>
-              </div>
-              {l.description && (
-                <p className="text-sm text-cheeze-ink-soft whitespace-pre-wrap mt-4">
-                  {l.description}
-                </p>
-              )}
-              {l.requirements && (
-                <div className="mt-4 pt-4 border-t border-cheeze-purple-deep/15">
-                  <div className="text-[10px] uppercase tracking-widest text-cheeze-purple-deep mb-1">
-                    지원 조건
-                  </div>
-                  <p className="text-sm text-cheeze-ink-soft/90 whitespace-pre-wrap">
-                    {l.requirements}
-                  </p>
-                </div>
-              )}
-            </li>
+              listing={l}
+              index={i + 1}
+              total={listings.length}
+              onPick={() => onPick(l)}
+            />
           ))}
         </ul>
       )}
     </div>
+  );
+}
+
+/**
+ * One open call rendered as a call-sheet entry — magazine-style numbered
+ * index in the left rail, big display title, animated yellow rule on hover.
+ * Click-anywhere-to-apply makes the whole row a single ergonomic target.
+ */
+function ListingItem({
+  listing: l,
+  index,
+  total,
+  onPick,
+}: {
+  listing: Listing;
+  index: number;
+  total: number;
+  onPick: () => void;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onPick}
+        className="group block w-full text-left py-10 lg:grid lg:grid-cols-[80px_1fr_auto] lg:gap-10 lg:items-start hover:bg-cheeze-cream-deep/30 transition-colors px-2 -mx-2"
+      >
+        {/* Left rail — magazine-style index */}
+        <div className="hidden lg:block pt-2">
+          <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">
+            No.
+          </div>
+          <div
+            className="text-4xl text-cheeze-purple-deep mt-1 leading-none tabular-nums"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            {String(index).padStart(2, "0")}
+          </div>
+          <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive mt-2 tabular-nums">
+            / {String(total).padStart(2, "0")}
+          </div>
+        </div>
+
+        {/* Center — metadata + headline + body */}
+        <div className="min-w-0">
+          <div className="flex items-center gap-3 mb-3 flex-wrap">
+            <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 bg-cheeze-purple-deep text-cheeze-yellow font-bold">
+              {ROLE_LABEL[l.role_type]}
+            </span>
+            {l.deadline && (
+              <span className="text-[11px] uppercase tracking-wider text-cheeze-wine font-semibold inline-flex items-center gap-1.5">
+                <span className="w-1 h-1 rounded-full bg-cheeze-wine" />
+                {formatDeadlineLong(l.deadline)} 마감
+              </span>
+            )}
+          </div>
+          <h3
+            className="text-3xl md:text-4xl tracking-tight leading-[1.05] text-cheeze-ink"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            {l.title}
+          </h3>
+          {/* Yellow accent rule — grows on hover */}
+          <div className="mt-4 h-px w-12 bg-cheeze-yellow transition-[width] duration-500 group-hover:w-32" />
+
+          {l.description && (
+            <p className="mt-5 text-[15px] text-cheeze-ink-soft whitespace-pre-wrap leading-relaxed max-w-prose">
+              {l.description}
+            </p>
+          )}
+          {l.requirements && (
+            <div className="mt-5 border-l-2 border-cheeze-purple-deep/30 group-hover:border-cheeze-purple-deep pl-4 py-1 transition-colors">
+              <div className="text-[10px] uppercase tracking-widest text-cheeze-purple-deep font-bold mb-1">
+                지원 조건
+              </div>
+              <p className="text-sm text-cheeze-ink-soft/90 whitespace-pre-wrap leading-relaxed">
+                {l.requirements}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Right — call-to-action chip + arrow shift */}
+        <div className="lg:self-end mt-6 lg:mt-0 lg:pt-2 flex lg:justify-end">
+          <span className="inline-flex items-center gap-3 text-xs font-bold tracking-widest uppercase px-6 py-4 bg-cheeze-purple-deep text-cheeze-yellow group-hover:bg-cheeze-purple transition-colors">
+            지원하기
+            <span className="inline-block transition-transform group-hover:translate-x-1.5">
+              →
+            </span>
+          </span>
+        </div>
+      </button>
+    </li>
   );
 }
 
@@ -266,7 +321,7 @@ function ApplyForm({
             </h3>
             {listing.deadline && (
               <span className="text-xs text-cheeze-wine">
-                ~ {listing.deadline}
+                ~ {formatDeadline(listing.deadline)}
               </span>
             )}
           </div>
@@ -342,7 +397,14 @@ function ApplyForm({
       <FieldGroup title="기본 정보">
         <div className="grid sm:grid-cols-2 gap-x-6 gap-y-4">
           <Field label="이름" name="name" required maxLength={50} placeholder="홍길동" />
-          <Field label="나이" name="age" type="number" placeholder="만 나이" />
+          <label className="block">
+            <span className="text-xs tracking-widest uppercase text-cheeze-olive">
+              생년월일
+            </span>
+            <BirthdateInput
+              className="mt-1.5 w-full bg-transparent border-b border-cheeze-purple-deep/40 focus:border-cheeze-purple-deep outline-none py-2 text-sm placeholder:text-cheeze-olive/50"
+            />
+          </label>
           <SelectField label="성별" name="gender">
             <option value="">선택 안 함</option>
             <option value="female">여성</option>
@@ -366,7 +428,14 @@ function ApplyForm({
       <FieldGroup title="연락처">
         <div className="grid sm:grid-cols-2 gap-x-6 gap-y-4">
           <Field label="이메일" name="email" type="email" required placeholder="you@example.com" />
-          <Field label="연락처" name="phone" placeholder="010-0000-0000" />
+          <label className="block">
+            <span className="text-xs tracking-widest uppercase text-cheeze-olive">
+              연락처
+            </span>
+            <PhoneInput
+              className="mt-1.5 w-full bg-transparent border-b border-cheeze-purple-deep/40 focus:border-cheeze-purple-deep outline-none py-2 text-sm placeholder:text-cheeze-olive/50"
+            />
+          </label>
         </div>
       </FieldGroup>
 

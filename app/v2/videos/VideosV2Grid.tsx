@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import type { Video } from "@/lib/youtube";
 
@@ -142,12 +143,13 @@ export default function VideosV2Grid({
             className="group text-left v2-film"
           >
             <div className="aspect-[16/10] relative overflow-hidden bg-cheeze-charcoal">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={v.thumbnail}
                 alt={v.title}
+                fill
+                sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                className="object-cover"
                 loading="lazy"
-                className="absolute inset-0 w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-cheeze-charcoal/55 via-cheeze-charcoal/0 to-transparent" />
               {v.durationSec && (
@@ -182,12 +184,13 @@ export default function VideosV2Grid({
             className="group text-left v2-film"
           >
             <div className="aspect-[9/16] relative overflow-hidden bg-cheeze-charcoal">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={v.thumbnail}
                 alt={v.title}
+                fill
+                sizes="(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw"
+                className="object-cover"
                 loading="lazy"
-                className="absolute inset-0 w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-cheeze-charcoal/85 to-transparent" />
               <span className="absolute top-2 left-2 bg-cheeze-yellow text-cheeze-purple-deep text-[9px] font-bold tracking-widest px-1.5 py-0.5">

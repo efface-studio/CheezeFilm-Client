@@ -60,6 +60,17 @@ export function InView({
       setRevealed(true);
       return;
     }
+    // Above-fold elements need to reveal immediately — IntersectionObserver
+    // queues its first callback for the next frame, and depending on browser
+    // it sometimes never fires for elements that are already visible at the
+    // very moment of observe() (Chrome dev double-effect in StrictMode is the
+    // usual culprit). Synchronous geometry check on mount catches those.
+    const rect = el.getBoundingClientRect();
+    const vh = window.innerHeight || 0;
+    if (rect.top < vh && rect.bottom > 0) {
+      setRevealed(true);
+      return;
+    }
     const io = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
@@ -81,7 +92,10 @@ export function InView({
     <Component
       ref={ref as React.Ref<HTMLElement>}
       className={className}
-      data-revealed={revealed || undefined}
+      // Explicitly render the string "true" — `data-revealed={true}` would
+      // be serialized by React as an empty attribute (`data-revealed=""`),
+      // which doesn't satisfy the CSS selectors that look for ="true".
+      data-revealed={revealed ? "true" : undefined}
       {...rest}
     >
       {children}

@@ -1,12 +1,26 @@
 import fs from "node:fs";
 import path from "node:path";
+import Image from "next/image";
 import Link from "next/link";
 import { V2Header, V2Footer } from "../page";
 import { InView } from "@/components/Stagger";
 import { members } from "@/lib/members";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "캐스트 | 치즈필름 02", description: "Editorial cast roster." };
+export const metadata = {
+  title: "캐스트 · The Cast",
+  description:
+    "치즈필름의 카메라 앞과 뒤, 함께 한 컷을 굽는 사람들. 배우·작가·연출의 명단을 한 페이지에서.",
+  alternates: { canonical: "/v2/members" },
+  openGraph: {
+    title: "캐스트 · The Cast | 치즈필름",
+    description: "치즈필름의 배우·작가·연출의 명단.",
+    url: "/v2/members",
+    type: "website",
+    images: ["/cheeze-logo.png"],
+  },
+  twitter: { images: ["/cheeze-logo.png"] },
+};
 
 const IMAGE_EXTS = [".jpg", ".jpeg", ".png", ".webp"];
 function resolvePhoto(slug: string) {
@@ -14,8 +28,10 @@ function resolvePhoto(slug: string) {
   for (const ext of IMAGE_EXTS) {
     const file = path.join(dir, `${slug}${ext}`);
     if (fs.existsSync(file)) {
-      const v = fs.statSync(file).mtimeMs;
-      return `/members/${slug}${ext}?v=${Math.floor(v)}`;
+      // No `?v=<mtime>` cache-bust — Next/Image rejects query strings
+      // on local sources, and the `/members/*` Cache-Control header
+      // already serves fresh content within 1 hour with SWR fallback.
+      return `/members/${slug}${ext}`;
     }
   }
   return null;
@@ -23,11 +39,11 @@ function resolvePhoto(slug: string) {
 
 export default function V2MembersPage() {
   return (
-    <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial">
+    <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial lg:pl-56">
       <V2Header />
 
       <section className="border-b border-cheeze-purple-deep/15">
-        <div className="mx-auto max-w-7xl px-6 py-16 grid lg:grid-cols-12 gap-x-10 gap-y-8">
+        <div className="mx-auto max-w-[100rem] px-6 py-16 grid lg:grid-cols-12 gap-x-10 gap-y-8">
           <InView className="v2-fade-up lg:col-span-2">
             <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">— Cast & Crew</div>
             <div className="mt-2 text-[3rem] leading-none text-cheeze-purple" style={{ fontFamily: "var(--font-display)" }}>
@@ -55,7 +71,7 @@ export default function V2MembersPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-16">
+      <section className="mx-auto max-w-[100rem] px-6 py-16">
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-14">
           {members.map((m, i) => {
             const photo = resolvePhoto(m.slug);
@@ -63,68 +79,81 @@ export default function V2MembersPage() {
               <InView
                 key={m.slug}
                 as="article"
-                className="v2-fade-up"
+                className="v2-fade-up group"
                 style={{ transitionDelay: `${(i % 3) * 80}ms` } as React.CSSProperties}
               >
-                <div className="v2-film aspect-[3/4] bg-cheeze-purple-deep relative overflow-hidden">
-                  {photo ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={photo}
-                      alt={m.name}
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span
-                      aria-hidden
-                      className="absolute inset-0 grid place-items-center text-[10rem] text-cheeze-yellow"
-                      style={{ fontFamily: "var(--font-display)" }}
-                    >
-                      {m.name.charAt(0)}
-                    </span>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-cheeze-charcoal/85 via-cheeze-charcoal/0 to-transparent" />
-                  <div className="absolute top-3 left-4 text-cheeze-yellow font-mono text-[11px] tracking-[0.3em]">
-                    № {String(i + 1).padStart(2, "0")}
-                  </div>
-                  <div className="absolute inset-x-0 bottom-0 p-4">
-                    <div className="text-[10px] tracking-[0.3em] uppercase text-cheeze-cream/85">
-                      {m.roleLabel}
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <h3 className="text-2xl tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
-                    {m.name}{" "}
-                    <span className="text-cheeze-olive text-xs uppercase tracking-widest font-normal">
-                      {m.nameEn}
-                    </span>
-                  </h3>
-                  <p className="mt-2 italic text-cheeze-purple-deep text-sm">“{m.highlight}”</p>
-                  <p className="mt-3 text-[14px] text-cheeze-ink-soft leading-relaxed">{m.bio}</p>
-                  <ul className="mt-3 text-[12px] text-cheeze-olive space-y-1">
-                    {m.works.map((w) => (
-                      <li key={w}>· {w}</li>
-                    ))}
-                  </ul>
-                  <div className="mt-4 flex items-center gap-3 text-[11px]">
-                    {m.joinedNote && (
-                      <span className="border border-cheeze-purple-deep/40 px-2 py-1 tracking-widest uppercase">
-                        {m.joinedNote}
+                {/* Card is now a Link to the member's detail page — the
+                    Instagram anchor and the wrapping link both fire on
+                    click, so we stop propagation on the Instagram link
+                    below to keep it pointing at the IG profile. */}
+                <Link
+                  href={`/v2/members/${encodeURIComponent(m.slug)}`}
+                  className="block"
+                >
+                  <div className="v2-film aspect-[3/4] bg-cheeze-purple-deep relative overflow-hidden">
+                    {photo ? (
+                      <Image
+                        src={photo}
+                        alt={m.name}
+                        fill
+                        sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                        className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                        // 첫 6장만 viewport 안에 들 가능성 큰 LCP 후보 — priority
+                        priority={i < 6}
+                      />
+                    ) : (
+                      <span
+                        aria-hidden
+                        className="absolute inset-0 grid place-items-center text-[10rem] text-cheeze-yellow"
+                        style={{ fontFamily: "var(--font-display)" }}
+                      >
+                        {m.name.charAt(0)}
                       </span>
                     )}
-                    {m.instagram && (
-                      <a
-                        href={`https://www.instagram.com/${m.instagram}/`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-cheeze-purple hover:text-cheeze-purple-deep tracking-widest"
-                      >
-                        @{m.instagram} ↗
-                      </a>
-                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-cheeze-charcoal/85 via-cheeze-charcoal/0 to-transparent" />
+                    <div className="absolute top-3 left-4 text-cheeze-yellow font-mono text-[11px] tracking-[0.3em]">
+                      № {String(i + 1).padStart(2, "0")}
+                    </div>
+                    <div className="absolute inset-x-0 bottom-0 p-4 flex items-center justify-between">
+                      <div className="text-[10px] tracking-[0.3em] uppercase text-cheeze-cream/85">
+                        {m.roleLabel}
+                      </div>
+                      <span className="text-cheeze-yellow text-xs tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity">
+                        프로필 →
+                      </span>
+                    </div>
                   </div>
-                </div>
+                  <div className="mt-4">
+                    <h3 className="text-2xl tracking-tight group-hover:text-cheeze-purple transition-colors" style={{ fontFamily: "var(--font-display)" }}>
+                      {m.name}{" "}
+                      <span className="text-cheeze-olive text-xs uppercase tracking-widest font-normal">
+                        {m.nameEn}
+                      </span>
+                    </h3>
+                    <p className="mt-2 italic text-cheeze-purple-deep text-sm">“{m.highlight}”</p>
+                    <p className="mt-3 text-[14px] text-cheeze-ink-soft leading-relaxed">{m.bio}</p>
+                    <ul className="mt-3 text-[12px] text-cheeze-olive space-y-1">
+                      {m.works.map((w) => (
+                        <li key={w}>· {w}</li>
+                      ))}
+                    </ul>
+                    {/* Instagram handle moved off the grid card — nested
+                        anchors are invalid HTML and we now have a member
+                        detail page that exposes the IG link cleanly. */}
+                    <div className="mt-4 flex items-center gap-3 text-[11px]">
+                      {m.joinedNote && (
+                        <span className="border border-cheeze-purple-deep/40 px-2 py-1 tracking-widest uppercase">
+                          {m.joinedNote}
+                        </span>
+                      )}
+                      {m.instagram && (
+                        <span className="text-cheeze-olive tracking-widest">
+                          @{m.instagram}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
               </InView>
             );
           })}

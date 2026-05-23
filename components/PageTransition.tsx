@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { flushSync } from "react-dom";
 
 /**
  * Page transition with two complementary mechanisms:
@@ -52,6 +53,9 @@ export default function PageTransition({
       // Skip external / new-tab / download / hash-only links.
       if (anchor.target && anchor.target !== "_self") return;
       if (anchor.hasAttribute("download")) return;
+      // Explicit opt-out — used by the design picker where a fade-only VT
+      // collides with React not having flushed the new tree yet.
+      if (anchor.hasAttribute("data-no-vt")) return;
       const href = anchor.getAttribute("href");
       if (!href || !href.startsWith("/")) return;
       // Any hash navigation should NEVER use a page transition — the browser
@@ -75,8 +79,16 @@ export default function PageTransition({
       }
 
       e.preventDefault();
+      // `flushSync` forces React to commit `router.push` synchronously
+      // inside the view-transition callback. Without it, Next 16 schedules
+      // the navigation as a transition update — VT then captures the OLD
+      // tree, "completes" the transition before the new tree commits, and
+      // the user is stuck on the source page with the URL bar updated but
+      // nothing rendered for the destination.
       doc.startViewTransition!(() => {
-        router.push(href);
+        flushSync(() => {
+          router.push(href);
+        });
       });
     }
 

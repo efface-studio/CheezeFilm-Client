@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import type { Video } from "@/lib/youtube";
 
@@ -170,22 +171,28 @@ function LongformGrid({
   videos: Video[];
   onOpen: (v: Video) => void;
 }) {
+  // Flex + `justify-center` keeps every row visually balanced. Items are
+  // a fixed width at each breakpoint (so cards don't bloat to absurd
+  // sizes); when the last batch leaves a partial row, the leftover items
+  // are centered with equal gutters on both sides instead of dangling on
+  // the left with empty space on the right.
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="flex flex-wrap gap-6 justify-center">
       {videos.map((v) => (
         <button
           key={v.id}
           type="button"
           onClick={() => onOpen(v)}
-          className="poster lightleak noise-overlay text-left group flex flex-col"
+          className="poster lightleak noise-overlay text-left group flex flex-col basis-[260px] sm:basis-[280px] lg:basis-[320px] grow-0 shrink-0 max-w-[360px]"
         >
           <div className="aspect-video relative overflow-hidden border-b-2 border-cheeze-purple-deep bg-cheeze-charcoal">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={v.thumbnail}
               alt={v.title}
+              fill
+              sizes="(min-width: 1024px) 320px, (min-width: 640px) 280px, 260px"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
               loading="lazy"
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
             <span className="absolute inset-0 grid place-items-center opacity-0 group-hover:opacity-100 transition-opacity bg-cheeze-purple-deep/55">
               <span className="text-cheeze-yellow text-5xl">▶</span>
@@ -219,22 +226,26 @@ function ShortsGrid({
   videos: Video[];
   onOpen: (v: Video) => void;
 }) {
+  // Same centered-flex trick as the longform grid, with tighter 9:16
+  // cards. The last partial row gets centered instead of hanging on
+  // the left, which was producing huge empty space at the page bottom.
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+    <div className="flex flex-wrap gap-4 sm:gap-5 justify-center">
       {videos.map((v) => (
         <button
           key={v.id}
           type="button"
           onClick={() => onOpen(v)}
-          className="group block text-left"
+          className="group block text-left basis-[150px] sm:basis-[170px] lg:basis-[195px] grow-0 shrink-0 max-w-[220px]"
         >
           <div className="aspect-[9/16] relative overflow-hidden border-2 border-cheeze-purple-deep bg-cheeze-charcoal shadow-[4px_4px_0_var(--cheeze-purple-deep)] group-hover:shadow-[6px_6px_0_var(--cheeze-purple-deep)] transition-shadow lightleak">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={v.thumbnail}
               alt={v.title}
+              fill
+              sizes="(min-width: 1024px) 200px, (min-width: 640px) 170px, 150px"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
               loading="lazy"
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
             <span className="absolute top-2 left-2 bg-cheeze-yellow text-cheeze-purple-deep text-[10px] font-bold tracking-widest px-1.5 py-0.5">
               SHORTS

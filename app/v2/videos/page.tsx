@@ -5,7 +5,20 @@ import { InView } from "@/components/Stagger";
 import VideosV2Grid from "./VideosV2Grid";
 
 export const revalidate = 3600;
-export const metadata = { title: "필모 | 치즈필름 02", description: "Editorial filmography." };
+export const metadata = {
+  title: "필모 · Filmography",
+  description:
+    "치즈필름이 지금까지 구워낸 작품들. 롱폼·쇼츠를 한 자리에서 다시 보세요.",
+  alternates: { canonical: "/v2/videos" },
+  openGraph: {
+    title: "필모 · Filmography | 치즈필름",
+    description: "치즈필름의 롱폼·쇼츠 필모그래피.",
+    url: "/v2/videos",
+    type: "website",
+    images: ["/cheeze-logo.png"],
+  },
+  twitter: { images: ["/cheeze-logo.png"] },
+};
 
 type SearchParams = Promise<{ kind?: string }>;
 
@@ -16,11 +29,11 @@ export default async function V2VideosPage({ searchParams }: { searchParams: Sea
   const { longform, shorts, source, totalCount } = await getAllVideos();
 
   return (
-    <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial">
+    <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial lg:pl-56">
       <V2Header />
 
       <section className="border-b border-cheeze-purple-deep/15">
-        <div className="mx-auto max-w-7xl px-6 py-16 grid lg:grid-cols-12 gap-x-10 gap-y-8 items-end">
+        <div className="mx-auto max-w-[100rem] px-6 py-16 grid lg:grid-cols-12 gap-x-10 gap-y-8 items-end">
           <InView className="v2-fade-up lg:col-span-2">
             <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">— Filmography</div>
             <div className="mt-2 text-[3rem] leading-none text-cheeze-purple" style={{ fontFamily: "var(--font-display)" }}>
@@ -71,13 +84,13 @@ export default async function V2VideosPage({ searchParams }: { searchParams: Sea
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-14">
+      <section className="mx-auto max-w-[100rem] px-6 py-14">
         <VideosV2Grid longform={longform} shorts={shorts} initialKind={initialKind} />
       </section>
 
       {source === "rss" && (
         <section className="border-t border-cheeze-purple-deep/15 bg-cheeze-cream-deep/40">
-          <div className="mx-auto max-w-7xl px-6 py-10 text-sm text-cheeze-ink-soft leading-relaxed">
+          <div className="mx-auto max-w-[100rem] px-6 py-10 text-sm text-cheeze-ink-soft leading-relaxed">
             <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-purple mb-2">
               — Editor's note
             </div>

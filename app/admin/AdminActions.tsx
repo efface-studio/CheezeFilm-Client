@@ -15,19 +15,46 @@ type Props =
       currentIsRead: boolean;
     };
 
-const STATUS_OPTIONS = [
-  { value: "pending", label: "대기" },
-  { value: "reviewing", label: "검토중" },
-  { value: "accepted", label: "합격" },
-  { value: "rejected", label: "불합격" },
-] as const;
+type StatusVal = "pending" | "reviewing" | "accepted" | "rejected";
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border-zinc-300",
-  reviewing: "bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-300",
-  accepted: "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border-emerald-300",
-  rejected: "bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-300",
-};
+const STATUS_OPTIONS: {
+  value: StatusVal;
+  label: string;
+  /** Active fill — solid Toss-style color, white text. */
+  activeBg: string;
+  activeText: string;
+  /** Inactive — soft pastel pill that hints at the destination color. */
+  idle: string;
+}[] = [
+  {
+    value: "pending",
+    label: "대기",
+    activeBg: "bg-zinc-900",
+    activeText: "text-white",
+    idle: "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
+  },
+  {
+    value: "reviewing",
+    label: "검토중",
+    activeBg: "bg-amber-500",
+    activeText: "text-white",
+    idle: "bg-amber-50 text-amber-700 hover:bg-amber-100",
+  },
+  {
+    value: "accepted",
+    label: "합격",
+    activeBg: "bg-emerald-500",
+    activeText: "text-white",
+    idle: "bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
+  },
+  {
+    value: "rejected",
+    label: "불합격",
+    activeBg: "bg-rose-500",
+    activeText: "text-white",
+    idle: "bg-rose-50 text-rose-700 hover:bg-rose-100",
+  },
+];
 
 export default function AdminActions(props: Props) {
   const router = useRouter();
@@ -72,29 +99,32 @@ export default function AdminActions(props: Props) {
 
   if (props.type === "audition") {
     return (
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-zinc-500 mr-1">상태:</span>
-        {STATUS_OPTIONS.map((opt) => {
-          const active = props.currentStatus === opt.value;
-          return (
-            <button
-              key={opt.value}
-              disabled={busy || active}
-              onClick={() => setStatus(opt.value)}
-              className={`text-xs font-semibold px-2.5 py-1 rounded border transition-colors ${
-                active
-                  ? "bg-purple-600 text-white border-purple-700 cursor-default"
-                  : `${STATUS_COLORS[opt.value]} cursor-pointer`
-              } disabled:opacity-60`}
-            >
-              {opt.label}
-            </button>
-          );
-        })}
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-xs font-semibold text-zinc-500 mr-1">상태</span>
+        <div className="flex flex-wrap items-center gap-2">
+          {STATUS_OPTIONS.map((opt) => {
+            const active = props.currentStatus === opt.value;
+            return (
+              <button
+                key={opt.value}
+                disabled={busy || active}
+                onClick={() => setStatus(opt.value)}
+                aria-pressed={active}
+                className={`text-sm font-bold px-4 py-2 rounded-xl transition-all active:scale-[0.97] disabled:cursor-default ${
+                  active
+                    ? `${opt.activeBg} ${opt.activeText} shadow-sm`
+                    : opt.idle + " disabled:opacity-60"
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
         <button
           onClick={remove}
           disabled={busy}
-          className="ml-auto text-xs font-semibold px-2.5 py-1 rounded border border-zinc-300 text-zinc-600 hover:bg-rose-50 hover:border-rose-300 hover:text-rose-700"
+          className="ml-auto text-sm font-bold px-4 py-2 rounded-xl text-zinc-500 hover:bg-rose-50 hover:text-rose-700 transition-colors disabled:opacity-50"
         >
           삭제
         </button>
@@ -103,18 +133,22 @@ export default function AdminActions(props: Props) {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <button
         onClick={toggleRead}
         disabled={busy}
-        className="text-xs font-semibold px-2.5 py-1 rounded border border-zinc-300 hover:bg-zinc-50 disabled:opacity-60"
+        className={`text-sm font-bold px-4 py-2 rounded-xl transition-all active:scale-[0.97] ${
+          props.currentIsRead
+            ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+            : "bg-purple-600 text-white hover:bg-purple-700 shadow-sm"
+        }`}
       >
         {props.currentIsRead ? "↺ 안 읽음으로" : "✓ 확인 처리"}
       </button>
       <button
         onClick={remove}
         disabled={busy}
-        className="ml-auto text-xs font-semibold px-2.5 py-1 rounded border border-zinc-300 text-zinc-600 hover:bg-rose-50 hover:border-rose-300 hover:text-rose-700"
+        className="ml-auto text-sm font-bold px-4 py-2 rounded-xl text-zinc-500 hover:bg-rose-50 hover:text-rose-700 transition-colors disabled:opacity-50"
       >
         삭제
       </button>
