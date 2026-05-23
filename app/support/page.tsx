@@ -1,5 +1,7 @@
 import { V2Header, V2Footer } from "../page";
 import { getContent, loadContentMap } from "@/lib/content";
+import { getMembers } from "@/lib/members";
+import { storageUrl } from "@/lib/db";
 import { InView } from "@/components/Stagger";
 import V2SupportTabs from "./V2SupportTabs";
 
@@ -30,7 +32,32 @@ export const metadata = {
 export default async function V2SupportPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const initialTab = params.tab === "fan" ? "fan" : "audition";
-  const contentMap = await loadContentMap();
+  const [contentMap, allMembers] = await Promise.all([
+    loadContentMap(),
+    getMembers(),
+  ]);
+
+  // Members the fan-letter form will offer as "좋아하는 배우" choices.
+  // Same hand-curated list the home spread uses + any other member
+  // who has a portrait uploaded, deduped. Order = featured first
+  // (matches home), then alphabetical by name.
+  const FEATURED_NAMES = [
+    "조효민", "조채윤", "다솜", "민지", "선경", "유덕",
+    "소정", "윤오", "아윤", "주석", "주현", "예나",
+  ];
+  const withPhoto = allMembers.filter((m) => !!m.photoPath);
+  const featuredOrdered = FEATURED_NAMES
+    .map((n) => withPhoto.find((m) => m.name === n))
+    .filter((m): m is NonNullable<typeof m> => !!m);
+  const featuredSlugs = new Set(featuredOrdered.map((m) => m.slug));
+  const rest = withPhoto
+    .filter((m) => !featuredSlugs.has(m.slug))
+    .sort((a, b) => a.name.localeCompare(b.name, "ko"));
+  const favoriteCastChoices = [...featuredOrdered, ...rest].map((m) => ({
+    name: m.name,
+    photoUrl: m.photoPath ? storageUrl("members", m.photoPath) : null,
+    roleLabel: m.roleLabel,
+  }));
 
   return (
     <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial flex flex-col">
@@ -68,7 +95,10 @@ export default async function V2SupportPage({ searchParams }: { searchParams: Se
           The fan-letter form caps itself with `max-w-xl` so its inputs
           don't stretch to the full container. */}
       <section className="mx-auto max-w-7xl px-6 py-16">
-        <V2SupportTabs initialTab={initialTab} />
+        <V2SupportTabs
+          initialTab={initialTab}
+          favoriteCastChoices={favoriteCastChoices}
+        />
       </section>
 
       <V2Footer />

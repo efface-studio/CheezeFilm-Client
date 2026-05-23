@@ -18,10 +18,18 @@ type Tab = "audition" | "fan";
  * Labels switch to friendly Korean ("오디션", "응원 보내기") since the
  * page hero already carries the English/editorial framing.
  */
+export type CastChoice = {
+  name: string;
+  photoUrl: string | null;
+  roleLabel: string;
+};
+
 export default function V2SupportTabs({
   initialTab,
+  favoriteCastChoices,
 }: {
   initialTab: Tab;
+  favoriteCastChoices: CastChoice[];
 }) {
   const [tab, setTab] = useState<Tab>(initialTab);
 
@@ -50,7 +58,7 @@ export default function V2SupportTabs({
       {tab === "audition" ? (
         <V2AuditionForm onSwitchToFan={() => setTab("fan")} />
       ) : (
-        <V2FanForm />
+        <V2FanForm castChoices={favoriteCastChoices} />
       )}
     </div>
   );
