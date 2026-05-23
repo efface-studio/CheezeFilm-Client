@@ -175,7 +175,12 @@ export default function VideosV2Grid({
 
   function ShortsGrid({ videos, onOpen }: { videos: Video[]; onOpen: (v: Video) => void }) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      // 2 / 3 / 4 columns. Was lg:grid-cols-5 — with the 9:16 portraits
+      // the cards were rendering ~245px wide and felt cramped on the
+      // big editorial container. 4-col on lg lands each card at ~370px
+      // (much closer to the YouTube Shorts feed look), and the title
+      // / SHORTS chip have room to breathe.
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
         {videos.map((v) => (
           <button
             key={v.id}
@@ -183,24 +188,25 @@ export default function VideosV2Grid({
             onClick={() => onOpen(v)}
             className="group text-left v2-film"
           >
-            <div className="aspect-[9/16] relative overflow-hidden bg-cheeze-charcoal">
+            <div className="aspect-[9/16] relative overflow-hidden rounded-2xl bg-cheeze-charcoal">
               <Image
                 src={v.thumbnail}
                 alt={v.title}
                 fill
-                sizes="(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw"
+                sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
                 className="object-cover"
                 loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-cheeze-charcoal/85 to-transparent" />
-              <span className="absolute top-2 left-2 bg-cheeze-yellow text-cheeze-purple-deep text-[9px] font-bold tracking-widest px-1.5 py-0.5">
+              <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-white/90 text-cheeze-ink text-[10px] font-bold px-2.5 py-1">
+                <span aria-hidden className="block w-1.5 h-1.5 rounded-full bg-red-500" />
                 SHORTS
               </span>
-              <div className="absolute inset-x-2 bottom-2 text-[11px] leading-snug text-cheeze-cream line-clamp-2">
+              <div className="absolute inset-x-3 bottom-3 text-[13px] font-semibold leading-snug text-cheeze-cream line-clamp-2">
                 {v.title}
               </div>
             </div>
-            <div className="mt-2 text-[10px] tracking-widest uppercase text-cheeze-olive">
+            <div className="mt-2 px-1 text-[12px] text-cheeze-ink-soft">
               {formatDate(v.publishedAt)}
             </div>
           </button>
