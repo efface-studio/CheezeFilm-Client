@@ -397,24 +397,36 @@ export default function V2Nav() {
             </div>
           </Link>
           <div className="flex items-center gap-2">
+            {/* Hamburger: square rounded chip with three even lines. Soft
+                grey fill on hover/active, no bordered look. */}
             <button
               type="button"
               onClick={() => setMobileOpen((v) => !v)}
-              className="inline-flex items-center justify-center w-10 h-10 border border-cheeze-purple-deep/30 text-cheeze-purple-deep hover:bg-cheeze-purple-deep/5 transition-colors"
+              className="inline-flex items-center justify-center w-10 h-10 rounded-xl text-cheeze-ink hover:bg-toss-50 active:bg-toss-100 transition-colors"
               aria-expanded={mobileOpen}
               aria-controls="v2-mobile-menu"
               aria-label="메뉴"
             >
-              <span
+              <svg
                 aria-hidden
-                className="block w-4 h-px bg-current relative before:absolute before:left-0 before:right-0 before:-top-1.5 before:h-px before:bg-current after:absolute after:left-0 after:right-0 after:top-1.5 after:h-px after:bg-current"
-              />
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                <path d="M4 7h16M4 12h16M4 17h16" />
+              </svg>
             </button>
+            {/* 지원 CTA: matches the home hero's dark rounded button
+                pattern. Sentence-case Korean, single arrow glyph. */}
             <Link
               href="/support"
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-cheeze-purple-deep text-cheeze-yellow text-[11px] font-bold tracking-widest uppercase hover:bg-cheeze-purple transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cheeze-ink text-white text-[13px] font-semibold hover:bg-cheeze-ink-soft transition-colors"
             >
-              지원
+              지원하기
               <span aria-hidden>→</span>
             </Link>
           </div>
