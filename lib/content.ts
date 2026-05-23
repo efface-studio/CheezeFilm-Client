@@ -17,7 +17,7 @@
 
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
-import { serverClient } from "./db";
+import { hasSupabaseServerEnv, serverClient } from "./db";
 
 /**
  * Cross-request cache window for the content map. Admin write endpoints
@@ -330,6 +330,7 @@ type ContentRow = { key: string; value: string };
  */
 const _fetchContentEntries = unstable_cache(
   async (): Promise<ContentRow[]> => {
+    if (!hasSupabaseServerEnv()) return [];
     const sb = serverClient();
     const { data, error } = await sb.from("site_content").select("key,value");
     if (error) {

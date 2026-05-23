@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { serverClient, storageUrl } from "./db";
+import { hasSupabaseServerEnv, serverClient, storageUrl } from "./db";
 
 /**
  * Returns the public URLs of every landscape cover photo in the
@@ -22,6 +22,7 @@ const COVERS_TTL = 300; // 5 min
 
 export const getCoverPhotos = unstable_cache(
   async (): Promise<string[]> => {
+    if (!hasSupabaseServerEnv()) return [];
     const sb = serverClient();
     const { data, error } = await sb.storage.from("covers").list("", {
       limit: 100,

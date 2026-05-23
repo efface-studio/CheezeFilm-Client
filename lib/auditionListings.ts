@@ -7,7 +7,11 @@
  */
 
 import { unstable_cache } from "next/cache";
-import { serverClient, type AuditionListing } from "./db";
+import {
+  hasSupabaseServerEnv,
+  serverClient,
+  type AuditionListing,
+} from "./db";
 import { parseDeadline, formatDeadline } from "./deadline";
 
 export { parseDeadline, formatDeadline };
@@ -45,6 +49,7 @@ const COLS =
 /** All listings, admin-side. */
 export const getAllListings = unstable_cache(
   async (): Promise<AuditionListing[]> => {
+    if (!hasSupabaseServerEnv()) return [];
     const sb = serverClient();
     const { data, error } = await sb
       .from("audition_listings")
@@ -63,6 +68,7 @@ export const getAllListings = unstable_cache(
 /** Public-facing list — only ones admins have marked open AND not past deadline. */
 export const getOpenListings = unstable_cache(
   async (): Promise<AuditionListing[]> => {
+    if (!hasSupabaseServerEnv()) return [];
     const sb = serverClient();
     const { data, error } = await sb
       .from("audition_listings")
@@ -81,6 +87,7 @@ export const getOpenListings = unstable_cache(
 
 export const findListing = unstable_cache(
   async (id: number): Promise<AuditionListing | undefined> => {
+    if (!hasSupabaseServerEnv()) return undefined;
     const sb = serverClient();
     const { data, error } = await sb
       .from("audition_listings")

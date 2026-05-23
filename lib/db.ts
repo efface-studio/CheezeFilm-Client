@@ -18,6 +18,22 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+/**
+ * Cheap predicate the data-layer helpers use to short-circuit when
+ * Supabase env vars aren't configured (e.g. PR Preview builds, where
+ * Vercel doesn't propagate secrets unless we explicitly add them per
+ * branch). When this returns false, callers should return an "empty"
+ * result instead of throwing — that lets Next.js still prerender every
+ * static V2 page with registry fallbacks.
+ */
+export function hasSupabaseServerEnv(): boolean {
+  return Boolean(SUPABASE_URL && SERVICE_KEY);
+}
+
+export function hasSupabasePublicEnv(): boolean {
+  return Boolean(SUPABASE_URL && ANON_KEY);
+}
+
 let _server: SupabaseClient | null = null;
 let _public: SupabaseClient | null = null;
 

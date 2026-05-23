@@ -14,7 +14,7 @@
  */
 
 import { unstable_cache } from "next/cache";
-import { serverClient } from "./db";
+import { hasSupabaseServerEnv, serverClient } from "./db";
 
 /**
  * Cache tags + revalidate windows for cross-request caching. The admin
@@ -103,6 +103,7 @@ function normalizeWorks(w: Row["works"]): string[] {
 
 export const getMembers = unstable_cache(
   async (): Promise<Member[]> => {
+    if (!hasSupabaseServerEnv()) return [];
     const sb = serverClient();
     const { data, error } = await sb
       .from("members")
@@ -123,6 +124,7 @@ export const getMembers = unstable_cache(
 
 export const findMember = unstable_cache(
   async (slug: string): Promise<Member | undefined> => {
+    if (!hasSupabaseServerEnv()) return undefined;
     const sb = serverClient();
     const { data, error } = await sb
       .from("members")
