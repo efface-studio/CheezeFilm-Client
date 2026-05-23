@@ -25,6 +25,11 @@ const nextConfig: NextConfig = {
     // AVIF first → WebP → JPEG fallback. AVIF is 30-50% smaller than
     // WebP for photo content; both supported by all modern browsers.
     formats: ["image/avif", "image/webp"],
+    // Allow the two quality settings we actually use. Next.js 16
+    // started warning when an `<Image quality>` value falls outside
+    // the configured list; 75 is the default and 85 is what the
+    // higher-fidelity thumbnails ask for.
+    qualities: [75, 85],
     // Optimized image cache TTL (Vercel CDN respects this).
     minimumCacheTTL: 60 * 60 * 24, // 24h
   },
