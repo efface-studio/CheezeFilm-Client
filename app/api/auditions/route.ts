@@ -5,6 +5,11 @@ import { randomUUID } from "node:crypto";
 import { db } from "@/lib/db";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
 import { isAcceptingApplications } from "@/lib/auditionListings";
+import {
+  computeAgeFromBirthdate,
+  isValidBirthdate,
+  isValidKoreanPhone,
+} from "@/lib/koreanFormat";
 
 export const runtime = "nodejs";
 
@@ -70,10 +75,28 @@ export async function POST(req: Request) {
   };
 
   const name = get("name");
+  // Birthdate is the new primary — `age` is derived from it. Older
+  // clients can still send raw `age` and we keep it.
+  const birthdate = get("birthdate") || null;
   const ageRaw = get("age");
-  const age = ageRaw ? Number(ageRaw) : null;
+  let age = ageRaw ? Number(ageRaw) : null;
+  if (birthdate) {
+    if (!isValidBirthdate(birthdate)) {
+      return NextResponse.json(
+        { error: "생년월일을 YYYY-MM-DD 형식으로 입력해주세요." },
+        { status: 400 },
+      );
+    }
+    age = computeAgeFromBirthdate(birthdate);
+  }
   const gender = get("gender") || null;
   const phone = get("phone") || null;
+  if (phone && !isValidKoreanPhone(phone)) {
+    return NextResponse.json(
+      { error: "연락처는 010-XXXX-XXXX 형식으로 입력해주세요." },
+      { status: 400 },
+    );
+  }
   const email = get("email");
   const experience = get("experience") || null;
   const role_preference = get("role_preference") || null;
@@ -143,14 +166,15 @@ export async function POST(req: Request) {
 
   const stmt = db.prepare(`
     INSERT INTO auditions
-      (name, age, gender, phone, email, experience, role_preference, intro, portfolio_url, photo_url, listing_id)
+      (name, age, birthdate, gender, phone, email, experience, role_preference, intro, portfolio_url, photo_url, listing_id)
     VALUES
-      (@name, @age, @gender, @phone, @email, @experience, @role_preference, @intro, @portfolio_url, @photo_url, @listing_id)
+      (@name, @age, @birthdate, @gender, @phone, @email, @experience, @role_preference, @intro, @portfolio_url, @photo_url, @listing_id)
   `);
 
   const result = stmt.run({
     name,
     age,
+    birthdate,
     gender,
     phone,
     email,

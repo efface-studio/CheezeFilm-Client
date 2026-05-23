@@ -4,10 +4,13 @@
  * 우선순위
  *   1. YOUTUBE_API_KEY 가 .env.local 에 있으면 → YouTube Data API v3 로 채널의
  *      uploads 플레이리스트를 페이지네이션해 503개 영상을 모두 가져옵니다.
- *      이어서 videos.list 로 duration 을 받아 60초 이하면 쇼츠로 분류합니다.
+ *      이어서 videos.list 로 duration 을 메타데이터로 받습니다.
  *   2. 키가 없거나 API 호출이 실패하면 → 채널의 공개 RSS 피드로 폴백해
- *      가장 최근 15개 영상을 가져옵니다. 각 영상은 youtube.com/shorts/<id>
- *      에 HEAD 요청을 보내 200이면 쇼츠, /watch 리다이렉트면 롱폼으로 분류.
+ *      가장 최근 15개 영상을 가져옵니다.
+ *
+ * 쇼츠/롱폼 분류는 **두 경로 모두** /shorts/<id> HEAD probe 로 합니다.
+ * (예전엔 API 경로에서 duration ≤ 60s 규칙을 썼는데, 2024 부터 쇼츠가
+ *  최대 180s 까지 늘어나서 길이만으론 100% 가를 수 없어요. probe 가 정답.)
  *
  * 두 경로 모두 Next.js fetch 캐시(`next: { revalidate: 3600 }`)로 1시간
  * 캐싱돼서 quota·트래픽 부담을 거의 만들지 않습니다.
@@ -17,8 +20,13 @@ import { XMLParser } from "fast-xml-parser";
 
 const CHANNEL_ID = "UCYn09ySlShmzBtYwl1OgOsA"; // CheezeFilm
 
-/** 60초를 분류 임계점으로 사용 (YouTube 쇼츠 공식 기준). */
-const SHORT_MAX_SECONDS = 60;
+/**
+ * Probe-실패 시 마지막 폴백으로만 쓰는 길이 기준값.
+ * 정상 경로에선 HEAD probe 가 판별합니다.
+ */
+const SHORT_FALLBACK_MAX_SECONDS = 60;
+/** 동시 HEAD probe 갯수 — 한꺼번에 500개 다 쏘면 YouTube edge 가 거부할 수도 있어서 제한. */
+const PROBE_CONCURRENCY = 25;
 
 export type Video = {
   id: string;
@@ -84,6 +92,29 @@ type RssEntry = {
  * We send a manual-redirect HEAD so we can inspect status + Location without
  * downloading the page body. Result is null on network failure.
  */
+/**
+ * Run an async task across an array with bounded concurrency. Used to
+ * probe hundreds of videos without firing all HEAD requests at once.
+ */
+async function pMapLimit<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let cursor = 0;
+  async function worker() {
+    while (true) {
+      const i = cursor++;
+      if (i >= items.length) return;
+      results[i] = await fn(items[i], i);
+    }
+  }
+  const n = Math.min(limit, items.length);
+  await Promise.all(Array.from({ length: n }, () => worker()));
+  return results;
+}
+
 async function probeIsShort(videoId: string): Promise<boolean | null> {
   try {
     const res = await fetch(`https://www.youtube.com/shorts/${videoId}`, {
@@ -286,19 +317,31 @@ async function fetchViaAPI(apiKey: string): Promise<{
     if (!pageToken) break;
   }
 
-  // 3) Look up durations in batches of 50 to classify shorts.
+  // 3) Pull durations as useful metadata + as a probe-failure fallback.
   const durations = await fetchDurations(
     out.map((v) => v.id),
     apiKey,
   );
 
-  const classified: Video[] = out.map((v) => {
+  // 4) Classify every video via /shorts/<id> probe. The HEAD request is
+  //    cached for an hour (see probeIsShort) so subsequent renders skip
+  //    the network entirely. Concurrency-limited to avoid overwhelming
+  //    YouTube edge — first cold run for ~500 videos at 25 in flight
+  //    finishes in a few seconds.
+  const classified: Video[] = await pMapLimit(out, PROBE_CONCURRENCY, async (v) => {
     const sec = durations.get(v.id);
-    return {
-      ...v,
-      durationSec: sec,
-      isShort: typeof sec === "number" && sec <= SHORT_MAX_SECONDS,
-    };
+    const probe = await probeIsShort(v.id);
+    let isShort: boolean;
+    if (probe !== null) {
+      isShort = probe;
+    } else if (typeof sec === "number") {
+      // Probe failed (network / 4xx) — fall back to duration.
+      isShort = sec <= SHORT_FALLBACK_MAX_SECONDS;
+    } else {
+      // No info at all — last-ditch title sniff.
+      isShort = /#shorts?\b|쇼츠/i.test(`${v.title} ${v.description ?? ""}`);
+    }
+    return { ...v, durationSec: sec, isShort };
   });
 
   return { videos: classified, totalCount };
@@ -306,31 +349,63 @@ async function fetchViaAPI(apiKey: string): Promise<{
 
 // --- Public entry --------------------------------------------------------
 
-export async function getAllVideos(): Promise<VideoFetchResult> {
-  const apiKey = process.env.YOUTUBE_API_KEY;
-  let result: { videos: Video[]; source: "api" | "rss" | "none"; totalCount?: number; error?: string };
+// Module-level cache so successive renders within the same Node process
+// don't re-do the full fetch + shorts probe pipeline. `fetch()` calls
+// inside `fetchViaAPI` already cache via `next: { revalidate: 3600 }`,
+// but each call still walks the playlist pages and re-classifies every
+// video — even when the underlying HTTP is cached, that's ~50–200ms.
+//
+// We cache the post-processed result in memory for 10 minutes. The first
+// admin tab switch still pays the cold cost, but every subsequent click
+// is < 5ms.
+const CACHE_TTL_MS = 10 * 60 * 1000;
+let cached: { result: VideoFetchResult; at: number } | null = null;
+let inFlight: Promise<VideoFetchResult> | null = null;
 
-  if (apiKey) {
-    try {
-      const { videos, totalCount } = await fetchViaAPI(apiKey);
-      if (videos.length > 0) {
-        result = { videos, source: "api", totalCount };
-      } else {
-        throw new Error("API returned no videos");
+export async function getAllVideos(): Promise<VideoFetchResult> {
+  const now = Date.now();
+  if (cached && now - cached.at < CACHE_TTL_MS) {
+    return cached.result;
+  }
+  // Coalesce concurrent calls — if a second request comes in while the
+  // first is fetching, share the same promise.
+  if (inFlight) return inFlight;
+  inFlight = (async () => {
+    const apiKey = process.env.YOUTUBE_API_KEY;
+    let result: {
+      videos: Video[];
+      source: "api" | "rss" | "none";
+      totalCount?: number;
+      error?: string;
+    };
+    if (apiKey) {
+      try {
+        const { videos, totalCount } = await fetchViaAPI(apiKey);
+        if (videos.length > 0) {
+          result = { videos, source: "api", totalCount };
+        } else {
+          throw new Error("API returned no videos");
+        }
+      } catch (e) {
+        console.error("YouTube Data API failed, falling back to RSS:", e);
+        result = await rssResult();
       }
-    } catch (e) {
-      console.error("YouTube Data API failed, falling back to RSS:", e);
+    } else {
       result = await rssResult();
     }
-  } else {
-    result = await rssResult();
+    const final: VideoFetchResult = {
+      ...result,
+      longform: result.videos.filter((v) => !v.isShort),
+      shorts: result.videos.filter((v) => v.isShort),
+    };
+    cached = { result: final, at: Date.now() };
+    return final;
+  })();
+  try {
+    return await inFlight;
+  } finally {
+    inFlight = null;
   }
-
-  return {
-    ...result,
-    longform: result.videos.filter((v) => !v.isShort),
-    shorts: result.videos.filter((v) => v.isShort),
-  };
 }
 
 async function rssResult(): Promise<{

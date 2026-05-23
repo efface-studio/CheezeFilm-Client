@@ -1,19 +1,43 @@
+import Image from "next/image";
 import Link from "next/link";
 import { getAllVideos } from "@/lib/youtube";
 import { getContent } from "@/lib/content";
 import { members } from "@/lib/members";
 import { InView, StaggerText } from "@/components/Stagger";
+import HeroCover from "@/components/HeroCover";
 import CountUp from "@/components/CountUp";
+import V2Nav from "@/components/V2Nav";
+import V2SnapScroller from "@/components/V2SnapScroller";
+import CareersReel from "@/components/CareersReel";
+import { getCoverPhotos } from "@/lib/coverPhotos";
 
 export const revalidate = 3600;
+// Page-level metadata — `title.absolute` bypasses the layout's "%s | 치즈필름"
+// template since the brand is already in the V2 home title. `og:image` is
+// re-stated per page because page-level `openGraph` replaces the layout
+// block entirely (Next merges metadata per-field, not deep).
 export const metadata = {
-  title: "치즈필름 02 | Editorial",
-  description: "모던 에디토리얼 무드의 치즈필름.",
+  title: { absolute: "치즈필름 — 스토리를 굽는 사람들" },
+  description:
+    "웹드라마 스튜디오 치즈필름의 공식 팬 사이트. 신작·캐스트·오디션 소식을 한 곳에서.",
+  alternates: { canonical: "/v2" },
+  openGraph: {
+    title: "치즈필름 — 스토리를 굽는 사람들",
+    description: "신작·캐스트·오디션 소식을 한 곳에서 만나보세요.",
+    url: "/v2",
+    type: "website",
+    images: ["/cheeze-logo.png"],
+  },
+  twitter: { images: ["/cheeze-logo.png"] },
 };
 
 export default async function HomeV2() {
   const { longform, shorts } = await getAllVideos();
   const c = (key: string) => getContent(key);
+  // Hero cover: prefer landscape group/cast photos from /public/covers/
+  // (drop files in, they auto-rotate). Falls back to the 3 featured video
+  // thumbnails configured in admin → "이번 호 표지" when no photos exist.
+  const coverPhotos = getCoverPhotos();
   const heroVideos = [
     c("works.1.videoId").trim() || longform[0]?.id || "",
     c("works.2.videoId").trim() || longform[1]?.id || "",
@@ -21,33 +45,24 @@ export default async function HomeV2() {
   ].filter(Boolean);
 
   return (
-    <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial">
+    // `data-v2-home` opts this page into scroll-snap (see globals.css).
+    // The `html:has(...)` selector pins each direct `<section>` to a snap
+    // point so scrolling rests on a clean section boundary instead of
+    // drifting between them.
+    <main
+      data-v2-home
+      className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial lg:pl-56"
+    >
+      <V2SnapScroller />
       <V2Header />
 
       {/* ── HERO ──────────────────────────────────────── */}
       <section className="border-b border-cheeze-purple-deep/15 overflow-hidden">
-        <div className="mx-auto max-w-7xl px-6 pt-16 pb-20 grid lg:grid-cols-12 gap-x-10 gap-y-12">
-          {/* Issue rail */}
-          <aside className="lg:col-span-2 flex lg:flex-col items-start lg:items-stretch justify-between gap-3 lg:pr-6">
-            <InView className="v2-fade-up">
-              <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">
-                Issue
-              </div>
-              <div
-                className="text-[5rem] leading-none mt-2 text-cheeze-purple"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                <CountUp value={2} fallback="02" duration={1100} suffix="" />
-                <span aria-hidden style={{ marginLeft: "-0.45em" }}>2</span>
-              </div>
-              <div className="text-[10px] tracking-[0.3em] uppercase text-cheeze-olive mt-2">
-                Spring · 2026
-              </div>
-            </InView>
-            <InView as="span" className="v2-vrule hidden lg:block flex-1 mt-6" />
-          </aside>
-
-          {/* Hero copy */}
+        <div className="mx-auto max-w-[100rem] px-6 pt-16 pb-20 grid lg:grid-cols-12 gap-x-10 gap-y-12">
+          {/* Landscape cover → re-balanced grid: copy gets 7, cover gets 5.
+              A 3:2 landscape photo in col-span-5 (~620px) lands at ~413px
+              tall, which sits comfortably alongside the headline + CTA
+              stack on the left without crushing either side. */}
           <div className="lg:col-span-7">
             <InView className="v2-fade-up">
               <div className="text-[11px] tracking-[0.45em] uppercase text-cheeze-purple font-mono mb-6 flex items-center gap-2">
@@ -97,37 +112,11 @@ export default async function HomeV2() {
             </InView>
           </div>
 
-          {/* Cover card with mask reveal */}
-          <aside className="lg:col-span-3 flex flex-col gap-4">
-            {heroVideos[0] && (
-              <a
-                href={`https://www.youtube.com/watch?v=${heroVideos[0]}`}
-                target="_blank"
-                rel="noreferrer"
-                className="group block v2-film"
-              >
-                <InView className="v2-mask aspect-[3/4] relative bg-cheeze-charcoal">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`https://i.ytimg.com/vi/${heroVideos[0]}/maxresdefault.jpg`}
-                    alt="Featured film"
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-cheeze-charcoal/85 via-cheeze-charcoal/0 to-cheeze-charcoal/30" />
-                  <div className="absolute inset-x-0 bottom-0 p-5">
-                    <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-yellow/90 mb-2">
-                      Now Featured · Cover
-                    </div>
-                    <div
-                      className="text-cheeze-cream text-2xl leading-tight"
-                      style={{ fontFamily: "var(--font-display)" }}
-                    >
-                      이번 호의 한 컷.
-                    </div>
-                  </div>
-                </InView>
-              </a>
-            )}
+          {/* Cover card with mask reveal — landscape photos win when present
+              in /public/covers/, otherwise we cycle the 3 featured video
+              thumbnails configured in admin. */}
+          <aside className="lg:col-span-5 flex flex-col gap-4">
+            <HeroCover photoSrcs={coverPhotos} videoIds={heroVideos} />
             <InView className="v2-fade-up text-[10px] tracking-[0.3em] uppercase text-cheeze-olive flex justify-between">
               <span>FILE</span>
               <span>EDITION 02</span>
@@ -137,7 +126,7 @@ export default async function HomeV2() {
 
         {/* Stats strip */}
         <div className="border-t border-cheeze-purple-deep/15">
-          <div className="mx-auto max-w-7xl px-6 py-7 grid grid-cols-2 md:grid-cols-4 divide-x divide-cheeze-purple-deep/10">
+          <div className="mx-auto max-w-[100rem] px-6 py-7 grid grid-cols-2 md:grid-cols-4 divide-x divide-cheeze-purple-deep/10">
             <Stat label={c("stats.subscribers.label")} value={3.32} suffix={c("stats.subscribers.suffix")} fallback={`${c("stats.subscribers")}${c("stats.subscribers.suffix")}`} decimals={2} />
             <Stat label={c("stats.videos.label")} value={503} suffix={c("stats.videos.suffix")} fallback={`${c("stats.videos")}${c("stats.videos.suffix")}`} />
             <Stat label={c("stats.views.label")} value={13.8} suffix={c("stats.views.suffix")} fallback={`${c("stats.views")}${c("stats.views.suffix")}`} decimals={1} />
@@ -166,9 +155,14 @@ export default async function HomeV2() {
         </div>
       </div>
 
+      {/* "RECENT UPLOADS" used to live here as its own section but it was
+          basically a smaller-scale duplicate of FILMS below. Merged into
+          one section: featured 3 films at top, recent uploads grid below
+          the divider. See /films section further down. */}
+
       {/* ── STORY ───────────────────────────────────── */}
       <section id="issue" className="border-b border-cheeze-purple-deep/15">
-        <div className="mx-auto max-w-7xl px-6 py-24 grid lg:grid-cols-12 gap-10">
+        <div className="mx-auto max-w-[100rem] px-6 py-24 grid lg:grid-cols-12 gap-10">
           <InView as="aside" className="v2-fade-up lg:col-span-2">
             <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">
               — Section 01
@@ -218,7 +212,7 @@ export default async function HomeV2() {
 
       {/* ── FILMS ───────────────────────────────────── */}
       <section id="films" className="border-b border-cheeze-purple-deep/15">
-        <div className="mx-auto max-w-7xl px-6 py-24">
+        <div className="mx-auto max-w-[100rem] px-6 py-24">
           <div className="grid lg:grid-cols-12 mb-12 items-end">
             <InView className="v2-fade-up lg:col-span-2">
               <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">— Section 02</div>
@@ -237,7 +231,7 @@ export default async function HomeV2() {
                 Filmography.
               </h2>
               <p className="mt-3 text-cheeze-ink-soft">
-                채널을 정의한 세 편의 작품, 그리고 매주 굽고 있는 것들.
+                채널을 정의한 세 편의 대표작, 그리고 매주 새로 굽고 있는 작품들까지.
               </p>
             </InView>
             <div className="lg:col-span-3 lg:text-right mt-4 lg:mt-0">
@@ -250,6 +244,7 @@ export default async function HomeV2() {
             </div>
           </div>
 
+          {/* Featured (this issue's covers) — big cards, 3-up */}
           <div className="grid md:grid-cols-3 gap-x-6 gap-y-12">
             {heroVideos.slice(0, 3).map((vid, i) => (
               <FilmCard
@@ -269,13 +264,109 @@ export default async function HomeV2() {
               />
             ))}
           </div>
+
+          {/* Recent uploads — used to be its own "방금 업로드된" section.
+              Now lives here as a secondary row under the featured films.
+              Skips any video already shown as a featured cover to avoid
+              repeating the same thumbnail twice. */}
+          {(() => {
+            const featuredIds = new Set(heroVideos);
+            const recent = longform
+              .filter((v) => !featuredIds.has(v.id))
+              .slice(0, 6);
+            if (recent.length === 0) return null;
+            return (
+              <div className="mt-20 pt-12 border-t border-cheeze-purple-deep/15">
+                <InView className="v2-fade-up flex items-baseline justify-between gap-6 mb-8">
+                  <div>
+                    <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">
+                      — Just dropped
+                    </div>
+                    <h3
+                      className="mt-2 text-2xl md:text-3xl tracking-tight"
+                      style={{ fontFamily: "var(--font-display)" }}
+                    >
+                      방금 업로드된.
+                    </h3>
+                  </div>
+                  <Link
+                    href="/v2/videos"
+                    className="text-[11px] tracking-widest uppercase font-bold text-cheeze-purple-deep hover:text-cheeze-purple border-b border-cheeze-purple-deep/30 hover:border-cheeze-purple pb-1 transition-colors whitespace-nowrap"
+                  >
+                    전체 필모 →
+                  </Link>
+                </InView>
+
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10">
+                  {recent.map((v, i) => (
+                    <InView
+                      key={v.id}
+                      className="v2-fade-up"
+                      style={
+                        {
+                          transitionDelay: `${(i % 3) * 60}ms`,
+                        } as React.CSSProperties
+                      }
+                    >
+                      <a
+                        href={v.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="group block v2-film"
+                      >
+                        <div className="aspect-[16/10] relative overflow-hidden bg-cheeze-charcoal">
+                          <Image
+                            src={v.thumbnail}
+                            alt={v.title}
+                            fill
+                            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            loading="lazy"
+                            quality={85}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-cheeze-charcoal/60 via-transparent to-transparent" />
+                          {i === 0 && (
+                            <span className="absolute top-3 left-3 bg-cheeze-yellow text-cheeze-purple-deep text-[9px] font-bold tracking-widest uppercase px-2 py-1">
+                              New
+                            </span>
+                          )}
+                          <span className="absolute bottom-3 right-3 bg-cheeze-charcoal/85 text-cheeze-cream text-[10px] font-mono tracking-wider px-2 py-1">
+                            {new Date(v.publishedAt).toLocaleDateString(
+                              "ko-KR",
+                              { month: "2-digit", day: "2-digit" },
+                            )}
+                          </span>
+                        </div>
+                        <h4 className="mt-3 text-[15px] font-bold leading-snug text-cheeze-ink line-clamp-2 group-hover:text-cheeze-purple transition-colors">
+                          {v.title}
+                        </h4>
+                        <div className="mt-1 text-[10px] tracking-widest uppercase text-cheeze-olive">
+                          {new Date(v.publishedAt).toLocaleDateString("ko-KR", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </div>
+                      </a>
+                    </InView>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </section>
 
       {/* ── SHORTS strip ─────────────────────────────── */}
+      {/* `data-nav-section="films"` makes V2Nav treat this section as a
+          continuation of #films for scroll-spy purposes — so "02 영상" stays
+          lit while the user is reading shorts. */}
       {shorts.length > 0 && (
-        <section className="border-b border-cheeze-purple-deep/15">
-          <div className="mx-auto max-w-7xl px-6 py-20">
+        <section
+          data-nav-section="films"
+          className="border-b border-cheeze-purple-deep/15"
+        >
+          <div className="mx-auto max-w-[100rem] px-6 py-20">
             <div className="flex items-baseline justify-between mb-8">
               <InView className="v2-fade-up">
                 <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">— Section 03</div>
@@ -306,12 +397,13 @@ export default async function HomeV2() {
                     rel="noreferrer"
                     className="group block aspect-[9/16] overflow-hidden bg-cheeze-charcoal relative v2-film"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                       src={v.thumbnail}
                       alt={v.title}
+                      fill
+                      sizes="(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw"
+                      className="object-cover"
                       loading="lazy"
-                      className="absolute inset-0 w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-cheeze-charcoal/85 to-transparent" />
                     <div className="absolute inset-x-2 bottom-2 text-[11px] leading-snug text-cheeze-cream line-clamp-2">
@@ -327,7 +419,7 @@ export default async function HomeV2() {
 
       {/* ── CAST ────────────────────────────────────── */}
       <section id="cast" className="border-b border-cheeze-purple-deep/15">
-        <div className="mx-auto max-w-7xl px-6 py-24">
+        <div className="mx-auto max-w-[100rem] px-6 py-24">
           <div className="grid lg:grid-cols-12 mb-12 items-end">
             <InView className="v2-fade-up lg:col-span-2">
               <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">— Section 04</div>
@@ -391,9 +483,141 @@ export default async function HomeV2() {
         </div>
       </section>
 
+      {/* ── CAREERS teaser ──────────────────────────── */}
+      {/* Compact preview of the full careers page so users don't have to
+          click through to get the gist. Shows: heading, the reel, and the
+          top 4 role chips (actor leads — that's the open audition focus).
+          Full details + email CTA live on /v2/careers. */}
+      <section id="careers" className="border-b border-cheeze-purple-deep/15">
+        <div className="mx-auto max-w-[100rem] px-6 py-24 grid lg:grid-cols-12 gap-x-10 gap-y-12">
+          <InView className="v2-fade-up lg:col-span-2">
+            <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">
+              — Section 05
+            </div>
+            <div
+              className="mt-3 text-[3rem] leading-none text-cheeze-purple"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              04
+            </div>
+          </InView>
+
+          {/* Left column — copy + role chips */}
+          <div className="lg:col-span-6 flex flex-col">
+            <InView className="v2-fade-up v2-title">
+              <h2
+                className="text-4xl md:text-5xl tracking-tight leading-[1.05]"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                <span className="text-cheeze-purple">주연배우</span>를 비롯해,
+                <br />
+                함께 한 컷을 구울 사람.
+              </h2>
+              <p className="mt-6 max-w-xl text-cheeze-ink-soft leading-relaxed">
+                치즈필름 신작의 얼굴이 될 배우를 1순위로, 작가·연출·촬영·편집까지
+                결을 맞춰 오래 함께할 사람을 찾고 있습니다.
+              </p>
+            </InView>
+
+            <InView className="v2-fade-up mt-8">
+              <ol className="grid sm:grid-cols-2 gap-x-6 gap-y-5">
+                {[
+                  {
+                    num: "01",
+                    title: "배우 (주연/조연)",
+                    desc: "신작의 얼굴. 10~30분 단편 안에서 인물을 진짜처럼 살려낼 분.",
+                  },
+                  {
+                    num: "02",
+                    title: "작가",
+                    desc: "매주 한 편씩 단편을 굽는 작가. 청춘 드라마 톤을 이해하는 분.",
+                  },
+                  {
+                    num: "03",
+                    title: "연출",
+                    desc: "한 회차 안에서 인물의 작은 변화를 카메라로 잡아내는 분.",
+                  },
+                  {
+                    num: "04",
+                    title: "촬영 · 편집",
+                    desc: "빛·구도·컷 — 한 컷의 결을 책임지는 사람.",
+                  },
+                ].map((r, i) => (
+                  <li
+                    key={r.title}
+                    className={`flex items-baseline gap-3 ${i === 0 ? "border-l-2 border-cheeze-purple pl-3" : "pl-3"}`}
+                  >
+                    <span className="font-mono text-[10px] tracking-wider tabular-nums text-cheeze-olive/70">
+                      {r.num}
+                    </span>
+                    <div>
+                      <h3
+                        className="text-xl tracking-tight"
+                        style={{ fontFamily: "var(--font-display)" }}
+                      >
+                        {r.title}
+                        {i === 0 && (
+                          <span className="ml-2 text-[9px] font-mono tracking-widest uppercase bg-cheeze-purple text-cheeze-cream px-1.5 py-0.5 align-middle">
+                            1순위
+                          </span>
+                        )}
+                      </h3>
+                      <p className="mt-1 text-[13px] text-cheeze-ink-soft leading-relaxed">
+                        {r.desc}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </InView>
+
+            <InView className="v2-fade-up mt-10 flex flex-wrap gap-3">
+              <Link
+                href="/v2/careers"
+                className="inline-flex items-center gap-2 text-sm font-bold tracking-widest uppercase px-5 py-3 bg-cheeze-purple-deep text-cheeze-yellow hover:bg-cheeze-purple transition-colors"
+              >
+                전체 채용 정보 →
+              </Link>
+              <a
+                href="mailto:cheezefilm.m@gmail.com?subject=%5B%EC%A7%80%EC%9B%90%5D%20%EC%B9%98%EC%A6%88%ED%95%84%EB%A6%84%20%EB%B0%B0%EC%9A%B0%20%EC%98%A4%EB%94%94%EC%85%98"
+                className="inline-flex items-center gap-2 text-sm font-bold tracking-widest uppercase px-5 py-3 border border-cheeze-purple-deep text-cheeze-purple-deep hover:bg-cheeze-purple-deep hover:text-cheeze-yellow transition-colors"
+              >
+                지원하기 ↗
+              </a>
+            </InView>
+          </div>
+
+          {/* Right column — autoplaying reel */}
+          <InView className="v2-fade-up lg:col-span-4 lg:border-l lg:border-cheeze-purple-deep/15 lg:pl-8">
+            <div className="text-[10px] tracking-[0.3em] uppercase text-cheeze-olive mb-3 flex items-center gap-2">
+              <span className="v2-pulse-dot" /> Audition reel
+            </div>
+            <CareersReel
+              src="/reels/DQ_oNK3EW_w.mp4"
+              label="치즈필름 주연배우 공개 오디션 릴스"
+            />
+            <a
+              href="https://www.instagram.com/p/DQ_oNK3EW_w/"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex items-center gap-1.5 text-[11px] tracking-[0.25em] uppercase text-cheeze-purple hover:text-cheeze-purple-deep"
+            >
+              Instagram에서 원본 보기 ↗
+            </a>
+          </InView>
+        </div>
+      </section>
+
       {/* ── CTA / CONTACT ──────────────────────────── */}
-      <section id="contact" className="bg-cheeze-purple-deep text-cheeze-cream">
-        <div className="mx-auto max-w-7xl px-6 py-24 grid lg:grid-cols-12 gap-10 items-end">
+      {/* `lg:-ml-56 lg:pl-56` breaks the purple bg out of the main's rail
+          gutter so it spans the viewport edge-to-edge, then re-applies the
+          inner padding so the content stays aligned with the rest of the
+          page. Same trick as the footer. */}
+      <section
+        id="contact"
+        className="bg-cheeze-purple-deep text-cheeze-cream lg:-ml-56 lg:pl-56"
+      >
+        <div className="mx-auto max-w-[100rem] px-6 py-24 grid lg:grid-cols-12 gap-10 items-end">
           <InView className="v2-fade-up lg:col-span-7">
             <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-yellow flex items-center gap-2">
               <span className="v2-pulse-dot" /> Section 05 · Take part
@@ -440,78 +664,182 @@ export default async function HomeV2() {
 
 // ─── Shared V2 components ────────────────────────────
 
+// Re-exported as <V2Header /> so the existing `import { V2Header }` call
+// sites across V2 routes keep working. The actual UI now lives in the
+// V2Nav client component — a left side rail on lg+ with IntersectionObserver
+// scroll-spy, falling back to a sticky compact top bar on mobile.
 export function V2Header() {
-  return (
-    <header className="border-b border-cheeze-purple-deep/15 sticky top-0 z-40 bg-cheeze-cream/95 backdrop-blur">
-      <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
-        <Link href="/v2" className="flex items-center gap-3 group">
-          <span className="inline-flex w-9 h-9 rounded-full bg-cheeze-purple overflow-hidden border border-cheeze-purple-deep">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/cheeze-logo.png" alt="CheezeFilm" className="w-full h-full object-cover" />
-          </span>
-          <span className="hidden sm:flex flex-col leading-none">
-            <span className="font-bold text-sm tracking-tight">치즈필름</span>
-            <span className="text-[10px] tracking-[0.3em] text-cheeze-olive uppercase">
-              Editorial · 02
-            </span>
-          </span>
-        </Link>
-
-        <nav className="hidden md:flex items-center gap-7 text-sm">
-          <Link href="/v2#issue" className="hover:text-cheeze-purple transition-colors">이슈</Link>
-          <Link href="/v2/videos" className="hover:text-cheeze-purple transition-colors">필모</Link>
-          <Link href="/v2/members" className="hover:text-cheeze-purple transition-colors">캐스트</Link>
-          <Link href="/v2#contact" className="hover:text-cheeze-purple transition-colors">접촉</Link>
-        </nav>
-
-        <div className="flex items-center gap-3 text-xs">
-          <Link
-            href="/"
-            className="text-cheeze-olive hover:text-cheeze-purple tracking-widest uppercase transition-colors"
-          >
-            ← 디자인 바꾸기
-          </Link>
-          <Link
-            href="/v2/support"
-            className="px-3.5 py-2 bg-cheeze-purple-deep text-cheeze-yellow text-[11px] tracking-widest uppercase font-bold hover:bg-cheeze-purple transition-colors"
-          >
-            지원
-          </Link>
-        </div>
-      </div>
-    </header>
-  );
+  return <V2Nav />;
 }
 
 export function V2Footer() {
+  const year = new Date().getFullYear();
   return (
-    <footer className="bg-cheeze-cream border-t border-cheeze-purple-deep/15">
-      <div className="mx-auto max-w-7xl px-6 py-10 grid md:grid-cols-3 gap-6 text-xs text-cheeze-ink-soft">
-        <div className="flex items-center gap-2.5">
-          <span className="inline-flex w-7 h-7 rounded-full overflow-hidden bg-cheeze-purple">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/cheeze-logo.png" alt="" className="w-full h-full object-cover" />
-          </span>
-          <span className="font-bold tracking-widest uppercase">
-            CheezeFilm · Editorial 02
-          </span>
+    // `lg:-ml-56` cancels the `lg:pl-56` we add on <main> for the side-rail
+    // gutter, then `lg:pl-56` is re-applied to the *inner* content so the
+    // purple background reaches the page edge but the text still aligns
+    // with the rest of the page beyond the rail. Without this break-out
+    // there's a seam where the cream gutter abuts the purple footer.
+    <footer className="bg-cheeze-purple-deep text-cheeze-cream border-t border-cheeze-purple-deep lg:-ml-56 lg:pl-56">
+      {/* ── Main grid: brand · links · contact ──────────── */}
+      <div className="mx-auto max-w-[100rem] px-6 py-14 grid md:grid-cols-12 gap-x-10 gap-y-10">
+        {/* Brand block (col-span-5) */}
+        <div className="md:col-span-5">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex w-10 h-10 rounded-full overflow-hidden bg-cheeze-purple border border-cheeze-cream/20">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/cheeze-logo.png"
+                alt="CheezeFilm"
+                className="w-full h-full object-cover"
+              />
+            </span>
+            <div>
+              <div
+                className="text-2xl text-cheeze-yellow leading-none"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                치즈필름
+              </div>
+              <div className="mt-1 text-[10px] tracking-[0.35em] uppercase text-cheeze-cream/55">
+                CheezeFilm · Editorial 02
+              </div>
+            </div>
+          </div>
+          <p className="mt-5 max-w-sm text-sm leading-relaxed text-cheeze-cream/75 whitespace-pre-line">
+            {getContent("footer.tagline")}
+          </p>
+          <div className="mt-5 flex items-center gap-2">
+            <a
+              href="https://www.youtube.com/@CheezeFilmz"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[11px] px-3 py-1.5 border border-cheeze-cream/30 hover:bg-cheeze-yellow hover:text-cheeze-purple-deep hover:border-cheeze-yellow transition-colors tracking-widest uppercase"
+            >
+              YouTube ↗
+            </a>
+            <a
+              href="https://www.instagram.com/cheezefilm.official/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[11px] px-3 py-1.5 border border-cheeze-cream/30 hover:bg-cheeze-yellow hover:text-cheeze-purple-deep hover:border-cheeze-yellow transition-colors tracking-widest uppercase"
+            >
+              Instagram ↗
+            </a>
+          </div>
         </div>
-        <div className="text-cheeze-olive">
-          © {new Date().getFullYear()} (주)스튜디오 치즈. All rights reserved.
+
+        {/* Quick links (col-span-3) */}
+        <div className="md:col-span-3">
+          <h4 className="text-[10px] tracking-[0.4em] uppercase text-cheeze-yellow font-bold">
+            바로가기
+          </h4>
+          <ul className="mt-5 space-y-2.5 text-sm">
+            <li>
+              <Link
+                href="/v2#issue"
+                className="text-cheeze-cream/80 hover:text-cheeze-yellow transition-colors"
+              >
+                소개
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/v2/videos"
+                className="text-cheeze-cream/80 hover:text-cheeze-yellow transition-colors"
+              >
+                영상
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/v2/members"
+                className="text-cheeze-cream/80 hover:text-cheeze-yellow transition-colors"
+              >
+                멤버
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/v2/support"
+                className="text-cheeze-cream/80 hover:text-cheeze-yellow transition-colors"
+              >
+                오디션 지원
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/v2/support?tab=fan"
+                className="text-cheeze-cream/80 hover:text-cheeze-yellow transition-colors"
+              >
+                응원 메시지
+              </Link>
+            </li>
+          </ul>
         </div>
-        <div className="flex md:justify-end items-center gap-2">
-          <span className="opacity-60">Crafted by</span>
-          <a
-            href="https://efface.dev"
-            target="_blank"
-            rel="noreferrer"
-            className="font-bold text-cheeze-purple hover:text-cheeze-purple-deep"
-          >
-            efface · efface.dev ↗
-          </a>
+
+        {/* Studio info (col-span-4) — 문의 섹션이 v2 home의 상단 contact
+            섹션과 정확히 같은 정보였어서 중복이었음. 그 자리에 한국 법인
+            정보(상호/대표/사업자등록번호 등)를 옮겨 넣었어요. */}
+        <div className="md:col-span-4">
+          <h4 className="text-[10px] tracking-[0.4em] uppercase text-cheeze-yellow font-bold">
+            Studio Info
+          </h4>
+          <V2CompanyStrip />
+        </div>
+      </div>
+
+      {/* ── Bottom strip: copyright + credit ────────────── */}
+      <div className="border-t border-cheeze-cream/12">
+        <div className="mx-auto max-w-[100rem] px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-cheeze-cream/70">
+          <div>
+            © {year} {getContent("company.name") || "(주)스튜디오 치즈"}. All rights reserved.
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="opacity-60">Crafted by</span>
+            <a
+              href="https://efface.dev"
+              target="_blank"
+              rel="noreferrer"
+              className="group inline-flex items-center gap-1.5 font-bold text-cheeze-yellow hover:text-cheeze-cream transition-colors"
+            >
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-cheeze-yellow group-hover:bg-cheeze-cream transition-colors" />
+              efface
+              <span className="text-cheeze-cream/40 group-hover:text-cheeze-cream/70 transition-colors">
+                · efface.dev ↗
+              </span>
+            </a>
+          </div>
         </div>
       </div>
     </footer>
+  );
+}
+
+/** 한국 푸터 컨벤션 — 상호·대표·사업자등록번호 등을 footer 4-col 안에
+ *  맞춰 세로 리스트로. 좁은 영역에 가로 wrap 으로 흩뿌리면 가독성 떨어짐. */
+function V2CompanyStrip() {
+  const items = [
+    { label: "상호", value: getContent("company.name") },
+    { label: "대표", value: getContent("company.ceo") },
+    { label: "사업자등록번호", value: getContent("company.business_no") },
+    { label: "통신판매업신고", value: getContent("company.commerce_no") },
+    { label: "직업정보제공사업", value: getContent("company.job_info_no") },
+    { label: "MCN", value: getContent("company.network") },
+    { label: "주소", value: getContent("company.address") },
+    { label: "고객센터", value: getContent("company.phone") },
+  ].filter((it) => it.value && it.value !== "—");
+  return (
+    <dl className="mt-5 grid grid-cols-[5.5rem_1fr] gap-x-3 gap-y-2 text-[12px]">
+      {items.map((it) => (
+        <div key={it.label} className="contents">
+          <dt className="text-[10px] tracking-[0.2em] uppercase text-cheeze-cream/40 pt-0.5">
+            {it.label}
+          </dt>
+          <dd className="text-cheeze-cream/85 break-words">{it.value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
@@ -606,16 +934,29 @@ function FilmCard({
 }
 
 function ContactRow({ label, value, href }: { label: string; value: string; href: string }) {
+  // `mailto:` 와 외부 링크는 다르게 처리 — mailto 에 `target="_blank"`
+  // 를 붙이면 일부 브라우저가 빈 탭을 띄운 뒤 메일 클라이언트를 호출하는
+  // 식으로 어색해짐. http(s) 만 새 탭으로.
+  const isMail = href.startsWith("mailto:");
+  const isExternal = href.startsWith("http");
   return (
-    <div className="grid grid-cols-[6rem_1fr] gap-3 items-baseline pb-3 border-b border-cheeze-cream/15">
-      <span className="text-[10px] tracking-[0.3em] uppercase text-cheeze-yellow/80">{label}</span>
+    <div className="grid grid-cols-[6rem_1fr] gap-3 items-baseline pb-3 border-b border-cheeze-cream/15 group">
+      <span className="text-[10px] tracking-[0.3em] uppercase text-cheeze-yellow/80">
+        {label}
+      </span>
       <a
         href={href}
-        target="_blank"
-        rel="noreferrer"
-        className="text-sm break-all hover:text-cheeze-yellow transition-colors"
+        target={isExternal ? "_blank" : undefined}
+        rel={isExternal ? "noreferrer" : undefined}
+        className="text-sm break-all underline decoration-cheeze-cream/25 underline-offset-[6px] hover:text-cheeze-yellow hover:decoration-cheeze-yellow transition-colors inline-flex items-center gap-1.5"
       >
-        {value}
+        <span>{value}</span>
+        <span
+          aria-hidden
+          className="text-[10px] opacity-50 group-hover:opacity-100 transition-opacity"
+        >
+          {isMail ? "✉" : "↗"}
+        </span>
       </a>
     </div>
   );

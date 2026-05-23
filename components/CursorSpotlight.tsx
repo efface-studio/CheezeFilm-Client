@@ -1,16 +1,21 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 
 /**
  * Soft yellow radial glow that follows the cursor — like a stage spotlight
  * on a paper poster. Pure CSS-variable updates so it's cheap on every move.
- * Disabled for touch / reduced-motion users.
+ * Disabled for touch / reduced-motion users, and skipped entirely on the
+ * admin shell (where it just reads as decorative noise).
  */
 export default function CursorSpotlight() {
   const ref = useRef<HTMLDivElement | null>(null);
+  const pathname = usePathname();
+  const isAdmin = pathname?.startsWith("/admin") ?? false;
 
   useEffect(() => {
+    if (isAdmin) return;
     if (typeof window === "undefined") return;
     if (
       window.matchMedia("(pointer: coarse)").matches ||
@@ -43,7 +48,9 @@ export default function CursorSpotlight() {
       window.removeEventListener("mousemove", onMove);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [isAdmin]);
+
+  if (isAdmin) return null;
 
   return (
     <div

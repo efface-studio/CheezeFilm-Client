@@ -8,23 +8,26 @@ import { members } from "@/lib/members";
 import { getAllContent } from "@/lib/content";
 import AdminShell from "./AdminShell";
 import AdminActions from "./AdminActions";
-import MemberPhotoManager from "./MemberPhotoManager";
 import ContentEditor from "./ContentEditor";
 import AdminListToolbar from "./AdminListToolbar";
 import MembersCrud from "./MembersCrud";
 import ListingsCrud from "./ListingsCrud";
+import IssueCoverPicker from "./IssueCoverPicker";
+import CoverPhotosManager from "./CoverPhotosManager";
 import { getAllListings, listingSummary } from "@/lib/auditionListings";
+import { getAllVideos } from "@/lib/youtube";
+import { getContent } from "@/lib/content";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "관리자 대시보드 | 치즈필름" };
 
 type Tab =
   | "dashboard"
+  | "issue"
   | "listings"
   | "auditions"
   | "fan"
   | "members"
-  | "memberPhotos"
   | "content";
 
 const PHOTO_EXTS = [".jpg", ".jpeg", ".png", ".webp"];
@@ -48,11 +51,11 @@ export default async function AdminPage({
   const params = await searchParams;
   const allowed = new Set<Tab>([
     "dashboard",
+    "issue",
     "listings",
     "auditions",
     "fan",
     "members",
-    "memberPhotos",
     "content",
   ]);
   const tab: Tab = allowed.has(params.tab as Tab)
@@ -67,6 +70,19 @@ export default async function AdminPage({
     .all() as FanMessage[];
   const listings = getAllListings();
   const contentItems = getAllContent();
+
+  // Only fetch the YouTube catalogue when the admin is actually on the
+  // issue-cover picker — `getAllVideos` is expensive on the first cold
+  // hit (HEAD-probes every video for shorts classification).
+  const pickerVideos =
+    tab === "issue"
+      ? (await getAllVideos()).longform.map((v) => ({
+          id: v.id,
+          title: v.title,
+          publishedAt: v.publishedAt,
+          thumbnail: v.thumbnail,
+        }))
+      : [];
 
   const auditionStats = {
     total: auditions.length,
@@ -135,6 +151,32 @@ export default async function AdminPage({
         />
       )}
 
+      {tab === "issue" && (
+        <div className="space-y-12">
+          {/* Photos win over videos when both are present — list them
+              first so admins see the "live" source at the top. */}
+          <SectionHeader
+            title="표지 사진"
+            subtitle="V2 홈 hero에서 2초마다 넘어가는 가로형 사진들. 비어있으면 아래 표지 영상이 폴백으로 떠요."
+          >
+            <CoverPhotosManager />
+          </SectionHeader>
+          <SectionHeader
+            title="표지 영상 (폴백)"
+            subtitle="표지 사진이 한 장도 없을 때만 표시되는 유튜브 표지 영상 3개"
+          >
+            <IssueCoverPicker
+              videos={pickerVideos}
+              initial={[
+                getContent("works.1.videoId").trim(),
+                getContent("works.2.videoId").trim(),
+                getContent("works.3.videoId").trim(),
+              ]}
+            />
+          </SectionHeader>
+        </div>
+      )}
+
       {tab === "listings" && (
         <SectionHeader
           title="지원 공고"
@@ -152,7 +194,6 @@ export default async function AdminPage({
           <AdminListToolbar
             scope="audition"
             total={auditions.length}
-            exportHref="/api/admin/export?type=auditions"
           />
           <AuditionsTable items={auditions} />
         </SectionHeader>
@@ -166,7 +207,6 @@ export default async function AdminPage({
           <AdminListToolbar
             scope="fan"
             total={fanMessages.length}
-            exportHref="/api/admin/export?type=fan"
           />
           <FanMessagesTable items={fanMessages} />
         </SectionHeader>
@@ -175,38 +215,29 @@ export default async function AdminPage({
       {tab === "members" && (
         <SectionHeader
           title="멤버 관리"
-          subtitle={`총 ${members.length}명 · 추가 / 수정 / 삭제`}
+          subtitle={`총 ${members.length}명 · 사진 ${memberPhotos.filter((p) => p.photoUrl).length}건 등록`}
         >
           <MembersCrud
-            members={members.map((m) => ({
-              slug: m.slug,
-              name: m.name,
-              nameEn: m.nameEn,
-              role: m.role,
-              roleLabel: m.roleLabel,
-              highlight: m.highlight,
-              bio: m.bio,
-              works: m.works,
-              joinedNote: m.joinedNote,
-              instagram: m.instagram,
-              sourceUrl: m.sourceUrl,
-              accent: m.accent,
-              uncertain: m.uncertain,
-            }))}
+            members={memberPhotos.map((p) => {
+              const full = members.find((m) => m.slug === p.slug)!;
+              return {
+                slug: full.slug,
+                name: full.name,
+                nameEn: full.nameEn,
+                role: full.role,
+                roleLabel: full.roleLabel,
+                highlight: full.highlight,
+                bio: full.bio,
+                works: full.works,
+                joinedNote: full.joinedNote,
+                instagram: full.instagram,
+                sourceUrl: full.sourceUrl,
+                accent: full.accent,
+                uncertain: full.uncertain,
+                photoUrl: p.photoUrl,
+              };
+            })}
           />
-        </SectionHeader>
-      )}
-
-      {tab === "memberPhotos" && (
-        <SectionHeader
-          title="멤버 사진"
-          subtitle={`${memberPhotos.filter((p) => p.photoUrl).length} / ${members.length} 등록됨`}
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {memberPhotos.map((m) => (
-              <MemberPhotoManager key={m.slug} member={m} />
-            ))}
-          </div>
         </SectionHeader>
       )}
 
@@ -335,9 +366,7 @@ function DashboardView({
                       {m.nickname}
                     </div>
                     {!m.is_read && (
-                      <span className="text-[10px] uppercase tracking-wider bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
-                        NEW
-                      </span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-600" />
                     )}
                   </div>
                   <p className="mt-1 text-sm text-zinc-600 line-clamp-2">
@@ -375,25 +404,25 @@ function TrendCard({
   const isUp = delta > 0;
   const isFlat = delta === 0;
   const color = isFlat
-    ? "text-zinc-500 bg-zinc-100"
+    ? "text-zinc-500"
     : isUp
-      ? "text-emerald-700 bg-emerald-50"
-      : "text-rose-700 bg-rose-50";
+      ? "text-emerald-600"
+      : "text-rose-600";
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-4 flex items-center justify-between gap-4">
+    <div className="rounded-xl border border-zinc-200 bg-white p-5 flex items-center justify-between gap-4">
       <div>
-        <div className="text-xs text-zinc-500 font-medium">{label}</div>
-        <div className="mt-1 flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-zinc-900 tabular-nums">
+        <div className="text-[12px] text-zinc-500 font-semibold">{label}</div>
+        <div className="mt-1.5 flex items-baseline gap-2">
+          <span className="text-3xl font-extrabold text-zinc-900 tabular-nums leading-none">
             {current}
           </span>
-          <span className="text-xs text-zinc-400 tabular-nums">
-            지난 7일 {previous}
+          <span className="text-[11px] text-zinc-400 tabular-nums">
+            지난 주 {previous}
           </span>
         </div>
       </div>
-      <div className={`text-xs font-bold px-2 py-1 rounded ${color}`}>
-        {isFlat ? "변동 없음" : (isUp ? "▲" : "▼") + " " + Math.abs(pct) + "%"}
+      <div className={`text-sm font-bold tabular-nums ${color}`}>
+        {isFlat ? "—" : (isUp ? "+" : "") + pct + "%"}
       </div>
     </div>
   );
@@ -403,28 +432,31 @@ function KpiCard({
   label,
   value,
   hint,
-  accent,
+  // accent kept in the signature for caller stability but no longer wired
+  // to a pastel band — the card design is now monochrome with a single
+  // hint chip in zinc, which reads as a real product KPI rather than a
+  // generic "AI dashboard" pastel grid.
 }: {
   label: string;
   value: number | string;
   hint?: string;
   accent: "purple" | "yellow" | "emerald" | "zinc";
 }) {
-  const accentClasses = {
-    purple: "bg-purple-50 text-purple-700 border-purple-200",
-    yellow: "bg-amber-50 text-amber-700 border-amber-200",
-    emerald: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    zinc: "bg-zinc-50 text-zinc-700 border-zinc-200",
-  }[accent];
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-4">
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-xs text-zinc-500 font-medium">{label}</div>
-        <div className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${accentClasses}`}>
-          {hint}
-        </div>
+    <div className="rounded-xl border border-zinc-200 bg-white p-5 hover:border-zinc-300 transition-colors">
+      <div className="text-[12px] font-semibold text-zinc-500 mb-2">
+        {label}
       </div>
-      <div className="text-2xl font-bold text-zinc-900 tabular-nums">{value}</div>
+      <div className="flex items-baseline justify-between gap-2">
+        <div className="text-3xl font-extrabold text-zinc-900 tabular-nums leading-none">
+          {value}
+        </div>
+        {hint && (
+          <div className="text-[11px] font-medium text-zinc-400 tabular-nums">
+            {hint}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -439,13 +471,13 @@ function PanelCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-5">
+    <div className="rounded-xl border border-zinc-200 bg-white p-5">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-bold text-zinc-900">{title}</h3>
         {link && (
           <Link
             href={link.href}
-            className="text-xs font-semibold text-purple-700 hover:text-purple-900"
+            className="text-xs font-bold text-zinc-500 hover:text-zinc-900 transition-colors"
           >
             {link.label}
           </Link>
@@ -510,6 +542,23 @@ function StatusBadge({ status }: { status: Audition["status"] }) {
   );
 }
 
+const ROLE_PREF_KO: Record<string, string> = {
+  lead: "주연",
+  support: "조연",
+  extra: "단역",
+  staff: "스태프",
+};
+function rolePrefKo(v: string | null): string | null {
+  if (!v) return null;
+  return ROLE_PREF_KO[v] ?? v;
+}
+
+const GENDER_KO: Record<string, string> = {
+  female: "여성",
+  male: "남성",
+  other: "기타",
+};
+
 function AuditionsTable({ items }: { items: Audition[] }) {
   if (items.length === 0)
     return <EmptyCard>아직 접수된 오디션 지원이 없습니다.</EmptyCard>;
@@ -532,101 +581,202 @@ function AuditionsTable({ items }: { items: Audition[] }) {
               {a.age && <span className="ml-2 text-zinc-400 text-xs">{a.age}세</span>}
               <span className="block text-xs text-zinc-500 truncate">{a.email}</span>
             </span>
-            <span className="text-zinc-600 text-sm hidden sm:inline">{a.role_preference ?? "—"}</span>
+            <span className="text-zinc-600 text-sm hidden sm:inline">{rolePrefKo(a.role_preference) ?? "—"}</span>
             <StatusBadge status={a.status} />
             <span className="text-xs text-zinc-400 hidden sm:inline">
               {new Date(a.created_at).toLocaleDateString("ko-KR")}
               <span className="ml-2 text-purple-700 group-open:rotate-180 inline-block transition-transform">▾</span>
             </span>
           </summary>
-          <div className="px-5 py-5 bg-zinc-50/60 border-t border-zinc-100 grid md:grid-cols-[140px_1fr] gap-6">
-            {/* Profile photo column (mandatory field) */}
-            <div>
-              <div className="text-[11px] uppercase tracking-wider font-medium text-zinc-500 mb-1.5">프로필 사진</div>
-              {a.photo_url ? (
-                <a href={a.photo_url} target="_blank" rel="noreferrer" className="block w-32 aspect-[4/5] overflow-hidden border border-zinc-300 hover:border-purple-400 transition-colors">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={a.photo_url} alt={`${a.name} 프로필`} className="w-full h-full object-cover" />
-                </a>
-              ) : (
-                <div className="w-32 aspect-[4/5] border border-dashed border-zinc-300 grid place-items-center text-xs text-zinc-400">
-                  사진 없음
-                </div>
-              )}
-            </div>
-
-            {/* Other fields column */}
-            <div className="grid md:grid-cols-3 gap-4">
-            <div className="md:col-span-3">
-              <DetailField
-                label="지원 공고"
-                value={
-                  listingSummary(a.listing_id) ? (
-                    <span className="inline-flex items-center gap-2 text-sm text-zinc-700 bg-purple-50 border border-purple-200 px-2 py-1 rounded">
-                      <span className="text-purple-700">▣</span>
-                      {listingSummary(a.listing_id)}
-                    </span>
-                  ) : (
-                    <span className="text-sm text-zinc-400 italic">
-                      (공고 미지정 — 구버전 지원서)
-                    </span>
-                  )
-                }
-              />
-            </div>
-            <DetailField label="연락처" value={a.phone ?? "—"} />
-            <DetailField label="희망 포지션" value={a.role_preference ?? "—"} />
-            <DetailField
-              label="포트폴리오"
-              value={
-                a.portfolio_url ? (
-                  <a
-                    href={a.portfolio_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-purple-700 hover:underline break-all"
-                  >
-                    {a.portfolio_url}
-                  </a>
-                ) : "—"
-              }
-            />
-            <div className="md:col-span-3">
-              <DetailField
-                label="경력"
-                value={
-                  <p className="whitespace-pre-wrap text-sm text-zinc-700">
-                    {a.experience ?? "—"}
-                  </p>
-                }
-              />
-            </div>
-            <div className="md:col-span-3">
-              <DetailField
-                label="자기소개"
-                value={
-                  <blockquote className="text-sm text-zinc-700 border-l-2 border-purple-400 pl-3 whitespace-pre-wrap">
-                    {a.intro}
-                  </blockquote>
-                }
-              />
-            </div>
-            <div className="md:col-span-3 pt-2 border-t border-zinc-200">
-              <AdminActions type="audition" id={a.id} currentStatus={a.status} />
-            </div>
-            </div>
-          </div>
+          <AuditionDetail audition={a} />
         </details>
       ))}
     </div>
   );
 }
 
-function DetailField({ label, value }: { label: string; value: React.ReactNode }) {
+/**
+ * Expanded audition body — laid out like a candidate dossier:
+ *   - Left rail: portrait photo + ID badge + key facts (제출일, 공고, 포지션, 성별, 연락처)
+ *   - Right column: 자기소개 quote → 경력 → 포트폴리오, with editorial section dividers
+ *   - Bottom: full-width status actions bar
+ */
+function AuditionDetail({ audition: a }: { audition: Audition }) {
+  const listing = listingSummary(a.listing_id);
+  const submitted = new Date(a.created_at);
+  const submittedStr = `${submitted.getFullYear()}.${String(submitted.getMonth() + 1).padStart(2, "0")}.${String(submitted.getDate()).padStart(2, "0")} ${String(submitted.getHours()).padStart(2, "0")}:${String(submitted.getMinutes()).padStart(2, "0")}`;
   return (
-    <div>
-      <div className="text-[11px] uppercase tracking-wider font-medium text-zinc-500 mb-1">{label}</div>
-      <div className="text-sm text-zinc-700">{value}</div>
+    <div className="bg-gradient-to-b from-zinc-50 to-white border-t border-zinc-200">
+      <div className="px-6 py-6 grid lg:grid-cols-[200px_1fr] gap-8">
+        {/* ── Left rail ── */}
+        <aside className="space-y-4">
+          {/* Photo card */}
+          <div className="relative w-full max-w-[200px]">
+            {a.photo_url ? (
+              <a
+                href={a.photo_url}
+                target="_blank"
+                rel="noreferrer"
+                className="block aspect-[4/5] overflow-hidden rounded-md ring-1 ring-zinc-300 shadow-sm hover:ring-purple-400 transition"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={a.photo_url}
+                  alt={`${a.name} 프로필`}
+                  className="w-full h-full object-cover"
+                />
+              </a>
+            ) : (
+              <div className="aspect-[4/5] rounded-md border border-dashed border-zinc-300 grid place-items-center text-xs text-zinc-400 bg-white">
+                사진 없음
+              </div>
+            )}
+            <div className="absolute -top-2 -left-2 bg-zinc-900 text-white text-[10px] font-mono px-1.5 py-0.5 rounded-sm shadow-sm">
+              #{String(a.id).padStart(4, "0")}
+            </div>
+          </div>
+
+          {/* Facts */}
+          <dl className="rounded-md border border-zinc-200 bg-white divide-y divide-zinc-100 text-xs">
+            <FactRow label="제출일" value={submittedStr} mono />
+            <FactRow
+              label="지원 공고"
+              value={
+                listing ? (
+                  <span className="inline-flex items-center gap-1 text-purple-700 font-medium">
+                    <span aria-hidden>▣</span>
+                    <span className="truncate">{listing}</span>
+                  </span>
+                ) : (
+                  <span className="text-zinc-400 italic">미지정</span>
+                )
+              }
+            />
+            <FactRow label="희망 포지션" value={rolePrefKo(a.role_preference) ?? "—"} />
+            <FactRow
+              label="생년월일"
+              value={
+                a.birthdate
+                  ? `${a.birthdate}${a.age ? ` · 만 ${a.age}세` : ""}`
+                  : a.age
+                    ? `만 ${a.age}세`
+                    : "—"
+              }
+              mono={!!a.birthdate}
+            />
+            <FactRow
+              label="성별"
+              value={a.gender ? GENDER_KO[a.gender] ?? a.gender : "—"}
+            />
+          </dl>
+        </aside>
+
+        {/* ── Right column ── */}
+        <div className="min-w-0 space-y-7">
+          {/* Header */}
+          <div className="pb-3 border-b border-zinc-200">
+            <div className="flex items-baseline gap-3 flex-wrap">
+              <h3 className="text-2xl font-bold text-zinc-900 leading-tight">{a.name}</h3>
+              <span className="text-sm text-zinc-500">{rolePrefKo(a.role_preference) ?? "포지션 미지정"} 지원</span>
+            </div>
+            <div className="mt-1.5 flex items-center gap-4 text-xs text-zinc-500 flex-wrap">
+              <a
+                href={`mailto:${a.email}`}
+                className="inline-flex items-center gap-1.5 hover:text-purple-700"
+              >
+                <span aria-hidden className="text-zinc-400">✉</span>
+                {a.email}
+              </a>
+              {a.phone && (
+                <span className="inline-flex items-center gap-1.5">
+                  <span aria-hidden className="text-zinc-400">☏</span>
+                  <span className="tabular-nums">{a.phone}</span>
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* 자기소개 */}
+          <DetailSection eyebrow="자기소개">
+            <blockquote className="relative border-l-4 border-purple-400 pl-5 pr-3 py-1 text-[15px] text-zinc-800 whitespace-pre-wrap leading-relaxed">
+              {/* Tiny corner mark instead of a giant typographic quote —
+                  guarantees a clean render across fallback fonts. */}
+              <span
+                aria-hidden
+                className="absolute -left-[3px] -top-2 w-2 h-2 rounded-full bg-purple-400"
+              />
+              {a.intro}
+            </blockquote>
+          </DetailSection>
+
+          {/* 경력 */}
+          {a.experience && (
+            <DetailSection eyebrow="경력 · 제작 활동">
+              <p className="text-sm text-zinc-700 whitespace-pre-wrap leading-relaxed">
+                {a.experience}
+              </p>
+            </DetailSection>
+          )}
+
+          {/* 포트폴리오 */}
+          <DetailSection eyebrow="포트폴리오 링크">
+            {a.portfolio_url ? (
+              <a
+                href={a.portfolio_url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-purple-700 hover:underline break-all"
+              >
+                <span aria-hidden>↗</span>
+                {a.portfolio_url}
+              </a>
+            ) : (
+              <span className="text-sm text-zinc-400 italic">제출 안 함</span>
+            )}
+          </DetailSection>
+        </div>
+      </div>
+
+      {/* Status actions */}
+      <div className="px-6 py-4 border-t border-zinc-200 bg-white">
+        <AdminActions type="audition" id={a.id} currentStatus={a.status} />
+      </div>
+    </div>
+  );
+}
+
+function DetailSection({
+  eyebrow,
+  children,
+}: {
+  eyebrow: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section>
+      <h4 className="text-[13px] font-bold text-zinc-900 mb-2">{eyebrow}</h4>
+      {children}
+    </section>
+  );
+}
+
+function FactRow({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: React.ReactNode;
+  mono?: boolean;
+}) {
+  return (
+    <div className="px-3 py-2.5 grid grid-cols-[80px_1fr] items-start gap-2 min-w-0">
+      <dt className="text-[10px] tracking-wider uppercase font-semibold text-zinc-500 pt-0.5">
+        {label}
+      </dt>
+      <dd className={`text-xs text-zinc-800 min-w-0 break-words ${mono ? "font-mono tabular-nums" : ""}`}>
+        {value}
+      </dd>
     </div>
   );
 }
@@ -643,19 +793,24 @@ function FanMessagesTable({ items }: { items: FanMessage[] }) {
           key={m.id}
           data-fan-row
           data-fan-search={`${m.nickname} ${m.email ?? ""} ${m.message} ${m.favorite_work ?? ""}`}
-          className={`rounded-lg border bg-white p-4 ${m.is_read ? "border-zinc-200 opacity-90" : "border-purple-300 ring-1 ring-purple-100"}`}
+          className={`rounded-xl border bg-white p-5 transition-colors ${m.is_read ? "border-zinc-200" : "border-zinc-300"}`}
         >
           <div className="flex items-start justify-between gap-2 mb-2">
-            <div>
-              <div className="font-semibold text-zinc-900">{m.nickname}</div>
-              <div className="text-xs text-zinc-500">
-                {m.favorite_work ? `${m.favorite_work} · ` : ""}
-                {new Date(m.created_at).toLocaleString("ko-KR")}
+            <div className="flex items-center gap-2">
+              {!m.is_read && (
+                <span className="w-2 h-2 rounded-full bg-purple-600 shrink-0" />
+              )}
+              <div>
+                <div className="font-bold text-zinc-900 text-[15px]">{m.nickname}</div>
+                <div className="text-xs text-zinc-500 mt-0.5">
+                  {m.favorite_work ? `${m.favorite_work} · ` : ""}
+                  {new Date(m.created_at).toLocaleString("ko-KR")}
+                </div>
               </div>
             </div>
             <span
-              className={`text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded ${
-                m.is_read ? "bg-zinc-100 text-zinc-500" : "bg-purple-600 text-white"
+              className={`text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full ${
+                m.is_read ? "bg-zinc-100 text-zinc-500" : "bg-zinc-900 text-white"
               }`}
             >
               {m.is_read ? "확인함" : "NEW"}

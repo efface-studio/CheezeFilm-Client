@@ -1,4 +1,9 @@
-import Link from "next/link";
+// 이 페이지에선 의도적으로 `next/link` 가 아닌 평범한 `<a>` 를 사용합니다.
+// 디자인 picker 는 V1 ↔ V2 사이의 완전한 hard switch — SPA prefetch /
+// 클라이언트 라우팅이 view-transition 콜백 안에서 router.push 가 silently
+// 실패하는 경우가 있어 클릭이 먹지 않았어요. `data-no-vt` 가 PageTransition
+// 가로채기를 건너뛰게 해주고, plain anchor 의 기본 동작이 hard navigation
+// 을 수행합니다.
 
 export const metadata = {
   title: "치즈필름 | CheezeFilm",
@@ -14,10 +19,11 @@ export default function VersionPicker() {
   return (
     <main className="min-h-screen flex flex-col md:flex-row picker-stage relative">
       {/* V1 — Vintage Cinema (warm side) */}
-      <Link
+      <a
         href="/v1"
         aria-label="버전 01 — 빈티지 시네마"
         className="picker-half picker-half--vintage group"
+        data-no-vt
       >
         <div className="picker-half__inner">
           {/* Decorative vintage hints */}
@@ -62,13 +68,14 @@ export default function VersionPicker() {
             </div>
           </div>
         </div>
-      </Link>
+      </a>
 
       {/* V2 — Modern Editorial (sleek side, same colors, different feel) */}
-      <Link
+      <a
         href="/v2"
         aria-label="버전 02 — 모던 에디토리얼"
         className="picker-half picker-half--editorial group"
+        data-no-vt
       >
         <div className="picker-half__inner">
           {/* Decorative modern hints — sharp geometry */}
@@ -123,7 +130,7 @@ export default function VersionPicker() {
             </div>
           </div>
         </div>
-      </Link>
+      </a>
 
       {/* Centered logo + identity strip */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-center pt-5 sm:pt-6">

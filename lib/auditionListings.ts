@@ -5,6 +5,9 @@
  */
 
 import { db, type AuditionListing } from "./db";
+import { parseDeadline, formatDeadline } from "./deadline";
+
+export { parseDeadline, formatDeadline };
 
 export const ROLE_TYPES = ["lead", "support", "extra", "staff"] as const;
 export const STATUSES = ["draft", "open", "closed"] as const;
@@ -24,10 +27,8 @@ export const STATUS_LABEL: Record<AuditionListing["status"], string> = {
 
 function isOpenForApplications(l: AuditionListing): boolean {
   if (l.status !== "open") return false;
-  if (l.deadline) {
-    const d = new Date(l.deadline);
-    if (!Number.isNaN(d.getTime()) && d.getTime() < Date.now()) return false;
-  }
+  const t = parseDeadline(l.deadline);
+  if (t !== null && t < Date.now()) return false;
   return true;
 }
 
@@ -120,3 +121,4 @@ export function listingSummary(id: number | null): string | null {
   const l = findListing(id);
   return l ? `#${l.id} · ${l.title}` : null;
 }
+

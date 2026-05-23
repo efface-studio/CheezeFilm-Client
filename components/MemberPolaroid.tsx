@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import Image from "next/image";
 import type { Member } from "@/lib/members";
 import { getRoleColorClass } from "@/lib/members";
 
@@ -15,8 +16,10 @@ function resolvePhoto(slug: string) {
   for (const ext of IMAGE_EXTS) {
     const file = path.join(dir, `${slug}${ext}`);
     if (fs.existsSync(file)) {
-      const v = fs.statSync(file).mtimeMs;
-      return `/members/${slug}${ext}?v=${Math.floor(v)}`;
+      // No cache-bust query — Next/Image rejects them on local URLs.
+      // The /members/* Cache-Control header (max-age=3600 + SWR=86400)
+      // serves fresh content within 1 hour anyway.
+      return `/members/${slug}${ext}`;
     }
   }
   return null;
@@ -49,11 +52,12 @@ export default function MemberPolaroid({
         )}`}
       >
         {photo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={photo}
             alt={member.name}
-            className="absolute inset-0 w-full h-full object-cover"
+            fill
+            sizes={size === "lg" ? "280px" : "(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"}
+            className="object-cover"
             loading="lazy"
           />
         ) : (

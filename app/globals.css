@@ -509,19 +509,19 @@ body {
   from { opacity: 0; transform: translateY(12px); }
 }
 ::view-transition-old(root) {
-  animation: vt-fade-out 240ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: vt-fade-out 130ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 ::view-transition-new(root) {
-  animation: vt-fade-in 380ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation: vt-fade-in 200ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
 /* 2) CSS fallback for browsers without VT API (Firefox today) */
 @keyframes page-slide-in {
-  0%   { opacity: 0; transform: translateY(14px); }
+  0%   { opacity: 0; transform: translateY(10px); }
   100% { opacity: 1; transform: translateY(0); }
 }
 .page-slide-in {
-  animation: page-slide-in 360ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation: page-slide-in 200ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 /* When the View Transitions API is driving the animation, the wrapper's
    own keyframe would stack on top and double the motion. Modern browsers
@@ -582,20 +582,30 @@ body {
 
 /* Image mask reveal — opens like a curtain on scroll-in.
    The wrapper clips, and the inner img scales down slightly so the
-   final motion is "image pushes open the mask". */
+   final motion is "image pushes open the mask".
+
+   NOTE: previous version put `clip-path: inset(0 0 100% 0)` on the base
+   `.v2-mask` and unrolled it via `[data-revealed="true"]`. Under Tailwind
+   v4's @layer ordering that override silently lost the cascade and the
+   element stayed permanently hidden. The current arrangement is
+   inverted — base state is visible, and `.v2-mask-pre[data-revealed]`
+   layered ON TOP via the InView class flip closes it briefly before the
+   intersection observer opens it. */
 .v2-mask {
   overflow: hidden;
-  clip-path: inset(0 0 100% 0);
   transition: clip-path 1000ms cubic-bezier(0.65, 0, 0.35, 1) 60ms;
 }
-.v2-mask[data-revealed="true"] { clip-path: inset(0 0 0 0); }
 .v2-mask > img,
 .v2-mask > .v2-mask-img {
-  transform: scale(1.08);
   transition: transform 1400ms cubic-bezier(0.2, 0.7, 0.2, 1) 60ms;
 }
-.v2-mask[data-revealed="true"] > img,
-.v2-mask[data-revealed="true"] > .v2-mask-img { transform: scale(1); }
+.v2-mask:not([data-revealed="true"]) {
+  clip-path: inset(0 0 100% 0);
+}
+.v2-mask:not([data-revealed="true"]) > img,
+.v2-mask:not([data-revealed="true"]) > .v2-mask-img {
+  transform: scale(1.08);
+}
 
 /* Block fade-up — preferred over generic .reveal in V2 (longer, firmer). */
 .v2-fade-up {
@@ -694,7 +704,8 @@ body {
   .v2-marquee, .v2-pulse-dot { animation: none !important; }
 }
 
-/* Vignette around viewport edges — gives a projected-screen feel */
+/* Vignette around viewport edges — gives a projected-screen feel.
+   Suppressed on admin pages where it reads as visual noise instead. */
 .vignette::before {
   content: "";
   position: fixed;
@@ -706,6 +717,9 @@ body {
     rgba(22, 16, 32, 0.18) 100%
   );
   z-index: 3;
+}
+body:has(.admin-shell).vignette::before {
+  display: none;
 }
 
 /* Tab-style picker */
@@ -760,4 +774,79 @@ body {
 .noise-overlay > * {
   position: relative;
   z-index: 1;
+}
+
+/* ── V2 home scroll snap ─────────────────────────────────────
+   Each top-level <section> on `/v2` becomes a snap stop so the
+   page rests on a clean boundary as the user scrolls. `proximity`
+   keeps it gentle — only snaps when the user releases near a
+   section edge, never fights mid-section scrolling for tall
+   sections.
+
+   The `.v2-snap` class is toggled on <html> by a tiny client
+   component on the V2 home page (V2SnapScroller). We use a class
+   rather than `html:has(...)` because Tailwind v4's CSS pipeline
+   silently strips `:has()` rules in some configurations. */
+.v2-snap {
+  scroll-snap-type: y proximity;
+}
+.v2-snap main[data-v2-home] > section {
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
+}
+/* Touch + reduced-motion: scroll-snap interacts badly with momentum
+   scrolling on phones, and reduced-motion users prefer linear scroll. */
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .v2-snap,
+  .v2-snap main[data-v2-home] > section {
+    scroll-snap-type: none;
+    scroll-snap-align: none;
+  }
+}
+
+/* ── HeroCover cross-fade + ken burns ─────────────────────
+   Slide rotation is 5000ms (see HeroCover.tsx). The fade is
+   1600ms so two consecutive slides overlap for the middle
+   second — no hard cut, no perceptible "edge". The active
+   slide also runs a slow zoom (1 → 1.07) over 5500ms so
+   each photo subtly drifts forward while you look at it.
+
+   Resetting `animation` on every active flip requires the
+   keyframe to be applied via a data attribute rather than a
+   transition (transitions don't "restart" on prop change). */
+/* The selector beats `.v2-film img` (which sets a transform/filter
+   hover transition) since it's more specific with the `.hero-cover-img`
+   class added. Without this, our 1.6s opacity fade gets overridden. */
+.v2-film .hero-cover-img,
+.hero-cover-img {
+  opacity: 0;
+  transform: scale(1.04);
+  transition: opacity 1600ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.v2-film .hero-cover-img.is-active,
+.hero-cover-img.is-active {
+  opacity: 1;
+  animation: hero-cover-ken-burns 5500ms cubic-bezier(0.4, 0, 0.4, 1) forwards;
+}
+@keyframes hero-cover-ken-burns {
+  from { transform: scale(1); }
+  to   { transform: scale(1.07); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-cover-img.is-active {
+    animation: none;
+    transform: scale(1);
+  }
+  .hero-cover-img {
+    transition: opacity 300ms ease-out;
+  }
+}
+
+/* V2 nav rail — pending pulse used by `LinkPending` while Next is
+   transitioning to a new route. Pulses yellow opacity so the user sees
+   "click registered" even on slow dev routes. */
+@keyframes v2-link-pending {
+  0%, 100% { opacity: 0.3; }
+  50%      { opacity: 1; }
 }

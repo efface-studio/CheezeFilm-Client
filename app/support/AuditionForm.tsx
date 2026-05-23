@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Confetti from "@/components/Confetti";
+import BirthdateInput from "@/components/BirthdateInput";
+import PhoneInput from "@/components/PhoneInput";
+import { formatDeadline, formatDeadlineLong } from "@/lib/deadline";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -122,59 +125,136 @@ function ListingPicker({
       )}
 
       {listings && listings.length > 0 && (
-        <ul className="grid gap-4">
-          {listings.map((l) => (
-            <li
+        <ul className="grid gap-8">
+          {listings.map((l, i) => (
+            <ListingFlyer
               key={l.id}
-              className="border-2 border-cheeze-purple-deep bg-cheeze-cream-deep/40 p-5 hover:bg-cheeze-cream-deep transition-colors"
-            >
-              <div className="flex items-start justify-between gap-4 mb-2">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] uppercase tracking-widest px-1.5 py-0.5 bg-cheeze-purple-deep text-cheeze-yellow">
-                      {ROLE_LABEL[l.role_type]}
-                    </span>
-                    {l.deadline && (
-                      <span className="text-[10px] uppercase tracking-widest text-cheeze-wine">
-                        ~ {l.deadline} 마감
-                      </span>
-                    )}
-                  </div>
-                  <h3
-                    className="text-xl"
-                    style={{ fontFamily: "var(--font-display)" }}
-                  >
-                    {l.title}
-                  </h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onPick(l)}
-                  className="btn-yellow shrink-0"
-                >
-                  지원하기 →
-                </button>
-              </div>
-              {l.description && (
-                <p className="text-sm text-cheeze-ink-soft whitespace-pre-wrap mt-2">
-                  {l.description}
-                </p>
-              )}
-              {l.requirements && (
-                <div className="mt-3 pt-3 border-t border-cheeze-purple-deep/20">
-                  <div className="text-[10px] uppercase tracking-widest text-cheeze-purple-deep mb-1">
-                    지원 조건
-                  </div>
-                  <p className="text-sm text-cheeze-ink-soft/90 whitespace-pre-wrap">
-                    {l.requirements}
-                  </p>
-                </div>
-              )}
-            </li>
+              listing={l}
+              index={i + 1}
+              total={listings.length}
+              onPick={() => onPick(l)}
+            />
           ))}
         </ul>
       )}
     </div>
+  );
+}
+
+/**
+ * Vintage "casting flyer" rendition of a single open call. Each card
+ * mimics a stamped call sheet from a 60s film set — marquee strip with
+ * sprocket dots up top, big display title, weathered drop shadow,
+ * yellow accent rule that grows on hover, big bottom CTA.
+ */
+function ListingFlyer({
+  listing: l,
+  index,
+  total,
+  onPick,
+}: {
+  listing: Listing;
+  index: number;
+  total: number;
+  onPick: () => void;
+}) {
+  const reelNo = String(index).padStart(2, "0");
+  const reelTotal = String(total).padStart(2, "0");
+  return (
+    <li className="group">
+      <button
+        type="button"
+        onClick={onPick}
+        className="w-full text-left border-2 border-cheeze-purple-deep bg-cheeze-cream-deep/40 hover:bg-cheeze-cream-deep transition-all shadow-[4px_4px_0_var(--cheeze-ink)] hover:shadow-[6px_6px_0_var(--cheeze-ink)] hover:-translate-y-0.5"
+      >
+        {/* Marquee strip — sprocket dots framing the reel marker */}
+        <div className="bg-cheeze-purple-deep text-cheeze-yellow px-4 py-1.5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <SprocketDots />
+            <span className="text-[10px] tracking-[0.35em] uppercase font-bold tabular-nums">
+              REEL {reelNo} / {reelTotal}
+            </span>
+          </div>
+          <span className="text-[10px] tracking-[0.35em] uppercase font-bold">
+            CASTING CALL
+          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] tracking-[0.35em] uppercase font-bold">
+              TAKE 01
+            </span>
+            <SprocketDots />
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="p-5 sm:p-6">
+          {/* Metadata row */}
+          <div className="flex items-center gap-3 mb-3 flex-wrap">
+            <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 bg-cheeze-purple-deep text-cheeze-yellow font-bold">
+              {ROLE_LABEL[l.role_type]}
+            </span>
+            {l.deadline && (
+              <span className="text-[11px] uppercase tracking-wider text-cheeze-wine font-bold inline-flex items-center gap-1.5">
+                <span className="w-1 h-1 rounded-full bg-cheeze-wine" />
+                {formatDeadlineLong(l.deadline)} 마감
+              </span>
+            )}
+          </div>
+
+          {/* Title — big display */}
+          <h3
+            className="text-3xl sm:text-4xl leading-[1.05] text-cheeze-ink"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            {l.title}
+          </h3>
+
+          {/* Yellow accent rule */}
+          <div className="mt-3 h-1 w-16 bg-cheeze-yellow transition-[width] duration-500 group-hover:w-40" />
+
+          {l.description && (
+            <p className="mt-5 text-sm sm:text-[15px] text-cheeze-ink-soft whitespace-pre-wrap leading-relaxed">
+              {l.description}
+            </p>
+          )}
+
+          {l.requirements && (
+            <div className="mt-5">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="h-px flex-1 bg-cheeze-purple-deep/30" />
+                <span className="text-[10px] uppercase tracking-[0.35em] text-cheeze-purple-deep font-bold">
+                  REQUIREMENTS
+                </span>
+                <span className="h-px flex-1 bg-cheeze-purple-deep/30" />
+              </div>
+              <p className="text-sm text-cheeze-ink-soft/90 whitespace-pre-wrap leading-relaxed text-center">
+                {l.requirements}
+              </p>
+            </div>
+          )}
+
+          {/* Footer — director's slate + CTA */}
+          <div className="mt-6 pt-4 border-t-2 border-dashed border-cheeze-purple-deep/30 flex items-center justify-between gap-4">
+            <div className="text-[10px] tracking-[0.3em] uppercase text-cheeze-olive font-bold">
+              ✦ CHEEZEFILM CASTING
+            </div>
+            <span className="btn-yellow inline-flex items-center gap-2 group-hover:translate-x-0.5 transition-transform">
+              지원하기 <span aria-hidden>→</span>
+            </span>
+          </div>
+        </div>
+      </button>
+    </li>
+  );
+}
+
+function SprocketDots() {
+  return (
+    <span className="flex items-center gap-1" aria-hidden>
+      <span className="w-1 h-1 rounded-full bg-cheeze-yellow/70" />
+      <span className="w-1 h-1 rounded-full bg-cheeze-yellow/70" />
+      <span className="w-1 h-1 rounded-full bg-cheeze-yellow/70" />
+    </span>
   );
 }
 
@@ -273,7 +353,7 @@ function ApplyForm({
             </h3>
             {listing.deadline && (
               <span className="text-xs text-cheeze-wine">
-                ~ {listing.deadline} 마감
+                ~ {formatDeadline(listing.deadline)} 마감
               </span>
             )}
           </div>
@@ -372,18 +452,10 @@ function ApplyForm({
           />
         </div>
         <div>
-          <label className="field-label" htmlFor="age">
-            나이
+          <label className="field-label" htmlFor="birthdate">
+            생년월일
           </label>
-          <input
-            id="age"
-            name="age"
-            type="number"
-            min={10}
-            max={99}
-            className="field-input"
-            placeholder="만 나이"
-          />
+          <BirthdateInput id="birthdate" />
         </div>
       </div>
 
@@ -436,12 +508,7 @@ function ApplyForm({
           <label className="field-label" htmlFor="phone">
             연락처
           </label>
-          <input
-            id="phone"
-            name="phone"
-            className="field-input"
-            placeholder="010-0000-0000"
-          />
+          <PhoneInput id="phone" />
         </div>
       </div>
 

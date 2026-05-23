@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -391,12 +392,13 @@ export default async function Home() {
               >
                 {w.videoId ? (
                   <>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                       src={`https://i.ytimg.com/vi/${w.videoId}/maxresdefault.jpg`}
                       alt={w.title}
+                      fill
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                      className="object-cover"
                       loading="lazy"
-                      className="absolute inset-0 w-full h-full object-cover"
                     />
                     {/* Dark gradient so the corner labels stay legible */}
                     <span
@@ -497,12 +499,13 @@ export default async function Home() {
                   className="group block"
                 >
                   <div className="aspect-video relative overflow-hidden border-2 border-cheeze-purple-deep bg-cheeze-charcoal shadow-[5px_5px_0_var(--cheeze-purple-deep)] group-hover:shadow-[8px_8px_0_var(--cheeze-purple-deep)] transition-shadow lightleak">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                       src={v.thumbnail}
                       alt={v.title}
+                      fill
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
                       loading="lazy"
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                     <span className="absolute inset-0 grid place-items-center opacity-0 group-hover:opacity-100 transition-opacity bg-cheeze-purple-deep/55 text-cheeze-yellow text-6xl">
                       ▶
@@ -554,12 +557,13 @@ export default async function Home() {
                   className="group block"
                 >
                   <div className="aspect-[9/16] relative overflow-hidden border-2 border-cheeze-purple-deep bg-cheeze-charcoal shadow-[3px_3px_0_var(--cheeze-purple-deep)] group-hover:shadow-[5px_5px_0_var(--cheeze-purple-deep)] transition-shadow lightleak">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                       src={v.thumbnail}
                       alt={v.title}
+                      fill
+                      sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
                       loading="lazy"
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                     <span className="absolute top-2 left-2 bg-cheeze-yellow text-cheeze-purple-deep text-[10px] font-bold tracking-widest px-1.5 py-0.5">
                       SHORTS
