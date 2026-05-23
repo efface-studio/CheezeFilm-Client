@@ -233,6 +233,8 @@ function ListingItem({
   );
 }
 
+type PhotoSlot = { file: File | null; preview: string | null };
+
 function ApplyForm({
   listing,
   onBack,
@@ -242,12 +244,39 @@ function ApplyForm({
 }) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [photos, setPhotos] = useState<PhotoSlot[]>([
+    { file: null, preview: null },
+    { file: null, preview: null },
+    { file: null, preview: null },
+  ]);
+  const fileInputRefs = [
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+  ];
 
-  function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    setPhotoPreview(file ? URL.createObjectURL(file) : null);
+  function onPickPhoto(slot: number, e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    setPhotos((prev) => {
+      const next = [...prev];
+      if (next[slot].preview) URL.revokeObjectURL(next[slot].preview);
+      next[slot] = {
+        file,
+        preview: file ? URL.createObjectURL(file) : null,
+      };
+      return next;
+    });
+  }
+
+  function clearSlot(slot: number) {
+    setPhotos((prev) => {
+      const next = [...prev];
+      if (next[slot].preview) URL.revokeObjectURL(next[slot].preview);
+      next[slot] = { file: null, preview: null };
+      return next;
+    });
+    const input = fileInputRefs[slot].current;
+    if (input) input.value = "";
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -256,12 +285,17 @@ function ApplyForm({
     setError("");
     const form = e.currentTarget;
     const fd = new FormData(form);
-    const photo = fd.get("photo");
-    if (!(photo instanceof File) || photo.size === 0) {
+
+    const filled = photos.filter((p) => p.file);
+    if (filled.length === 0) {
       setStatus("error");
-      setError("프로필 사진을 첨부해주세요. (필수)");
+      setError("프로필 사진을 1장 이상 첨부해주세요.");
       return;
     }
+
+    // FormData from the form already includes the file inputs by name
+    // (photo, photo2, photo3). Just append nothing extra — the slot
+    // state mirrors the inputs so no normalization needed here.
 
     try {
       const res = await fetch("/api/auditions", {
@@ -274,7 +308,14 @@ function ApplyForm({
       }
       setStatus("success");
       form.reset();
-      setPhotoPreview(null);
+      photos.forEach((p) => {
+        if (p.preview) URL.revokeObjectURL(p.preview);
+      });
+      setPhotos([
+        { file: null, preview: null },
+        { file: null, preview: null },
+        { file: null, preview: null },
+      ]);
     } catch (e) {
       setStatus("error");
       setError(e instanceof Error ? e.message : "오류가 발생했어요.");
@@ -283,18 +324,21 @@ function ApplyForm({
 
   if (status === "success") {
     return (
-      <div className="relative text-center py-16 border border-cheeze-purple-deep/40">
+      <div className="relative rounded-3xl bg-toss-50 px-6 py-16 text-center">
         <Confetti count={22} />
-        <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-purple mb-4">
-          — Take 1
+        <div
+          aria-hidden
+          className="mx-auto w-14 h-14 rounded-2xl bg-white flex items-center justify-center text-3xl mb-5 shadow-sm"
+        >
+          🎬
         </div>
-        <h3 className="text-4xl mb-3" style={{ fontFamily: "var(--font-display)" }}>
-          접수 완료.
+        <h3 className="text-[20px] font-bold text-cheeze-ink mb-2">
+          접수 완료!
         </h3>
-        <p className="text-cheeze-ink-soft max-w-sm mx-auto leading-relaxed">
-          <strong>{listing.title}</strong>
-          <br />에 지원해주셔서 감사합니다. 제작팀이 한 명씩 직접 읽고 빠르게
-          검토합니다.
+        <p className="text-[14px] text-cheeze-ink-soft max-w-sm mx-auto leading-relaxed">
+          <strong className="text-cheeze-ink">{listing.title}</strong>에
+          지원해주셔서 감사합니다. 제작팀이 직접 검토하고 1주 안에 회신
+          드릴게요.
         </p>
         <button
           type="button"
@@ -347,74 +391,96 @@ function ApplyForm({
       <input type="hidden" name="listing_id" value={listing.id} />
 
       <div>
-        <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-purple mb-2">
-          — Audition form
-        </div>
-        <h2 className="text-3xl tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
+        <h2 className="text-[24px] font-bold tracking-tight text-cheeze-ink">
           오디션 지원서
         </h2>
-        <p className="mt-2 text-sm text-cheeze-ink-soft">
+        <p className="mt-1.5 text-[14px] text-cheeze-ink-soft">
           정확한 검토를 위해 모든 항목을 솔직하게 작성해주세요.
         </p>
       </div>
 
-      <FieldGroup title="프로필 사진 *">
-        <div className="flex items-start gap-5">
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                fileInputRef.current?.click();
-              }
-            }}
-            className="w-32 h-40 border border-cheeze-purple-deep/40 hover:border-cheeze-purple-deep bg-cheeze-cream-deep/30 cursor-pointer overflow-hidden shrink-0 relative grid place-items-center transition-colors"
-          >
-            {photoPreview ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={photoPreview}
-                alt="미리보기"
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            ) : (
-              <div className="text-center px-2">
-                <div className="text-2xl mb-1">📷</div>
-                <div className="text-[10px] uppercase tracking-widest text-cheeze-olive">
-                  Click to upload
+      {/* Photo picker — 3-slot grid. First slot is required (the form
+          submit checks it), the other two are optional add-ons so the
+          applicant can include angle/full-body shots. */}
+      <FieldGroup
+        title="프로필 사진"
+        sublabel="최소 1장, 최대 3장 · 얼굴이 잘 보이는 사진 권장"
+      >
+        <ul className="grid grid-cols-3 gap-3">
+          {photos.map((p, i) => {
+            const isFirst = i === 0;
+            return (
+              <li key={i}>
+                <div
+                  onClick={() => fileInputRefs[i].current?.click()}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      fileInputRefs[i].current?.click();
+                    }
+                  }}
+                  className={`relative aspect-[3/4] rounded-2xl bg-white cursor-pointer overflow-hidden transition-all ${
+                    p.preview
+                      ? "ring-1 ring-toss-200"
+                      : "border-2 border-dashed border-toss-200 hover:border-cheeze-purple/50 hover:bg-toss-50/50"
+                  }`}
+                >
+                  {p.preview ? (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={p.preview}
+                        alt={`미리보기 ${i + 1}`}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          clearSlot(i);
+                        }}
+                        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-cheeze-ink/80 text-white text-[14px] hover:bg-cheeze-ink transition-colors"
+                        aria-label="사진 삭제"
+                      >
+                        ×
+                      </button>
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 grid place-items-center text-center px-2">
+                      <div>
+                        <div className="text-[24px] mb-1.5">＋</div>
+                        <div className="text-[12px] font-semibold text-cheeze-ink-soft">
+                          {isFirst ? "사진 추가 (필수)" : "사진 추가"}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
-          </div>
-          <div className="text-xs text-cheeze-ink-soft/80 leading-relaxed flex-1">
-            <p className="text-cheeze-purple-deep font-bold mb-1">필수 첨부 항목</p>
-            얼굴이 잘 보이는 프로필 사진 한 장. JPEG · PNG · WebP, 8MB 이하.
-          </div>
-        </div>
-        <input
-          ref={fileInputRef}
-          name="photo"
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/heic"
-          required
-          className="hidden"
-          onChange={onPickPhoto}
-        />
+                <input
+                  ref={fileInputRefs[i]}
+                  name={i === 0 ? "photo" : `photo${i + 1}`}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/heic"
+                  className="hidden"
+                  onChange={(e) => onPickPhoto(i, e)}
+                />
+              </li>
+            );
+          })}
+        </ul>
+        <p className="mt-3 text-[12px] text-cheeze-ink-soft">
+          JPEG · PNG · WebP / 8MB 이하
+        </p>
       </FieldGroup>
 
       <FieldGroup title="기본 정보">
-        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-4">
+        <div className="grid sm:grid-cols-2 gap-4">
           <Field label="이름" name="name" required maxLength={50} placeholder="홍길동" />
-          <label className="block">
-            <span className="text-xs tracking-widest uppercase text-cheeze-olive">
-              생년월일
-            </span>
-            <BirthdateInput
-              className="mt-1.5 w-full bg-transparent border-b border-cheeze-purple-deep/40 focus:border-cheeze-purple-deep outline-none py-2 text-sm placeholder:text-cheeze-olive/50"
-            />
-          </label>
+          <FieldShell label="생년월일">
+            <BirthdateInput className={FIELD_INPUT_CLASSES} />
+          </FieldShell>
           <SelectField label="성별" name="gender">
             <option value="">선택 안 함</option>
             <option value="female">여성</option>
@@ -436,16 +502,11 @@ function ApplyForm({
       </FieldGroup>
 
       <FieldGroup title="연락처">
-        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-4">
+        <div className="grid sm:grid-cols-2 gap-4">
           <Field label="이메일" name="email" type="email" required placeholder="you@example.com" />
-          <label className="block">
-            <span className="text-xs tracking-widest uppercase text-cheeze-olive">
-              연락처
-            </span>
-            <PhoneInput
-              className="mt-1.5 w-full bg-transparent border-b border-cheeze-purple-deep/40 focus:border-cheeze-purple-deep outline-none py-2 text-sm placeholder:text-cheeze-olive/50"
-            />
-          </label>
+          <FieldShell label="연락처">
+            <PhoneInput className={FIELD_INPUT_CLASSES} />
+          </FieldShell>
         </div>
       </FieldGroup>
 
@@ -468,12 +529,12 @@ function ApplyForm({
       </FieldGroup>
 
       {status === "error" && (
-        <div className="border border-cheeze-wine bg-cheeze-wine/5 px-4 py-3 text-sm text-cheeze-wine">
-          ⚠ {error}
+        <div className="rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-[14px] text-rose-700">
+          {error}
         </div>
       )}
 
-      <div className="flex items-center gap-4 pt-4 border-t border-toss-100">
+      <div className="flex items-center gap-4">
         <button
           type="submit"
           disabled={status === "submitting"}
@@ -490,14 +551,53 @@ function ApplyForm({
   );
 }
 
-function FieldGroup({ title, children }: { title: string; children: React.ReactNode }) {
+// ─── Field components ─────────────────────────────────────────
+// Toss-style: each field group is a rounded soft card with a small
+// title row and the fields inside as pill-style filled inputs.
+
+const FIELD_INPUT_CLASSES =
+  "w-full bg-white rounded-xl px-4 py-3 text-[15px] text-cheeze-ink placeholder:text-toss-300 outline-none focus:ring-2 focus:ring-cheeze-purple/30 transition";
+
+function FieldGroup({
+  title,
+  sublabel,
+  children,
+}: {
+  title: string;
+  sublabel?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="grid lg:grid-cols-[160px_1fr] gap-x-8 gap-y-5 pt-6 border-t border-cheeze-purple-deep/15">
-      <div className="text-[10px] tracking-[0.35em] uppercase text-cheeze-purple-deep">
-        {title}
+    <div className="rounded-2xl bg-toss-50 p-5 space-y-4">
+      <div>
+        <div className="text-[13px] font-semibold text-cheeze-ink">
+          {title}
+        </div>
+        {sublabel && (
+          <div className="text-[12px] text-cheeze-ink-soft mt-0.5">
+            {sublabel}
+          </div>
+        )}
       </div>
-      <div className="space-y-4">{children}</div>
+      <div className="space-y-3">{children}</div>
     </div>
+  );
+}
+
+function FieldShell({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block">
+      <div className="text-[13px] font-semibold text-cheeze-ink mb-1.5">
+        {label}
+      </div>
+      {children}
+    </label>
   );
 }
 
@@ -518,17 +618,17 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-xs tracking-widest uppercase text-cheeze-olive">
+      <div className="text-[13px] font-semibold text-cheeze-ink mb-1.5">
         {label}
         {required && <span className="text-cheeze-purple ml-1">*</span>}
-      </span>
+      </div>
       <input
         name={name}
         type={type}
         required={required}
         placeholder={placeholder}
         maxLength={maxLength}
-        className="mt-1.5 w-full bg-transparent border-b border-cheeze-purple-deep/40 focus:border-cheeze-purple-deep outline-none py-2 text-sm placeholder:text-cheeze-olive/50"
+        className={FIELD_INPUT_CLASSES}
       />
     </label>
   );
@@ -547,10 +647,12 @@ function SelectField({
 }) {
   return (
     <label className="block">
-      <span className="text-xs tracking-widest uppercase text-cheeze-olive">{label}</span>
+      <div className="text-[13px] font-semibold text-cheeze-ink mb-1.5">
+        {label}
+      </div>
       <select
         name={name}
-        className="mt-1.5 w-full bg-transparent border-b border-cheeze-purple-deep/40 focus:border-cheeze-purple-deep outline-none py-2 text-sm"
+        className={FIELD_INPUT_CLASSES}
         defaultValue={defaultValue}
       >
         {children}
@@ -576,17 +678,17 @@ function TextareaField({
 }) {
   return (
     <label className="block">
-      <span className="text-xs tracking-widest uppercase text-cheeze-olive">
+      <div className="text-[13px] font-semibold text-cheeze-ink mb-1.5">
         {label}
         {required && <span className="text-cheeze-purple ml-1">*</span>}
-      </span>
+      </div>
       <textarea
         name={name}
         rows={rows}
         required={required}
         placeholder={placeholder}
         maxLength={maxLength}
-        className="mt-1.5 w-full bg-transparent border border-cheeze-purple-deep/30 focus:border-cheeze-purple-deep outline-none p-3 text-sm placeholder:text-cheeze-olive/50"
+        className={FIELD_INPUT_CLASSES}
       />
     </label>
   );
