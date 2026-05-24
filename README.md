@@ -1,137 +1,164 @@
-# 🧀 CheezeFilm Fan Site
+# 🧀 CheezeFilm — Official-style fan site
 
-치즈필름(@CheezeFilmz)의 비공식 팬 사이트. 채널 소개·대표작 진열, 오디션 지원·팬 응원 메시지 접수, 그리고 관리자가 그 모든 응답을 확인할 수 있는 작은 풀스택 웹사이트입니다.
+The fan + audition site for **CheezeFilm** (`@CheezeFilmz`), a Korean web-drama studio with **3.45M+ subscribers**.
 
-## 핵심 특징
+The site is the channel's public storefront (story, cast, films, careers) and the studio's operations panel: open-audition application intake, fan-letter inbox, member / content management, all in one place.
 
-- **메인 페이지** — 채널 스토리, 대표작 3편(다중인격 소녀, 남자무리 여사친, 달고나), 최근 업로드 6편(YouTube에서 자동 페치), 제작진 소개, 통계 스트립
-- **영상 페이지** (`/videos`) — 채널의 모든 영상을 그리드로 표시. 제목 검색 + 페이지네이션(더보기). 카드 클릭 시 사이트 안에서 YouTube 임베드로 바로 재생(모달). 1시간 ISR 캐시
-- **지원하기 페이지** (`/support`) — `오디션 지원` / `응원 메시지` 두 탭으로 분리. URL에 `?tab=audition` 또는 `?tab=fan` 으로 직접 진입 가능
-- **관리자 페이지** (`/admin`) — 로그인 후 대시보드에서 모든 지원 내역 확인. 오디션은 `대기 / 검토중 / 합격 / 불합격` 상태로 변경 가능, 응원은 읽음/안읽음 토글 가능. 양쪽 모두 삭제 지원
-- **로컬 SQLite 저장소** — `data/cheezefilm.db` 에 모든 응답이 보관됩니다. 추가 인프라가 필요 없습니다
+> Live: <https://cheeze.efface.dev>
 
-## 디자인 컨셉
+---
 
-“AI스럽지 않은” 디자인을 목표로, 클래식 영화 포스터·필름 슬레이트·낡은 종이 무드를 잡았습니다.
+## Stack
 
-- **메인 컬러**: 치즈 옐로우 `#F4C235`
-- **잉크 블랙**: `#161310` (필름 검정)
-- **크림 베이지**: `#F6ECD6` (오래된 종이)
-- **벽돌 레드**: `#B13A2C` (포인트)
-- **폰트**: Black Han Sans (디스플레이) + Gowun Dodum (본문)
-- **장식**: 손그림 곡선 밑줄, 도장 스탬프, 필름 천공, 마퀴 티커, 거친 노이즈 텍스처 (전부 순수 CSS·SVG 인라인)
+- **Next.js 16** (App Router, React Server Components, Suspense streaming) on **React 19**
+- **TypeScript 5** strict
+- **Tailwind v4** (Lightning CSS) — Toss-inspired surface
+- **Supabase** — Postgres (auditions, fan_messages, members, audition_listings, site_content) + Storage (member portraits, cover photos, audition profile photos, reel MP4s)
+- **YouTube Data API v3** with RSS fallback for the channel feed
+- **ISR + `unstable_cache` + `revalidateTag`** for every public route; admin mutations flush surgically
+- **Vercel** hosting
 
-## 실행 방법
+## Public routes
+
+| Route | Purpose | Caching |
+|---|---|---|
+| `/` | Home — hero cover slideshow, live channel stats, featured cast, films grid, shorts strip, careers teaser | ISR 5m + Suspense streaming for the slow YouTube fetch |
+| `/videos` | Full filmography — long-form + shorts tabs with title/description search | ISR 1h + Suspense streaming |
+| `/members` | Cast & crew gallery with per-member detail pages | ISR 5m |
+| `/members/[slug]` | Member detail | ISR 5m, SSG for all known slugs |
+| `/careers` | Open positions, audition reel, apply CTA | ISR 5m |
+| `/support` | Audition application form **and** fan-letter form | ISR 1m |
+| `/sitemap.xml` | Dynamic sitemap of all members + active listings | ISR 1h |
+
+The hero stats bar, films grid, and shorts strip on `/` are wrapped in `<Suspense>` boundaries so the page shell paints in ~100ms while the slow `getAllVideos()` HEAD-probes 500+ videos in the background.
+
+## Admin (`/admin`)
+
+Cookie-based session login (`SESSION_SECRET` env var), then a tabbed dashboard:
+
+| Tab | What it does |
+|---|---|
+| **대시보드** | KPI cards + 7-day trend + pending-review queue + unread fan messages |
+| **이번 호 표지** | Hero cover photo uploader (up to 10) + fallback YouTube video picker |
+| **지원 공고** | CRUD on open audition / staff listings — drives the `/support` form's role chips |
+| **오디션 지원** | Audition applications table with status workflow (대기 → 검토중 → 합격 / 불합격) + CSV export |
+| **응원 메시지** | Fan letters inbox with read / unread + reply-via-email |
+| **멤버 관리** | Cast roster CRUD + Instagram photo auto-fetcher + YouTube channel cast-sync |
+| **사이트 콘텐츠** | All editable hero / story / footer copy. Each key has a Korean **and** an English input — English defaults to a baked-in translation when blank |
+
+Tab components are **dynamically imported** so a dashboard-only visit doesn't ship the 250 KB+ of CRUD JS for the other six tabs. Data fetching is **tab-aware**: each tab only queries what it needs.
+
+## i18n (KO ⇄ EN)
+
+A sidebar pill toggles between Korean and English. The preference lives in a `cf_lang` cookie (1y, lax) — no URL change, no route prefix.
+
+Two layers of strings:
+
+1. **`UI_STRINGS`** in [`lib/i18n.ts`](lib/i18n.ts) — ~150 hardcoded UI strings (nav, headings, button text, aria labels). Each entry has both `ko` and `en`. Looked up via `t(key, lang)`.
+2. **Content registry** in [`lib/content.ts`](lib/content.ts) — every admin-editable string. Each entry has a Korean `fallback` and an optional `fallbackEn`; admins can override either via the **사이트 콘텐츠** tab. Resolved via `getContent(map, key, lang)` which walks: DB `${key}.en` → `fallbackEn` → DB `${key}` → `fallback`.
+
+Reading the lang cookie opts public pages into dynamic rendering, but the data layer is still cached via `unstable_cache` so per-request work stays small.
+
+## Run locally
 
 ```bash
-# 1) 패키지 설치 (최초 1회)
+# 1) Install
 npm install
 
-# 2) 개발 서버
+# 2) Create .env.local — see "Environment variables" below
+
+# 3) Dev (port 3000, with Turbopack)
 npm run dev
-# → http://localhost:3000
 
-# 3) 프로덕션 빌드 / 실행
-npm run build
-npm start
+# 4) Production
+npm run build && npm start
 ```
 
-## YouTube 영상 가져오기
+## Environment variables
 
-영상은 두 가지 경로로 자동 페치됩니다 ([lib/youtube.ts](lib/youtube.ts)):
+Required:
 
-| 모드 | 조건 | 결과 |
+| Var | Where to set | Notes |
 |---|---|---|
-| **Data API** | `.env.local`에 `YOUTUBE_API_KEY` 설정 | 채널의 **503편+ 전부** 가져옴 (페이지네이션) |
-| **RSS 폴백** | 키 없음 또는 API 실패 | YouTube 공식 RSS로 **최근 15편** |
+| `NEXT_PUBLIC_SUPABASE_URL` | Public — shipped to the browser | `https://xxx.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public | anon key (RLS protects writes) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server only — never expose | bypasses RLS for admin reads / writes |
+| `SESSION_SECRET` | Server only | 32+ char random string for admin session cookie HMAC |
+| `ADMIN_USERNAME`, `ADMIN_PASSWORD` | Server only | bcrypt-hashed password recommended in production |
 
-키 없이도 즉시 동작합니다 (RSS). 전체 영상을 띄우고 싶다면:
+Optional:
 
-1. [Google Cloud Console](https://console.cloud.google.com/apis/library/youtube.googleapis.com) → 새 프로젝트 → YouTube Data API v3 사용 설정
-2. **사용자 인증 정보 → API 키 만들기**
-3. `.env.local`의 `# YOUTUBE_API_KEY=` 줄에서 `#`을 지우고 키 붙여넣기
-4. dev 서버 재시작
+| Var | Effect |
+|---|---|
+| `YOUTUBE_API_KEY` | Without it, the channel feed falls back to RSS (last 15 videos only). With it, all 500+ uploads are listed |
+| `NEXT_PUBLIC_SITE_URL` | Used by `metadata.metadataBase` + sitemap; defaults to `https://cheezefilm.kr` |
 
-quota는 페이지 1회 로드에 약 12 단위, 일일 무료 할당량 10,000 단위 → 사실상 무료입니다. 또한 모든 fetch는 1시간 ISR 캐시(`revalidate: 3600`) 적용으로 트래픽 부담 거의 없습니다.
+## Database
 
-## 관리자 계정
+Schema lives in [`supabase/schema.sql`](supabase/schema.sql). Five tables:
 
-기본 계정은 `.env.local` 에 정의되어 있습니다:
+- `auditions` — submissions from `/support?tab=audition`. Profile photos in Storage `auditions` bucket (up to 3 per applicant).
+- `fan_messages` — submissions from `/support?tab=fan`.
+- `members` — cast roster shown on `/members`. Photos in Storage `members` bucket.
+- `audition_listings` — admin-created postings that populate the role chips on the audition form + the sidebar CTA state.
+- `site_content` — `(key, value)` pairs that override the in-code content registry. English values are stored under `${key}.en`.
 
-```
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=cheeze2017!
-SESSION_SECRET=...
-```
+## Storage buckets
 
-운영 환경에서는 반드시 `ADMIN_PASSWORD`와 `SESSION_SECRET`을 새 값으로 바꿔주세요.
+| Bucket | Contents | Cache TTL |
+|---|---|---|
+| `covers` | Hero cover photos | 24h |
+| `members` | Cast portraits | 1h fresh + 24h SWR |
+| `auditions` | Applicant profile photos | 1h fresh + 24h SWR |
+| `reels` | MP4 videos pulled from Instagram once and cached | 24h fresh + 1w SWR |
 
-관리자 페이지 진입은 푸터 우측 하단의 “관리자” 링크 또는 `http://localhost:3000/admin/login` 으로 가능합니다.
+## Performance
 
-## 디렉터리 구조
+- **Suspense streaming** on `/` and `/videos` keeps the shell paint sub-100ms cold; slow YouTube data streams in.
+- **Module-level memo** in [`lib/youtube.ts`](lib/youtube.ts) coalesces concurrent `getAllVideos()` calls into one network fetch.
+- **Tab-aware data fetching** + **dynamic component imports** on `/admin`.
+- **AVIF / WebP** auto-served by Next/Image with a 24h CDN cache.
+- **Preconnect** hints in [`app/layout.tsx`](app/layout.tsx) for `i.ytimg.com`, Supabase, Pretendard CDN — TLS opens before the first thumbnail request.
+
+## Security
+
+- Cookie-based admin session signed with `SESSION_SECRET` (HMAC SHA-256).
+- Tight CSP, X-Frame-Options SAMEORIGIN, Referrer-Policy strict-origin in [`next.config.ts`](next.config.ts).
+- Server-only env vars never imported into client bundles; the i18n cookie reader lives in its own [`lib/i18n.server.ts`](lib/i18n.server.ts) to enforce that boundary.
+- Supabase row-level security on every public table; the public site uses the anon key (read-only paths), the server uses the service role key.
+- File uploads validate mime + size before persisting; admin-only mutation endpoints check session.
+
+## Project layout
 
 ```
 app/
-  page.tsx                  — 메인 페이지
-  videos/
-    page.tsx                — 전체 영상 목록 (RSS / Data API)
-    VideoGrid.tsx           — 그리드 + 검색 + 임베드 모달
-  members/
-    page.tsx                — 멤버 폴라로이드 게시판
-  support/
-    page.tsx                — 지원하기 (탭 컨테이너)
-    SupportTabs.tsx         — 오디션/응원 탭 전환
-    AuditionForm.tsx        — 오디션 폼
-    FanForm.tsx             — 응원 메시지 폼
-  admin/
-    login/page.tsx          — 관리자 로그인
-    page.tsx                — 대시보드
-    AdminActions.tsx        — 상태 변경/삭제 버튼
-    LogoutButton.tsx        — 로그아웃
-  api/
-    auditions/              — 공개 오디션 접수 POST
-    fan-messages/           — 공개 응원 접수 POST
-    admin/login             — 로그인 POST
-    admin/logout            — 로그아웃 POST
-    admin/auditions/[id]    — 상태변경 PATCH / 삭제 DELETE (인증 필요)
-    admin/fan-messages/[id] — 읽음토글 PATCH / 삭제 DELETE (인증 필요)
+  page.tsx                # Home (also exports SiteHeader / SiteFooter)
+  layout.tsx              # Root layout, fonts, resource hints, metadata
+  loading.tsx             # Global route-transition skeleton
+  videos/                 # /videos route + grid + player modal
+  members/                # /members + /members/[slug]
+  careers/                # /careers
+  support/                # /support audition + fan tabs
+  admin/                  # All admin tabs + tools
+  api/                    # Public + admin route handlers
 components/
-  SiteHeader.tsx            — 공통 헤더
-  SiteFooter.tsx            — 공통 푸터
+  SiteNav.tsx             # Sidebar rail + mobile top bar + lang toggle
+  HeroCover.tsx           # Home hero slideshow
+  Stagger.tsx             # Scroll-in reveal + character / word stagger
+  LangToggle.tsx          # KO ⇄ EN cookie writer
+  …
 lib/
-  db.ts                     — SQLite 연결 + 스키마
-  auth.ts                   — JWT 세션 쿠키 헬퍼
-  youtube.ts                — YT Data API / RSS 페치 + 1h ISR
-  members.ts                — 멤버 데이터 + 액센트 컬러 매핑
-data/                       — SQLite 파일 저장소 (gitignore)
+  i18n.ts                 # Dictionary + t() / tc() lookups
+  i18n.server.ts          # Server-only cookie reader
+  content.ts              # Editable content registry + getContent()
+  youtube.ts              # Channel feed (Data API → RSS fallback)
+  members.ts              # Member roster
+  auditionListings.ts     # Open postings
+  db.ts                   # Supabase clients
+  auth.ts                 # Admin session
+supabase/schema.sql       # Postgres tables + RLS
 ```
 
-## API 요약
+## License
 
-| Method | Path                              | 인증 | 설명 |
-|--------|-----------------------------------|------|------|
-| POST   | `/api/auditions`                  | ✗    | 오디션 지원 접수 |
-| POST   | `/api/fan-messages`               | ✗    | 응원 메시지 접수 |
-| POST   | `/api/admin/login`                | ✗    | 로그인 |
-| POST   | `/api/admin/logout`               | ✓    | 로그아웃 |
-| PATCH  | `/api/admin/auditions/[id]`       | ✓    | 상태 변경 (`pending`/`reviewing`/`accepted`/`rejected`) |
-| DELETE | `/api/admin/auditions/[id]`       | ✓    | 오디션 삭제 |
-| PATCH  | `/api/admin/fan-messages/[id]`    | ✓    | 읽음 토글 (`{is_read: boolean}`) |
-| DELETE | `/api/admin/fan-messages/[id]`    | ✓    | 응원 삭제 |
-
-## 데이터 모델
-
-```sql
-auditions(
-  id, name, age, gender, phone, email, experience,
-  role_preference, intro, portfolio_url, status, created_at
-)
-
-fan_messages(
-  id, nickname, email, favorite_work, message, is_read, created_at
-)
-```
-
-## Disclaimer
-
-본 사이트는 치즈필름 채널을 좋아하는 팬 프로젝트로 만든 데모이며, 공식 제작사 (주)스튜디오 치즈와 무관합니다. 채널의 모든 권리는 원 제작자에게 있습니다.
+Private project — UI design and code are not licensed for reuse without permission.

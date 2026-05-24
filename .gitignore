@@ -56,3 +56,9 @@ next-env.d.ts
 
 # Local SQLite DB (legacy)
 data/
+
+# AI agent instructions — kept locally only, not in the public repo.
+# Includes both repo-level (CLAUDE.md → AGENTS.md import) and the
+# umbrella AGENTS.md spec.
+AGENTS.md
+CLAUDE.md
