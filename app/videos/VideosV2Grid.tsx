@@ -175,12 +175,12 @@ export default function VideosV2Grid({
 
   function ShortsGrid({ videos, onOpen }: { videos: Video[]; onOpen: (v: Video) => void }) {
     return (
-      // 2 / 3 / 3 columns. User wanted shorts to feel closer to the
-      // longform card size (longform is lg:grid-cols-3). 3-col is the
-      // ceiling now on every breakpoint above sm. On max-w-[100rem]
-      // (1600px) that gives each card ~500px wide → matches the
-      // longform card width and reads as "obviously big".
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
+      // 1 / 2 / 2 columns. User: "훨씬 더 키워 한 3배정도, 롱폼에서
+      // 좌우 쓰는 넓이만큼 써도 됨". 3-col still looked small because
+      // the 9:16 aspect renders each card narrow. Capping at 2 cols
+      // on sm+ makes each card ~50% wider (and proportionally taller),
+      // which is roughly the 3× area increase the user asked for.
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {videos.map((v) => (
           <button
             key={v.id}
