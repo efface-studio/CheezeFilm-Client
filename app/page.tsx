@@ -14,6 +14,11 @@ import SiteNav from "@/components/SiteNav";
 import SnapScroller from "@/components/SnapScroller";
 import CareersReel from "@/components/CareersReel";
 import { getCoverPhotos } from "@/lib/coverPhotos";
+import {
+  getOpenListings,
+  ROLE_TYPE_LABEL,
+  formatDeadline,
+} from "@/lib/auditionListings";
 
 // ISR — the home pulls Supabase content, members, videos, and cover photos.
 // All of those are also wrapped in `unstable_cache` keyed by content/members/
@@ -48,11 +53,12 @@ export default async function HomePage() {
   // streaming sub-components (LiveStatsBar, FilmsSection, ShortsStrip).
   // The module-level memo in getAllVideos coalesces those concurrent
   // calls into a single fetch — so it only runs once per render.
-  const [lang, contentMap, members, coverPhotos] = await Promise.all([
+  const [lang, contentMap, members, coverPhotos, openListings] = await Promise.all([
     getServerLang(),
     loadContentMap(),
     getMembers(),
     getCoverPhotos(),
+    getOpenListings(),
   ]);
   // `c(key)` now picks the English variant (`${key}.en`) when the
   // user is in EN mode and that variant has been set in admin →
@@ -505,6 +511,56 @@ export default async function HomePage() {
                 <span aria-hidden>→</span>
               </Link>
             </InView>
+
+            {/* Live open-roles preview — fills the otherwise-empty
+                space below the CTAs. Only renders when at least one
+                listing is currently `open` (admin → 지원 공고). Each
+                listing chips its role label + a short title +
+                deadline. Click → /support?tab=audition where the form
+                already filters by these listings. */}
+            {openListings.length > 0 && (
+              <InView className="fade-up mt-10 pt-8 border-t border-cheeze-purple-deep/10">
+                <div className="flex items-baseline justify-between mb-4">
+                  <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive flex items-center gap-2">
+                    <span className="pulse-dot" />
+                    {lang === "en"
+                      ? `Open now · ${openListings.length}`
+                      : `현재 모집중 · ${openListings.length}건`}
+                  </div>
+                  <Link
+                    href="/support?tab=audition"
+                    className="text-[11px] tracking-widest uppercase font-bold text-cheeze-purple hover:text-cheeze-purple-deep"
+                  >
+                    {lang === "en" ? "Apply →" : "전체 공고 →"}
+                  </Link>
+                </div>
+                <ul className="grid sm:grid-cols-2 gap-2">
+                  {openListings.slice(0, 4).map((l) => (
+                    <li key={l.id}>
+                      <Link
+                        href="/support?tab=audition"
+                        className="group/listing flex items-center gap-3 rounded-2xl border border-cheeze-purple-deep/10 bg-white px-4 py-3 hover:border-cheeze-purple-deep/30 hover:shadow-[0_2px_12px_-4px_rgba(85,34,163,0.18)] transition-all"
+                      >
+                        <span className="shrink-0 inline-flex items-center justify-center min-w-[3rem] h-7 px-2 rounded-full bg-cheeze-yellow/15 text-cheeze-purple-deep text-[10px] font-bold tracking-widest uppercase">
+                          {ROLE_TYPE_LABEL[l.role_type]}
+                        </span>
+                        <span className="flex-1 min-w-0 text-[13px] font-semibold text-cheeze-ink truncate group-hover/listing:text-cheeze-purple transition-colors">
+                          {l.title}
+                        </span>
+                        {l.deadline && (
+                          <span className="shrink-0 text-[10px] font-mono tabular-nums text-cheeze-olive">
+                            {formatDeadline(l.deadline) ?? l.deadline}
+                          </span>
+                        )}
+                        <span aria-hidden className="shrink-0 text-cheeze-purple/40 group-hover/listing:text-cheeze-purple group-hover/listing:translate-x-0.5 transition-all">
+                          →
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </InView>
+            )}
           </div>
 
           {/* Right column — autoplaying reel */}

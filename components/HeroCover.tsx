@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { InView } from "@/components/Stagger";
 import { t, type Lang } from "@/lib/i18n";
 
 /**
@@ -90,9 +89,16 @@ export default function HeroCover({
   // the YouTube thumbnail.
   const aspectClass = mode === "photo" ? "aspect-[5/3]" : "aspect-[16/9]";
 
+  // NOTE: do not wrap in <InView className="mask-reveal">. The hero
+  // is always in viewport at page top, so the 1000ms clip-path "scroll
+  // in" reveal is pure delay — and worse, it re-fires on every fresh
+  // mount of HeroCover (which happens whenever the user navigates back
+  // to `/` after leaving). Users perceived that as "the cover loads
+  // slowly every time" because the cached image was hidden behind a
+  // clip-path animation. Render directly.
   return (
     <Wrapper>
-      <InView className={`mask-reveal ${aspectClass} relative bg-cheeze-charcoal overflow-hidden`}>
+      <div className={`${aspectClass} relative bg-cheeze-charcoal overflow-hidden`}>
         {/* Carousel track — a horizontal row of full-width slides.
             We translate the whole row by -idx * 100% so the active
             slide slides into view from the right (or out to the left
@@ -170,7 +176,7 @@ export default function HeroCover({
             {t("hero.cover.title", lang)}
           </div>
         </div>
-      </InView>
+      </div>
     </Wrapper>
   );
 }
