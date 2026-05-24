@@ -229,54 +229,89 @@ export default async function CareersPage() {
             </span>
           </InView>
 
-          {/* Featured role — 1순위 배우 as a yellow editorial block */}
+          {/* Featured role — 1순위 배우.
+              Was a heavy yellow-everywhere block with a giant "01"
+              watermark and ◆ bullets. Redesigned as a clean white
+              editorial card with yellow used as an ACCENT only:
+                - a yellow ribbon stripe on the left edge marks it
+                  as the priority slot at a glance,
+                - a small "FEATURED 01" pill in cheeze-yellow tones
+                  carries the priority label without dominating,
+                - tags become soft yellow chips (no more ◆),
+                - the CTA is a proper Toss-style purple pill button.
+              Net result: card reads as premium-quality rather than
+              loud, and matches the rest of the Toss surface. */}
           {(() => {
             const lead = ROLES[0];
             return (
-              <InView className="fade-up bg-cheeze-yellow text-cheeze-purple-deep grid md:grid-cols-12 gap-x-10 gap-y-6 p-8 md:p-12 relative overflow-hidden">
-                {/* Big "01" watermark */}
+              <InView className="fade-up relative overflow-hidden rounded-3xl bg-white border border-cheeze-purple-deep/10 shadow-[0_1px_0_rgba(17,24,39,0.04),0_24px_48px_-24px_rgba(85,34,163,0.18)]">
+                {/* Yellow ribbon stripe on the left edge */}
                 <span
                   aria-hidden
-                  className="absolute -right-4 -bottom-16 leading-none select-none text-cheeze-purple-deep/10"
-                  style={{ fontFamily: "var(--font-display)", fontSize: "22rem" }}
-                >
-                  01
-                </span>
-                <div className="md:col-span-7 relative">
-                  <div className="text-[10px] tracking-[0.4em] uppercase font-bold">
-                    Featured · 1st priority
+                  className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-cheeze-yellow via-cheeze-yellow-deep to-cheeze-yellow"
+                />
+
+                <div className="grid md:grid-cols-12 gap-x-10 gap-y-8 p-8 md:p-12 pl-9 md:pl-14">
+                  <div className="md:col-span-7">
+                    {/* Priority pill — yellow tint, not a full yellow bg */}
+                    <div className="inline-flex items-center gap-2 rounded-full bg-cheeze-yellow/15 text-cheeze-purple-deep px-3 py-1.5">
+                      <span
+                        className="text-[11px] font-mono tabular-nums tracking-wider font-bold"
+                        style={{ fontFamily: "var(--font-display)" }}
+                      >
+                        01
+                      </span>
+                      <span aria-hidden className="block w-px h-3 bg-cheeze-purple-deep/30" />
+                      <span className="text-[10px] tracking-[0.3em] uppercase font-bold">
+                        Featured · 1st priority
+                      </span>
+                    </div>
+
+                    <h3
+                      className="mt-5 leading-[0.95] tracking-[-0.02em] text-cheeze-ink"
+                      style={{
+                        fontFamily: "var(--font-display)",
+                        fontSize: "clamp(2rem, 4vw, 3.4rem)",
+                      }}
+                    >
+                      {lead.title}
+                    </h3>
+                    <p className="mt-4 text-[15px] leading-relaxed text-cheeze-ink-soft max-w-xl">
+                      {lead.desc}
+                    </p>
+
+                    {/* Tags — soft yellow chips, not ◆ bullets */}
+                    <ul className="mt-6 flex flex-wrap gap-2">
+                      {lead.tags.map((t) => (
+                        <li
+                          key={t}
+                          className="inline-flex items-center rounded-full bg-cheeze-yellow/20 text-cheeze-purple-deep text-[12px] font-semibold px-3 py-1.5"
+                        >
+                          {t}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <h3
-                    className="mt-3 leading-none tracking-[-0.01em]"
-                    style={{
-                      fontFamily: "var(--font-display)",
-                      fontSize: "clamp(2.2rem, 4.5vw, 4rem)",
-                    }}
-                  >
-                    {lead.title}
-                  </h3>
-                  <p className="mt-5 text-[15px] leading-relaxed max-w-xl">
-                    {lead.desc}
-                  </p>
-                </div>
-                <div className="md:col-span-5 relative flex flex-col justify-end gap-4">
-                  <ul className="space-y-1.5 text-[13px]">
-                    {lead.tags.map((t) => (
-                      <li key={t} className="flex gap-2">
-                        <span aria-hidden className="opacity-50">
-                          ◆
-                        </span>
-                        <span>{t}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    href={APPLY_HREF}
-                    className="mt-2 inline-flex items-center gap-1.5 self-start px-4 py-2.5 rounded-xl bg-cheeze-purple-deep text-white text-[13px] font-semibold hover:bg-cheeze-purple transition-colors"
-                  >
-                    배우로 지원하기
-                    <span aria-hidden>→</span>
-                  </Link>
+
+                  {/* CTA column — sits to the right on md+, falls below
+                      on mobile. Big rounded button with a hover slide
+                      on the arrow for affordance. */}
+                  <div className="md:col-span-5 flex md:justify-end md:items-end">
+                    <Link
+                      href={APPLY_HREF}
+                      className="group/cta inline-flex items-center justify-between gap-4 w-full md:w-auto md:min-w-[16rem] px-6 py-4 rounded-2xl bg-cheeze-purple-deep text-white hover:bg-cheeze-purple transition-colors shadow-[0_8px_24px_-12px_rgba(85,34,163,0.6)]"
+                    >
+                      <span className="text-[15px] font-bold tracking-tight">
+                        배우로 지원하기
+                      </span>
+                      <span
+                        aria-hidden
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-cheeze-yellow text-cheeze-purple-deep font-bold transition-transform group-hover/cta:translate-x-1"
+                      >
+                        →
+                      </span>
+                    </Link>
+                  </div>
                 </div>
               </InView>
             );
