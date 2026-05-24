@@ -371,21 +371,32 @@ export function getContent(
 /**
  * Resolve every registered key. Used for batch operations (e.g. the admin
  * editor that lists every key with its current value).
+ *
+ * Returns both the Korean (`value`) and English (`valueEn`) variants for
+ * each key. English variants are stored under `${key}.en` in the database
+ * and are optional — when none has been set, `valueEn` is `""`.
  */
 export async function getAllContent(): Promise<
-  Array<ContentEntry & { value: string }>
+  Array<ContentEntry & { value: string; valueEn: string }>
 > {
   const overrides = await loadContentMap();
   return CONTENT_REGISTRY.map((e) => ({
     ...e,
     value: overrides.get(e.key) ?? e.fallback,
+    valueEn: overrides.get(`${e.key}.en`) ?? "",
   }));
 }
 
-/** Set or update a single key. */
+/**
+ * Set or update a single key.
+ *
+ * Accepts the bare registered key for the Korean value, or `${key}.en`
+ * for the English override. Anything else is rejected so we don't
+ * accumulate orphaned rows.
+ */
 export async function setContent(key: string, value: string): Promise<void> {
-  // Reject unknown keys so we don't accumulate orphaned rows.
-  if (!CONTENT_REGISTRY.find((e) => e.key === key)) {
+  const baseKey = key.endsWith(".en") ? key.slice(0, -3) : key;
+  if (!CONTENT_REGISTRY.find((e) => e.key === baseKey)) {
     throw new Error(`Unknown content key: ${key}`);
   }
   const sb = serverClient();

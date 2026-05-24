@@ -7,6 +7,17 @@ export const runtime = "nodejs";
 
 const VALID_KEYS = new Set(CONTENT_REGISTRY.map((e) => e.key));
 
+/**
+ * Allow both the bare registered key (Korean value) and `${key}.en`
+ * (English override) — the rest of the content layer normalises by
+ * stripping `.en` before checking the registry.
+ */
+function isValidKey(key: string): boolean {
+  if (VALID_KEYS.has(key)) return true;
+  if (key.endsWith(".en") && VALID_KEYS.has(key.slice(0, -3))) return true;
+  return false;
+}
+
 type Body = { key?: string; value?: string; reset?: boolean };
 
 export async function PUT(req: Request) {
@@ -16,7 +27,7 @@ export async function PUT(req: Request) {
 
   const body = (await req.json().catch(() => ({}))) as Body;
   const key = (body.key ?? "").trim();
-  if (!key || !VALID_KEYS.has(key)) {
+  if (!key || !isValidKey(key)) {
     return NextResponse.json({ error: "Invalid key" }, { status: 400 });
   }
 
