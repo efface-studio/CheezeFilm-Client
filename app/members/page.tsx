@@ -5,7 +5,7 @@ import { InView } from "@/components/Stagger";
 import { getMembers } from "@/lib/members";
 import { storageUrl } from "@/lib/db";
 import { getServerLang } from "@/lib/i18n.server";
-import { t } from "@/lib/i18n";
+import { t, translateRoleLabel } from "@/lib/i18n";
 
 // Members rarely change; the cached list comes from `getMembers()`
 // (unstable_cache, tag: "members"). Admin writes flush via revalidateTag.
@@ -132,7 +132,7 @@ export default async function MembersPage() {
                     </div>
                     <div className="absolute inset-x-0 bottom-0 p-4 flex items-center justify-between">
                       <div className="text-[10px] tracking-[0.3em] uppercase text-cheeze-cream/85">
-                        {m.roleLabel}
+                        {translateRoleLabel(m.roleLabel, lang)}
                       </div>
                       <span className="text-cheeze-yellow text-xs tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity">
                         {lang === "en" ? "Profile →" : "프로필 →"}

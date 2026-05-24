@@ -251,6 +251,47 @@ const UI_STRINGS: Record<string, { ko: string; en?: string }> = {
   // Footer / Contact
   "footer.contact.eyebrow": { ko: "— Get in touch", en: "— Get in touch" },
   "footer.copyright":       { ko: "ⓒ 치즈필름", en: "© CheezeFilm" },
+  "footer.brand.name":      { ko: "치즈필름", en: "CheezeFilm" },
+  "footer.brand.editorial": { ko: "CheezeFilm · Editorial 02", en: "CheezeFilm · Editorial 02" },
+  "footer.quicklinks":      { ko: "바로가기", en: "Quick links" },
+  "footer.link.about":      { ko: "소개", en: "About" },
+  "footer.link.films":      { ko: "영상", en: "Films" },
+  "footer.link.members":    { ko: "멤버", en: "Cast" },
+  "footer.link.audition":   { ko: "오디션 지원", en: "Audition" },
+  "footer.link.fan":        { ko: "응원 메시지", en: "Fan letter" },
+
+  // Open-roles preview (under careers teaser on home)
+  "openroles.label":        { ko: "현재 모집중", en: "Open now" },
+  "openroles.unit":         { ko: "건", en: "" },
+  "openroles.viewAll":      { ko: "전체 공고 →", en: "Apply →" },
+  "role.type.lead":         { ko: "주연", en: "Lead" },
+  "role.type.support":      { ko: "조연", en: "Supporting" },
+  "role.type.extra":        { ko: "단역", en: "Extra" },
+  "role.type.staff":        { ko: "스태프", en: "Staff" },
+
+  // Hero CTA buttons
+  "hero.cta.youtube":       { ko: "YouTube에서 보기", en: "Watch on YouTube" },
+  "hero.cta.audition":      { ko: "오디션 지원", en: "Audition" },
+
+  // Story
+  "story.quote":            { ko: "스토리를 굽는 사람들의 작은 영화관.", en: "A small cinema by the people who bake stories." },
+
+  // Home Films section
+  "films.section.subtitle.home": { ko: "채널을 정의한 세 편의 대표작, 그리고 매주 새로 굽고 있는 작품들까지.", en: "Three flagship works that defined the channel — plus everything we bake every week." },
+  "films.section.cta":      { ko: "전체 영상 →", en: "All films →" },
+
+  // Member role labels (lookup from Korean roleLabel field on member data)
+  "member.role.출연":       { ko: "출연", en: "Cast" },
+  "member.role.주연":       { ko: "주연", en: "Lead" },
+  "member.role.조연":       { ko: "조연", en: "Supporting" },
+  "member.role.단역":       { ko: "단역", en: "Extra" },
+  "member.role.연출":       { ko: "연출", en: "Director" },
+  "member.role.각본":       { ko: "각본", en: "Writer" },
+  "member.role.촬영":       { ko: "촬영", en: "Cinematographer" },
+  "member.role.편집":       { ko: "편집", en: "Editor" },
+  "member.role.기획":       { ko: "기획", en: "Producer" },
+  "member.role.대표":       { ko: "대표", en: "CEO" },
+  "member.role.staff":      { ko: "스태프", en: "Staff" },
 
   // Search / videos page
   "videos.search.label":    { ko: "Search", en: "Search" },
@@ -274,6 +315,28 @@ const UI_STRINGS: Record<string, { ko: string; en?: string }> = {
   "loading.title":          { ko: "굽는 중", en: "Baking" },
   "loading.subtitle":       { ko: "잠시만 기다려주세요", en: "One moment, please" },
 };
+
+/**
+ * Translate a Korean member role label (like "출연 · 주연" or "출연")
+ * that's stored as plain Korean on member rows. Splits on "·" (the
+ * separator we use in admin), looks each piece up in
+ * `member.role.{korean}`, and rejoins. Falls back to the original
+ * Korean when a piece isn't in the dictionary so we never blank.
+ */
+export function translateRoleLabel(label: string, lang: Lang): string {
+  if (!label) return "";
+  if (lang === "ko") return label;
+  return label
+    .split(/\s*·\s*/)
+    .map((piece) => {
+      const trimmed = piece.trim();
+      if (!trimmed) return piece;
+      const entry = UI_STRINGS[`member.role.${trimmed}`];
+      if (entry?.en) return entry.en;
+      return trimmed;
+    })
+    .join(" · ");
+}
 
 /** Look up a UI string by key for the given lang. */
 export function t(key: string, lang: Lang): string {

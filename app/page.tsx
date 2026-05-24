@@ -6,7 +6,7 @@ import { getContent, loadContentMap } from "@/lib/content";
 import { getMembers } from "@/lib/members";
 import { storageUrl } from "@/lib/db";
 import { getServerLang } from "@/lib/i18n.server";
-import { t } from "@/lib/i18n";
+import { t, translateRoleLabel } from "@/lib/i18n";
 import { InView, StaggerText } from "@/components/Stagger";
 import HeroCover from "@/components/HeroCover";
 import CountUp from "@/components/CountUp";
@@ -14,11 +14,7 @@ import SiteNav from "@/components/SiteNav";
 import SnapScroller from "@/components/SnapScroller";
 import CareersReel from "@/components/CareersReel";
 import { getCoverPhotos } from "@/lib/coverPhotos";
-import {
-  getOpenListings,
-  ROLE_TYPE_LABEL,
-  formatDeadline,
-} from "@/lib/auditionListings";
+import { getOpenListings, formatDeadline } from "@/lib/auditionListings";
 
 // ISR — the home pulls Supabase content, members, videos, and cover photos.
 // All of those are also wrapped in `unstable_cache` keyed by content/members/
@@ -165,14 +161,14 @@ export default async function HomePage() {
                     />
                     <path fill="#fff" d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
                   </svg>
-                  YouTube에서 보기
+                  {t("hero.cta.youtube", lang)}
                   <span aria-hidden>↗</span>
                 </a>
                 <Link
                   href="/support"
                   className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-toss-50 text-cheeze-ink font-semibold text-[14px] hover:bg-toss-100 transition-colors"
                 >
-                  오디션 지원
+                  {t("hero.cta.audition", lang)}
                   <span aria-hidden>→</span>
                 </Link>
               </div>
@@ -247,7 +243,7 @@ export default async function HomePage() {
               className="text-2xl md:text-3xl leading-snug text-cheeze-purple-deep"
               style={{ fontFamily: "var(--font-display)" }}
             >
-              “스토리를 굽는 사람들의 작은 영화관.”
+              “{t("story.quote", lang)}”
             </blockquote>
             <div className="mt-5 text-[11px] tracking-[0.3em] uppercase text-cheeze-olive">
               — Studio Cheeze, since 2017
@@ -363,7 +359,7 @@ export default async function HomePage() {
                           {m.name}
                         </div>
                         <div className="mt-0.5 text-[12px] text-cheeze-ink-soft truncate">
-                          {m.roleLabel}
+                          {translateRoleLabel(m.roleLabel, lang)}
                         </div>
                       </div>
                     </Link>
@@ -396,7 +392,7 @@ export default async function HomePage() {
                 Filmography.
               </h2>
               <p className="mt-3 text-cheeze-ink-soft">
-                채널을 정의한 세 편의 대표작, 그리고 매주 새로 굽고 있는 작품들까지.
+                {t("films.section.subtitle.home", lang)}
               </p>
             </InView>
             <div className="lg:col-span-3 lg:text-right mt-4 lg:mt-0">
@@ -404,7 +400,7 @@ export default async function HomePage() {
                 href="/videos"
                 className="text-sm font-bold tracking-widest uppercase text-cheeze-purple hover:text-cheeze-purple-deep"
               >
-                전체 영상 →
+                {t("films.section.cta", lang)}
               </Link>
             </div>
           </div>
@@ -426,7 +422,7 @@ export default async function HomePage() {
           section is omitted; users seeing it gradually appear is fine
           and avoids a layout shift for empty channels. */}
       <Suspense fallback={null}>
-        <ShortsStripSection />
+        <ShortsStripSection lang={lang} />
       </Suspense>
 
       {/* ── CAREERS teaser ──────────────────────────── */}
@@ -527,15 +523,14 @@ export default async function HomePage() {
                 <div className="flex items-baseline justify-between mb-4">
                   <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive flex items-center gap-2">
                     <span className="pulse-dot" />
-                    {lang === "en"
-                      ? `Open now · ${openListings.length}`
-                      : `현재 모집중 · ${openListings.length}건`}
+                    {t("openroles.label", lang)} · {openListings.length}
+                    {t("openroles.unit", lang)}
                   </div>
                   <Link
                     href="/support?tab=audition"
                     className="text-[11px] tracking-widest uppercase font-bold text-cheeze-purple hover:text-cheeze-purple-deep"
                   >
-                    {lang === "en" ? "Apply →" : "전체 공고 →"}
+                    {t("openroles.viewAll", lang)}
                   </Link>
                 </div>
                 <ul className="grid sm:grid-cols-2 gap-2">
@@ -546,7 +541,7 @@ export default async function HomePage() {
                         className="group/listing flex items-center gap-3 rounded-2xl border border-cheeze-purple-deep/10 bg-white px-4 py-3 hover:border-cheeze-purple-deep/30 hover:shadow-[0_2px_12px_-4px_rgba(85,34,163,0.18)] transition-all"
                       >
                         <span className="shrink-0 inline-flex items-center justify-center min-w-[3rem] h-7 px-2 rounded-full bg-cheeze-yellow/15 text-cheeze-purple-deep text-[10px] font-bold tracking-widest uppercase">
-                          {ROLE_TYPE_LABEL[l.role_type]}
+                          {t(`role.type.${l.role_type}`, lang)}
                         </span>
                         <span className="flex-1 min-w-0 text-[13px] font-semibold text-cheeze-ink truncate group-hover/listing:text-cheeze-purple transition-colors">
                           {l.title}
@@ -691,10 +686,10 @@ export async function SiteFooter({ isHome = false }: { isHome?: boolean } = {}) 
                 className="text-2xl text-cheeze-yellow leading-none"
                 style={{ fontFamily: "var(--font-display)" }}
               >
-                치즈필름
+                {t("footer.brand.name", lang)}
               </div>
               <div className="mt-1 text-[10px] tracking-[0.35em] uppercase text-cheeze-cream/55">
-                CheezeFilm · Editorial 02
+                {t("footer.brand.editorial", lang)}
               </div>
             </div>
           </div>
@@ -784,7 +779,7 @@ export async function SiteFooter({ isHome = false }: { isHome?: boolean } = {}) 
         {/* Quick links (col-span-3) */}
         <div className="md:col-span-3">
           <h4 className="text-[10px] tracking-[0.4em] uppercase text-cheeze-yellow font-bold">
-            바로가기
+            {t("footer.quicklinks", lang)}
           </h4>
           <ul className="mt-5 space-y-2.5 text-sm">
             <li>
@@ -792,7 +787,7 @@ export async function SiteFooter({ isHome = false }: { isHome?: boolean } = {}) 
                 href="/#issue"
                 className="text-cheeze-cream/80 hover:text-cheeze-yellow transition-colors"
               >
-                소개
+                {t("footer.link.about", lang)}
               </Link>
             </li>
             <li>
@@ -800,7 +795,7 @@ export async function SiteFooter({ isHome = false }: { isHome?: boolean } = {}) 
                 href="/videos"
                 className="text-cheeze-cream/80 hover:text-cheeze-yellow transition-colors"
               >
-                영상
+                {t("footer.link.films", lang)}
               </Link>
             </li>
             <li>
@@ -808,7 +803,7 @@ export async function SiteFooter({ isHome = false }: { isHome?: boolean } = {}) 
                 href="/members"
                 className="text-cheeze-cream/80 hover:text-cheeze-yellow transition-colors"
               >
-                멤버
+                {t("footer.link.members", lang)}
               </Link>
             </li>
             <li>
@@ -816,7 +811,7 @@ export async function SiteFooter({ isHome = false }: { isHome?: boolean } = {}) 
                 href="/support"
                 className="text-cheeze-cream/80 hover:text-cheeze-yellow transition-colors"
               >
-                오디션 지원
+                {t("footer.link.audition", lang)}
               </Link>
             </li>
             <li>
@@ -824,7 +819,7 @@ export async function SiteFooter({ isHome = false }: { isHome?: boolean } = {}) 
                 href="/support?tab=fan"
                 className="text-cheeze-cream/80 hover:text-cheeze-yellow transition-colors"
               >
-                응원 메시지
+                {t("footer.link.fan", lang)}
               </Link>
             </li>
           </ul>
@@ -1066,14 +1061,14 @@ async function FilmsGrid({ heroVideos, lang }: { heroVideos: string[]; lang: imp
                       </span>
                     )}
                     <span className="absolute bottom-3 right-3 bg-cheeze-charcoal/85 text-cheeze-cream text-[10px] font-mono tracking-wider px-2 py-1">
-                      {new Date(v.publishedAt).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit" })}
+                      {new Date(v.publishedAt).toLocaleDateString(lang === "en" ? "en-US" : "ko-KR", { month: "2-digit", day: "2-digit" })}
                     </span>
                   </div>
                   <h4 className="mt-3 text-[15px] font-bold leading-snug text-cheeze-ink line-clamp-2 group-hover:text-cheeze-purple transition-colors">
                     {v.title}
                   </h4>
                   <div className="mt-1 text-[10px] tracking-widest uppercase text-cheeze-olive">
-                    {new Date(v.publishedAt).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+                    {new Date(v.publishedAt).toLocaleDateString(lang === "en" ? "en-US" : "ko-KR", { year: "numeric", month: "long", day: "numeric" })}
                   </div>
                 </a>
               </InView>
@@ -1088,7 +1083,7 @@ async function FilmsGrid({ heroVideos, lang }: { heroVideos: string[]; lang: imp
 /** Shorts strip — full section including header. Renders nothing
     when the channel has no shorts (or we're still loading), so no
     fallback is needed in the parent Suspense. */
-async function ShortsStripSection() {
+async function ShortsStripSection({ lang }: { lang: import("@/lib/i18n").Lang }) {
   const { shorts } = await getAllVideos();
   if (shorts.length === 0) return null;
   return (
@@ -1101,14 +1096,18 @@ async function ShortsStripSection() {
           <InView className="fade-up">
             <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">— Section 03</div>
             <h2 className="mt-2 text-3xl md:text-4xl tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
-              Shorts <span className="text-cheeze-purple">/</span> 한 입.
+              {lang === "en" ? (
+                <>Shorts.</>
+              ) : (
+                <>Shorts <span className="text-cheeze-purple">/</span> 한 입.</>
+              )}
             </h2>
           </InView>
           <Link
             href="/videos?kind=shorts"
             className="text-sm font-bold tracking-widest uppercase text-cheeze-purple hover:text-cheeze-purple-deep"
           >
-            전체 쇼츠 →
+            {t("shorts.viewAll", lang)}
           </Link>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
