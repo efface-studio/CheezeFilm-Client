@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import type { Video } from "@/lib/youtube";
+import { t, type Lang } from "@/lib/i18n";
 
 const PAGE_SIZE = 18;
 type Kind = "longform" | "shorts";
@@ -29,10 +30,12 @@ export default function VideosGrid({
   longform,
   shorts,
   initialKind,
+  lang = "ko",
 }: {
   longform: Video[];
   shorts: Video[];
   initialKind: Kind;
+  lang?: Lang;
 }) {
   const [kind, setKind] = useState<Kind>(initialKind);
   const [query, setQuery] = useState("");
@@ -74,7 +77,7 @@ export default function VideosGrid({
                 : "text-cheeze-ink-soft/70 hover:text-cheeze-ink"
             }`}
           >
-            롱폼 · {longform.length}
+            {t("videos.tab.longform", lang)} · {longform.length}
           </button>
           <button
             type="button"
@@ -85,13 +88,13 @@ export default function VideosGrid({
                 : "text-cheeze-ink-soft/70 hover:text-cheeze-ink"
             }`}
           >
-            쇼츠 · {shorts.length}
+            {t("videos.tab.shorts", lang)} · {shorts.length}
           </button>
         </div>
 
         <div className="flex items-center gap-3 flex-1 min-w-[240px] max-w-md">
           <span className="text-cheeze-olive text-xs uppercase tracking-widest hidden sm:inline">
-            Search
+            {t("videos.search.label", lang)}
           </span>
           <input
             type="search"
@@ -100,7 +103,7 @@ export default function VideosGrid({
               setQuery(e.target.value);
               setVisible(PAGE_SIZE);
             }}
-            placeholder="제목 또는 설명으로 검색"
+            placeholder={t("videos.search.placeholder", lang)}
             className="flex-1 bg-transparent border-b border-cheeze-purple-deep/40 focus:border-cheeze-purple-deep outline-none py-2 text-sm placeholder:text-cheeze-olive/60"
           />
         </div>
@@ -108,7 +111,9 @@ export default function VideosGrid({
 
       {filtered.length === 0 ? (
         <div className="py-24 text-center text-cheeze-olive">
-          {source.length === 0 ? "표시할 영상이 없어요." : `“${query}” 결과가 없어요.`}
+          {source.length === 0
+            ? t("videos.empty.title", lang)
+            : (lang === "en" ? `No results for “${query}”.` : `“${query}” 결과가 없어요.`)}
         </div>
       ) : kind === "longform" ? (
         <LongformGrid videos={shown} onOpen={setActive} />

@@ -6,6 +6,7 @@ import { getContent, loadContentMap } from "@/lib/content";
 import { getMembers } from "@/lib/members";
 import { storageUrl } from "@/lib/db";
 import { getServerLang } from "@/lib/i18n.server";
+import { t } from "@/lib/i18n";
 import { InView, StaggerText } from "@/components/Stagger";
 import HeroCover from "@/components/HeroCover";
 import CountUp from "@/components/CountUp";
@@ -100,7 +101,7 @@ export default async function HomePage() {
             <InView className="fade-up">
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-toss-50 text-cheeze-purple text-[12px] font-semibold">
                 <span aria-hidden className="block w-1.5 h-1.5 rounded-full bg-cheeze-purple" />
-                웹드라마 스튜디오
+                {t("hero.badge", lang)}
               </span>
             </InView>
             <InView
@@ -176,7 +177,7 @@ export default async function HomePage() {
               in /public/covers/, otherwise we cycle the 3 featured video
               thumbnails configured in admin. */}
           <aside className="lg:col-span-6 flex flex-col gap-4">
-            <HeroCover photoSrcs={coverPhotos} videoIds={heroVideos} />
+            <HeroCover photoSrcs={coverPhotos} videoIds={heroVideos} lang={lang} />
             {/* FILE · EDITION 02 caption removed — magazine masthead
                 language doesn't fit the new clean surface. */}
           </aside>
@@ -250,9 +251,9 @@ export default async function HomePage() {
                 metallic-gradient chips read as loud; this version
                 trusts the metal-coloured dots + clean typography. */}
             <div className="mt-10 rounded-2xl bg-toss-50 grid grid-cols-3 divide-x divide-toss-200/70">
-              <AwardChip label="Silver" dotClass="bg-zinc-400" />
-              <AwardChip label="Gold" dotClass="bg-amber-400" />
-              <AwardChip label="대상" dotClass="bg-cheeze-purple" />
+              <AwardChip label={t("awards.silver", lang)} dotClass="bg-zinc-400" />
+              <AwardChip label={t("awards.gold", lang)} dotClass="bg-amber-400" />
+              <AwardChip label={t("awards.grand", lang)} dotClass="bg-cheeze-purple" />
             </div>
           </InView>
         </div>
@@ -282,14 +283,14 @@ export default async function HomePage() {
                 The Cast.
               </h2>
               <p className="mt-3 text-cheeze-ink-soft">
-                카메라 앞과 뒤, 함께 굽는 사람들.
+                {lang === "en" ? "On both sides of the camera, baking together." : "카메라 앞과 뒤, 함께 굽는 사람들."}
               </p>
             </InView>
             <Link
               href="/members"
               className="lg:col-span-3 lg:text-right text-sm font-bold tracking-widest uppercase text-cheeze-purple hover:text-cheeze-purple-deep mt-4 lg:mt-0"
             >
-              전체 멤버 →
+              {lang === "en" ? "All members →" : "전체 멤버 →"}
             </Link>
           </div>
 
@@ -403,7 +404,7 @@ export default async function HomePage() {
               immediately while the cards stream in. Suspense fallback
               shows a layout-matched skeleton. */}
           <Suspense fallback={<FilmsGridSkeleton />}>
-            <FilmsGrid heroVideos={heroVideos} />
+            <FilmsGrid heroVideos={heroVideos} lang={lang} />
           </Suspense>
         </div>
       </section>
@@ -444,39 +445,21 @@ export default async function HomePage() {
                 className="text-4xl md:text-5xl tracking-tight leading-[1.05]"
                 style={{ fontFamily: "var(--font-display)" }}
               >
-                <span className="text-cheeze-purple">주연배우</span>를 비롯해,
-                <br />
-                함께 한 컷을 구울 사람.
+                <span className="text-cheeze-purple">{t("roles.lead", lang)}</span>
+                <span className="whitespace-pre-line">{t("roles.intro", lang)}</span>
               </h2>
               <p className="mt-6 max-w-xl text-cheeze-ink-soft leading-relaxed">
-                치즈필름 신작의 얼굴이 될 배우를 1순위로, 작가·연출·촬영·편집까지
-                결을 맞춰 오래 함께할 사람을 찾고 있습니다.
+                {t("roles.copy", lang)}
               </p>
             </InView>
 
             <InView className="fade-up mt-8">
               <ol className="grid sm:grid-cols-2 gap-x-6 gap-y-5">
                 {[
-                  {
-                    num: "01",
-                    title: "배우 (주연/조연)",
-                    desc: "신작의 얼굴. 10~30분 단편 안에서 인물을 진짜처럼 살려낼 분.",
-                  },
-                  {
-                    num: "02",
-                    title: "작가",
-                    desc: "매주 한 편씩 단편을 굽는 작가. 청춘 드라마 톤을 이해하는 분.",
-                  },
-                  {
-                    num: "03",
-                    title: "연출",
-                    desc: "한 회차 안에서 인물의 작은 변화를 카메라로 잡아내는 분.",
-                  },
-                  {
-                    num: "04",
-                    title: "촬영 · 편집",
-                    desc: "빛·구도·컷 — 한 컷의 결을 책임지는 사람.",
-                  },
+                  { num: "01", title: t("role1.title", lang), desc: t("role1.desc", lang) },
+                  { num: "02", title: t("role2.title", lang), desc: t("role2.desc", lang) },
+                  { num: "03", title: t("role3.title", lang), desc: t("role3.desc", lang) },
+                  { num: "04", title: t("role4.title", lang), desc: t("role4.desc", lang) },
                 ].map((r, i) => (
                   <li
                     key={r.title}
@@ -493,7 +476,7 @@ export default async function HomePage() {
                         {r.title}
                         {i === 0 && (
                           <span className="ml-2 text-[9px] font-mono tracking-widest uppercase bg-cheeze-purple text-cheeze-cream px-1.5 py-0.5 align-middle">
-                            1순위
+                            {lang === "en" ? "TOP" : "1순위"}
                           </span>
                         )}
                       </h3>
@@ -511,14 +494,14 @@ export default async function HomePage() {
                 href="/careers"
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-cheeze-ink text-white text-[14px] font-semibold hover:bg-cheeze-ink-soft transition-colors"
               >
-                전체 채용 정보
+                {lang === "en" ? "Full careers page" : "전체 채용 정보"}
                 <span aria-hidden>→</span>
               </Link>
               <Link
                 href="/support?tab=audition"
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-toss-50 text-cheeze-ink text-[14px] font-semibold hover:bg-toss-100 transition-colors"
               >
-                지원하기
+                {lang === "en" ? "Apply" : "지원하기"}
                 <span aria-hidden>→</span>
               </Link>
             </InView>
@@ -531,7 +514,7 @@ export default async function HomePage() {
             </div>
             <CareersReel
               src="/reels/DQ_oNK3EW_w.mp4"
-              label="치즈필름 주연배우 공개 오디션 릴스"
+              label={t("careers.reel.label", lang)}
             />
             <a
               href="https://www.instagram.com/p/DQ_oNK3EW_w/"
@@ -539,7 +522,7 @@ export default async function HomePage() {
               rel="noreferrer"
               className="mt-3 inline-flex items-center gap-1.5 text-[11px] tracking-[0.25em] uppercase text-cheeze-purple hover:text-cheeze-purple-deep"
             >
-              Instagram에서 원본 보기 ↗
+              {lang === "en" ? "View original on Instagram ↗" : "Instagram에서 원본 보기 ↗"}
             </a>
           </InView>
         </div>
@@ -667,7 +650,7 @@ export async function SiteFooter({ isHome = false }: { isHome?: boolean } = {}) 
               target="_blank"
               rel="noreferrer"
               className="group/social inline-flex items-center gap-2 pl-2 pr-3.5 py-2 rounded-full bg-white/10 hover:bg-white/15 backdrop-blur transition-colors"
-              aria-label="YouTube — 새 탭에서 열기"
+              aria-label={t("aria.youtube", lang)}
             >
               <svg
                 aria-hidden
@@ -691,7 +674,7 @@ export async function SiteFooter({ isHome = false }: { isHome?: boolean } = {}) 
               target="_blank"
               rel="noreferrer"
               className="group/social inline-flex items-center gap-2 pl-2 pr-3.5 py-2 rounded-full bg-white/10 hover:bg-white/15 backdrop-blur transition-colors"
-              aria-label="Instagram — 새 탭에서 열기"
+              aria-label={t("aria.instagram", lang)}
             >
               <svg
                 aria-hidden
@@ -830,14 +813,14 @@ export async function SiteFooter({ isHome = false }: { isHome?: boolean } = {}) 
 function CompanyStrip({ contentMap, lang }: { contentMap: Map<string, string>; lang: import("@/lib/i18n").Lang }) {
   const c = (key: string) => getContent(contentMap, key, lang);
   const items = [
-    { label: "상호", value: c("company.name") },
-    { label: "대표", value: c("company.ceo") },
-    { label: "사업자등록번호", value: c("company.business_no") },
-    { label: "통신판매업신고", value: c("company.commerce_no") },
-    { label: "직업정보제공사업", value: c("company.job_info_no") },
+    { label: t("company.label.name", lang), value: c("company.name") },
+    { label: t("company.label.ceo", lang), value: c("company.ceo") },
+    { label: t("company.label.business_no", lang), value: c("company.business_no") },
+    { label: t("company.label.commerce_no", lang), value: c("company.commerce_no") },
+    { label: t("company.label.job_info_no", lang), value: c("company.job_info_no") },
     { label: "MCN", value: c("company.network") },
-    { label: "주소", value: c("company.address") },
-    { label: "고객센터", value: c("company.phone") },
+    { label: t("company.label.address", lang), value: c("company.address") },
+    { label: t("company.label.phone", lang), value: c("company.phone") },
   ].filter((it) => it.value && it.value !== "—");
   return (
     <dl className="mt-5 grid grid-cols-[5.5rem_1fr] gap-x-3 gap-y-2 text-[12px]">
@@ -956,7 +939,7 @@ function FilmsGridSkeleton() {
 /** Films grid — 3 featured (from heroVideos) + 6 recent (from
     longform, skipping the featured). Awaits getAllVideos for the
     recent uploads list. */
-async function FilmsGrid({ heroVideos }: { heroVideos: string[] }) {
+async function FilmsGrid({ heroVideos, lang }: { heroVideos: string[]; lang: import("@/lib/i18n").Lang }) {
   const { longform } = await getAllVideos();
   const featuredIds = new Set(heroVideos);
   const recent = longform.filter((v) => !featuredIds.has(v.id)).slice(0, 6);
@@ -968,15 +951,9 @@ async function FilmsGrid({ heroVideos }: { heroVideos: string[] }) {
             key={vid}
             videoId={vid}
             number={String(i + 1).padStart(2, "0")}
-            title={["다중인격 소녀", "남자무리 여사친", "달고나"][i] ?? ""}
-            year={["Series", "2020 · Anthology", "2020 · 4-part"][i] ?? ""}
-            tagline={
-              [
-                "사투리, 그리고 네 개의 인격.",
-                "남자들 사이의 단 한 명, 여사친.",
-                "달콤하고, 한 번에 깨지는 청춘.",
-              ][i] ?? ""
-            }
+            title={[t("film1.title", lang), t("film2.title", lang), t("film3.title", lang)][i] ?? ""}
+            year={[t("films.year.series", lang), t("films.year.anthology", lang), t("films.year.fourpart", lang)][i] ?? ""}
+            tagline={[t("film1.tagline", lang), t("film2.tagline", lang), t("film3.tagline", lang)][i] ?? ""}
             delay={i * 120}
           />
         ))}
@@ -989,14 +966,14 @@ async function FilmsGrid({ heroVideos }: { heroVideos: string[] }) {
                 — Just dropped
               </div>
               <h3 className="mt-2 text-2xl md:text-3xl tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
-                방금 업로드된.
+                {t("films.recent.title", lang)}
               </h3>
             </div>
             <Link
               href="/videos"
               className="text-[11px] tracking-widest uppercase font-bold text-cheeze-purple-deep hover:text-cheeze-purple border-b border-cheeze-purple-deep/30 hover:border-cheeze-purple pb-1 transition-colors whitespace-nowrap"
             >
-              전체 필모 →
+              {t("films.recent.viewAll", lang)}
             </Link>
           </InView>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10">

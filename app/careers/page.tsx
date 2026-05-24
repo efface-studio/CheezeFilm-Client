@@ -2,6 +2,8 @@ import Link from "next/link";
 import { SiteHeader, SiteFooter } from "../page";
 import { InView } from "@/components/Stagger";
 import CareersReel from "@/components/CareersReel";
+import { t, type Lang } from "@/lib/i18n";
+import { getServerLang } from "@/lib/i18n.server";
 
 // Static-ish editorial page; only thing that changes is the `careers.*`
 // content keys, which we flush via `revalidateTag("site_content")` from
@@ -37,7 +39,78 @@ export const metadata = {
  */
 const APPLY_HREF = "/support?tab=audition";
 
+type Role = {
+  title: string;
+  desc: string;
+  tags: [string, string, string];
+};
+
+/** Build the role list for the active lang. Defined as a function so the
+ *  ROLES list can pull translated values via `t()` without leaking the
+ *  module scope. */
+function buildRoles(lang: Lang): Role[] {
+  return [
+    {
+      // 1순위 — 채널의 얼굴이 되는 배우. 새 작품의 주연을 맡을 분.
+      title: t("role.actor.title", lang),
+      desc: t("role.actor.desc", lang),
+      tags: [
+        t("role.actor.tag1", lang),
+        t("role.actor.tag2", lang),
+        t("role.actor.tag3", lang),
+      ],
+    },
+    {
+      title: t("role.writer.title", lang),
+      desc: t("role.writer.desc", lang),
+      tags: [
+        t("role.writer.tag1", lang),
+        t("role.writer.tag2", lang),
+        t("role.writer.tag3", lang),
+      ],
+    },
+    {
+      title: t("role.director.title", lang),
+      desc: t("role.director.desc", lang),
+      tags: [
+        t("role.director.tag1", lang),
+        t("role.director.tag2", lang),
+        t("role.director.tag3", lang),
+      ],
+    },
+    {
+      title: t("role.dp.title", lang),
+      desc: t("role.dp.desc", lang),
+      tags: [
+        t("role.dp.tag1", lang),
+        t("role.dp.tag2", lang),
+        t("role.dp.tag3", lang),
+      ],
+    },
+    {
+      title: t("role.editor.title", lang),
+      desc: t("role.editor.desc", lang),
+      tags: [
+        t("role.editor.tag1", lang),
+        t("role.editor.tag2", lang),
+        t("role.editor.tag3", lang),
+      ],
+    },
+    {
+      title: t("role.pd.title", lang),
+      desc: t("role.pd.desc", lang),
+      tags: [
+        t("role.pd.tag1", lang),
+        t("role.pd.tag2", lang),
+        t("role.pd.tag3", lang),
+      ],
+    },
+  ];
+}
+
 export default async function CareersPage() {
+  const lang = await getServerLang();
+  const ROLES = buildRoles(lang);
   return (
     <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial flex flex-col">
       <SiteHeader />
@@ -63,7 +136,7 @@ export default async function CareersPage() {
             <InView className="fade-up">
               <div className="text-[10px] tracking-[0.45em] uppercase text-cheeze-purple flex items-center gap-2">
                 <span className="pulse-dot" />
-                Now casting · Now hiring
+                {t("careers.hero.nowcasting", lang)}
               </div>
               <h1
                 className="mt-5 leading-[0.92] tracking-[-0.02em]"
@@ -72,10 +145,12 @@ export default async function CareersPage() {
                   fontSize: "clamp(3rem, 8vw, 6.5rem)",
                 }}
               >
-                함께 한 컷을
+                {t("careers.hero.headline.line1", lang)}
                 <br />
                 <span className="relative inline-block">
-                  <span className="relative z-10">구울 사람.</span>
+                  <span className="relative z-10">
+                    {t("careers.hero.headline.line2", lang)}
+                  </span>
                   {/* Yellow swipe underneath the second line */}
                   <span
                     aria-hidden
@@ -84,18 +159,23 @@ export default async function CareersPage() {
                 </span>
               </h1>
               <p className="mt-8 max-w-xl text-cheeze-ink-soft leading-relaxed text-[15px]">
-                작은 스튜디오에서 시작해 매주 한 편씩 청춘의 한 장면을 굽고
-                있어요. <strong className="text-cheeze-ink">배우</strong>를
-                1순위로, 작가·연출·촬영·편집·운영 — 어느 자리든 결을 맞춰 오래
-                함께할 사람을 천천히 찾고 있습니다.
+                {t("careers.hero.lede.before", lang)}
+                <strong className="text-cheeze-ink">
+                  {t("careers.hero.priority", lang)}
+                </strong>
+                {t("careers.hero.lede.after", lang)}
               </p>
             </InView>
 
             {/* Stat strip — magazine masthead figures. */}
             <InView className="fade-up mt-10 grid grid-cols-3 max-w-2xl border-y border-cheeze-purple-deep/20 divide-x divide-cheeze-purple-deep/15">
-              <Stat number={ROLES.length} label="Open roles" />
-              <Stat number="1st" label="배우 우선" accent="text-cheeze-purple-deep" />
-              <Stat number="11.30" label="우선 검토" />
+              <Stat number={ROLES.length} label={t("careers.stat.open", lang)} />
+              <Stat
+                number="1st"
+                label={t("careers.stat.actor", lang)}
+                accent="text-cheeze-purple-deep"
+              />
+              <Stat number="11.30" label={t("careers.stat.review", lang)} />
             </InView>
 
             <InView className="fade-up mt-8 flex flex-wrap gap-3">
@@ -103,7 +183,7 @@ export default async function CareersPage() {
                 href={APPLY_HREF}
                 className="group/cta inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-cheeze-ink text-white text-[14px] font-semibold hover:bg-cheeze-ink-soft transition-colors"
               >
-                지원하기
+                {t("careers.cta.apply", lang)}
                 <span
                   aria-hidden
                   className="transition-transform group-hover/cta:translate-x-1"
@@ -115,7 +195,7 @@ export default async function CareersPage() {
                 href="#roles"
                 className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-toss-50 text-cheeze-ink text-[14px] font-semibold hover:bg-toss-100 transition-colors"
               >
-                포지션 보기
+                {t("careers.cta.viewPositions", lang)}
                 <span aria-hidden>↓</span>
               </a>
             </InView>
@@ -125,15 +205,15 @@ export default async function CareersPage() {
               ledger; the WHO section handles the role list. */}
           <InView className="fade-up lg:col-span-5 lg:pl-8 lg:border-l lg:border-cheeze-purple-deep/15">
             <div className="text-[10px] tracking-[0.3em] uppercase text-cheeze-olive mb-3 flex items-center gap-2">
-              <span className="pulse-dot" /> Audition reel
+              <span className="pulse-dot" /> {t("careers.reel.eyebrow", lang)}
             </div>
             <CareersReel
               src="/reels/DQ_oNK3EW_w.mp4"
-              label="치즈필름 주연배우 공개 오디션 릴스"
+              label={t("careers.reel.label", lang)}
             />
             <div className="mt-4 flex items-center justify-between gap-3 text-[11px]">
               <span className="text-cheeze-ink-soft italic">
-                "치즈필름과 함께 2026년을 만들어갈 주인공을 기다립니다."
+                &ldquo;{t("careers.reel.caption", lang)}&rdquo;
               </span>
               <a
                 href="https://www.instagram.com/p/DQ_oNK3EW_w/"
@@ -141,7 +221,7 @@ export default async function CareersPage() {
                 rel="noreferrer"
                 className="shrink-0 tracking-[0.25em] uppercase text-cheeze-purple hover:text-cheeze-purple-deep"
               >
-                원본 ↗
+                {t("careers.reel.source", lang)} ↗
               </a>
             </div>
           </InView>
@@ -155,7 +235,7 @@ export default async function CareersPage() {
         <div className="mx-auto max-w-[100rem] px-6 py-24 grid lg:grid-cols-12 gap-x-10 gap-y-12">
           <InView className="fade-up lg:col-span-2">
             <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-yellow/80">
-              — Why us
+              {t("careers.why.eyebrow", lang)}
             </div>
             <div
               className="mt-3 text-[3rem] leading-none text-cheeze-yellow"
@@ -171,31 +251,25 @@ export default async function CareersPage() {
               className="block text-cheeze-yellow leading-none"
               style={{ fontFamily: "var(--font-display)", fontSize: "5rem" }}
             >
-              "
+              &ldquo;
             </span>
             <blockquote
               className="-mt-4 text-3xl md:text-5xl leading-[1.15] text-cheeze-cream"
               style={{ fontFamily: "var(--font-display)" }}
             >
-              회사가 커진다고{" "}
-              <span className="text-cheeze-yellow">작품의 결이 흐려지면</span>{" "}
-              안 된다.
+              {t("careers.why.quote.before", lang)}{" "}
+              <span className="text-cheeze-yellow">
+                {t("careers.why.quote.highlight", lang)}
+              </span>{" "}
+              {t("careers.why.quote.after", lang)}
             </blockquote>
             <div className="mt-6 text-[11px] tracking-[0.3em] uppercase text-cheeze-cream/55">
-              — Studio Cheeze, 2026
+              {t("careers.why.attribution", lang)}
             </div>
           </InView>
           <InView className="fade-up lg:col-span-4 lg:border-l lg:border-cheeze-cream/15 lg:pl-8 space-y-5 text-cheeze-cream/80 text-[14px] leading-relaxed">
-            <p>
-              대형 제작사처럼 분업화된 시스템보다, 한 사람이 처음부터 끝까지
-              작품에 깊게 관여하는 환경을 만들고 있어요. 본인 손으로 청춘
-              드라마 한 편을 굽는다는 감각이 무엇보다 중요합니다.
-            </p>
-            <p>
-              3년 안에 영화 한 편, 시리즈 한 시즌. 채널에서 만든 톤을 더 큰
-              포맷으로 옮기는 일을 진지하게 준비 중이고, 거기에 손을 보태고
-              싶은 분이라면 좋아요.
-            </p>
+            <p>{t("careers.why.body1", lang)}</p>
+            <p>{t("careers.why.body2", lang)}</p>
           </InView>
         </div>
       </section>
@@ -212,7 +286,7 @@ export default async function CareersPage() {
           <InView className="fade-up flex items-end justify-between gap-6 mb-12">
             <div>
               <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">
-                — Casting call · 02
+                {t("careers.who.eyebrow", lang)}
               </div>
               <h2
                 className="mt-3 leading-[0.95] tracking-[-0.01em]"
@@ -221,11 +295,12 @@ export default async function CareersPage() {
                   fontSize: "clamp(2.6rem, 5vw, 4.5rem)",
                 }}
               >
-                찾고 있는 사람.
+                {t("careers.section.casting", lang)}
               </h2>
             </div>
             <span className="hidden md:inline-flex font-mono text-[11px] tracking-wider text-cheeze-olive/60">
-              {String(ROLES.length).padStart(2, "0")} positions
+              {String(ROLES.length).padStart(2, "0")}{" "}
+              {t("careers.section.positions", lang)}
             </span>
           </InView>
 
@@ -263,7 +338,7 @@ export default async function CareersPage() {
                       </span>
                       <span aria-hidden className="block w-px h-3 bg-cheeze-purple-deep/30" />
                       <span className="text-[10px] tracking-[0.3em] uppercase font-bold">
-                        Featured · 1st priority
+                        {t("careers.lead.featured", lang)}
                       </span>
                     </div>
 
@@ -282,12 +357,12 @@ export default async function CareersPage() {
 
                     {/* Tags — soft yellow chips, not ◆ bullets */}
                     <ul className="mt-6 flex flex-wrap gap-2">
-                      {lead.tags.map((t) => (
+                      {lead.tags.map((tag) => (
                         <li
-                          key={t}
+                          key={tag}
                           className="inline-flex items-center rounded-full bg-cheeze-yellow/20 text-cheeze-purple-deep text-[12px] font-semibold px-3 py-1.5"
                         >
-                          {t}
+                          {tag}
                         </li>
                       ))}
                     </ul>
@@ -302,7 +377,7 @@ export default async function CareersPage() {
                       className="group/cta inline-flex items-center justify-between gap-4 w-full md:w-auto md:min-w-[16rem] px-6 py-4 rounded-2xl bg-cheeze-purple-deep text-white hover:bg-cheeze-purple transition-colors shadow-[0_8px_24px_-12px_rgba(85,34,163,0.6)]"
                     >
                       <span className="text-[15px] font-bold tracking-tight">
-                        배우로 지원하기
+                        {t("careers.apply.actor", lang)}
                       </span>
                       <span
                         aria-hidden
@@ -362,12 +437,12 @@ export default async function CareersPage() {
                     </div>
                     {/* Tags — visible as chips */}
                     <ul className="lg:col-span-3 flex flex-wrap gap-1.5 lg:justify-end">
-                      {r.tags.map((t) => (
+                      {r.tags.map((tag) => (
                         <li
-                          key={t}
+                          key={tag}
                           className="text-[10px] tracking-wider uppercase text-cheeze-olive border border-cheeze-purple-deep/20 px-2 py-1 group-hover:border-cheeze-purple/50 group-hover:text-cheeze-purple-deep transition-colors"
                         >
-                          {t}
+                          {tag}
                         </li>
                       ))}
                     </ul>
@@ -390,17 +465,17 @@ export default async function CareersPage() {
           <InView className="fade-up flex items-end justify-between gap-6 mb-14">
             <div>
               <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-yellow flex items-center gap-2">
-                <span className="pulse-dot" /> How to apply · 03
+                <span className="pulse-dot" /> {t("careers.how.eyebrow", lang)}
               </div>
               <h2
                 className="mt-5 text-5xl md:text-6xl tracking-tight leading-[1] text-cheeze-yellow"
                 style={{ fontFamily: "var(--font-display)" }}
               >
-                지원, 어렵지 않아요.
+                {t("careers.how.title", lang)}
               </h2>
             </div>
             <span className="hidden md:inline-flex font-mono text-[11px] tracking-widest uppercase text-cheeze-yellow/60">
-              3 steps · 1 form
+              {t("careers.how.summary", lang)}
             </span>
           </InView>
 
@@ -411,18 +486,18 @@ export default async function CareersPage() {
             {[
               {
                 step: "01",
-                title: "공고 선택",
-                body: "지원 페이지에서 진행 중인 오디션 공고를 골라요. 배우·작가·연출·운영 등 모든 포지션이 한 곳에 모여있어요.",
+                title: t("careers.how.step1.title", lang),
+                body: t("careers.how.step1.body", lang),
               },
               {
                 step: "02",
-                title: "지원서 작성",
-                body: "이름·연락처·짧은 자기소개와 작품 링크. 첨부 자료는 한 번에 업로드돼요. 양식 없음, 1~2분이면 끝.",
+                title: t("careers.how.step2.title", lang),
+                body: t("careers.how.step2.body", lang),
               },
               {
                 step: "03",
-                title: "작가·대표 면담",
-                body: "검토 후 1주 안에 회신해요. 줌 또는 합정 사무실에서 일하는 방식·작품 톤·기대치를 맞춰봐요.",
+                title: t("careers.how.step3.title", lang),
+                body: t("careers.how.step3.body", lang),
               },
             ].map((s, i) => (
               <InView
@@ -469,7 +544,7 @@ export default async function CareersPage() {
           <InView className="fade-up mt-14 grid lg:grid-cols-12 gap-x-10 gap-y-10 items-center">
             <div className="lg:col-span-7">
               <div className="text-[10px] tracking-[0.3em] uppercase text-cheeze-yellow/70 mb-3">
-                Apply now
+                {t("careers.apply.eyebrow", lang)}
               </div>
               <h3
                 className="leading-tight tracking-tight text-cheeze-yellow"
@@ -478,19 +553,18 @@ export default async function CareersPage() {
                   fontSize: "clamp(2rem, 3.6vw, 3rem)",
                 }}
               >
-                지원서 한 장이면
+                {t("careers.apply.headline.line1", lang)}
                 <br />
-                다음 단계로.
+                {t("careers.apply.headline.line2", lang)}
               </h3>
               <p className="mt-5 max-w-lg text-cheeze-cream/70 text-[14px] leading-relaxed">
-                모든 지원은 같은 폼을 통해 받고 있어요. 공고를 고른 뒤 짧은
-                양식만 채우시면, 작가·대표가 직접 확인합니다.
+                {t("careers.apply.body", lang)}
               </p>
               <Link
                 href={APPLY_HREF}
                 className="group/apply mt-8 inline-flex items-center gap-3 px-7 py-4 bg-cheeze-yellow text-cheeze-purple-deep font-bold tracking-widest uppercase text-sm hover:bg-cheeze-cream transition-colors"
               >
-                지원 페이지로
+                {t("careers.apply.cta", lang)}
                 <span
                   aria-hidden
                   className="transition-transform group-hover/apply:translate-x-1"
@@ -500,16 +574,16 @@ export default async function CareersPage() {
               </Link>
             </div>
             <div className="lg:col-span-5 lg:border-l lg:border-cheeze-cream/15 lg:pl-10 space-y-4 text-[13px]">
-              <Row label="채용 외 문의">
+              <Row label={t("careers.row.other", lang)}>
                 <Link
                   href="/support?tab=fan"
                   className="text-cheeze-cream/85 underline decoration-cheeze-cream/30 underline-offset-4 hover:text-cheeze-yellow hover:decoration-cheeze-yellow"
                 >
-                  응원 메시지 / 팬레터 보내기 →
+                  {t("careers.row.other.link", lang)} →
                 </Link>
               </Row>
-              <Row label="현장 견학">
-                현재 비공개. 합류 결정 후 가능합니다.
+              <Row label={t("careers.row.visit", lang)}>
+                {t("careers.row.visit.body", lang)}
               </Row>
             </div>
           </InView>
@@ -520,40 +594,6 @@ export default async function CareersPage() {
     </main>
   );
 }
-
-const ROLES = [
-  {
-    // 1순위 — 채널의 얼굴이 되는 배우. 새 작품의 주연을 맡을 분.
-    title: "배우 (주연/조연)",
-    desc: "치즈필름 신작의 얼굴이 될 배우. 10~30분짜리 단편 안에서 청춘의 한 컷을 진짜처럼 살아낼 수 있는 분.",
-    tags: ["10대 후반~30대", "오디션 영상/프로필 필수", "본업·부업 OK"],
-  },
-  {
-    title: "작가",
-    desc: "10분짜리 단편을 매주 한 편씩 굽는 작가. 청춘 드라마의 톤을 이해하고, 대사로 인물을 살릴 수 있는 분.",
-    tags: ["단편 시나리오 경력", "치즈필름 채널 시청 다수", "협업 가능한 분"],
-  },
-  {
-    title: "연출",
-    desc: "현장을 책임지는 연출. 한 회차 안에서 인물의 작은 변화를 카메라로 잡아내는 데 관심이 많은 분.",
-    tags: ["단편 연출 1편 이상", "스토리보드 가능", "여러 톤 소화 가능"],
-  },
-  {
-    title: "촬영 · 조명",
-    desc: "현장에서 빛과 구도를 책임지는 사람. DSLR/미러리스 · 시네마 카메라 모두 환영.",
-    tags: ["기본 장비 운용", "조명 셋업 가능", "야외 촬영 OK"],
-  },
-  {
-    title: "편집",
-    desc: "한 컷의 길이가 작품의 결을 결정한다고 믿는 분. 음악·SFX 감각이 함께 있는 분 우대.",
-    tags: ["Premiere/DaVinci 능숙", "컬러 그레이딩 경험", "쇼츠 편집 별도"],
-  },
-  {
-    title: "운영 · PD",
-    desc: "촬영 일정, 출연자 케어, 예산 관리. 작품이 차질 없이 굴러가도록 안 보이는 곳에서 일하는 분.",
-    tags: ["스케줄 관리", "외부 커뮤니케이션", "엑셀/노션"],
-  },
-];
 
 /** Small editorial stat card used in the hero strip — one big figure +
  *  caption. Three of these sit side-by-side with vertical dividers. */

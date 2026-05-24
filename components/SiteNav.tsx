@@ -74,18 +74,24 @@ const NAV: NavItem[] = [
 
 type OpenRoleType = "lead" | "support" | "extra" | "staff";
 
-/** Map the actual open role types to an accurate Korean status label.
+/** Map the actual open role types to a lang-aware status label.
  *  We treat anything that's not "staff" as an audition role for label
- *  purposes; if both buckets are open we show both, comma-separated. */
-function deriveOpenLabel(roleTypes: Set<OpenRoleType>): string {
+ *  purposes; if both buckets are open we show both. */
+function deriveOpenLabel(roleTypes: Set<OpenRoleType>, lang: Lang): string {
   const hasStaff = roleTypes.has("staff");
   const hasAudition =
     roleTypes.has("lead") ||
     roleTypes.has("support") ||
     roleTypes.has("extra");
-  if (hasStaff && hasAudition) return "오디션 · 스태프 모집 중";
-  if (hasAudition) return "오디션 모집 중";
-  if (hasStaff) return "스태프 모집 중";
+  if (lang === "en") {
+    if (hasStaff && hasAudition) return "Casting & hiring";
+    if (hasAudition) return "Casting now";
+    if (hasStaff) return "Hiring now";
+  } else {
+    if (hasStaff && hasAudition) return "오디션 · 스태프 모집 중";
+    if (hasAudition) return "오디션 모집 중";
+    if (hasStaff) return "스태프 모집 중";
+  }
   // Sentinel: no openings, used by the caller to hide the row.
   return "";
 }
@@ -130,7 +136,7 @@ export default function SiteNav({ lang = "ko" }: { lang?: Lang }) {
         const roleTypes = new Set<OpenRoleType>(
           (d.listings ?? []).map((l) => l.role_type),
         );
-        setOpenLabel(deriveOpenLabel(roleTypes));
+        setOpenLabel(deriveOpenLabel(roleTypes, lang));
       })
       .catch(() => {
         if (!cancelled) setOpenLabel("");
@@ -138,7 +144,7 @@ export default function SiteNav({ lang = "ko" }: { lang?: Lang }) {
     return () => {
       cancelled = true;
     };
-  }, [pathname]);
+  }, [pathname, lang]);
 
   // ── Scroll spy ────────────────────────────────────
   // rAF-throttled scroll listener instead of IntersectionObserver: gives us
@@ -260,7 +266,7 @@ export default function SiteNav({ lang = "ko" }: { lang?: Lang }) {
           keeps the DOM lighter on detail views. */}
       {isHome && (
       <aside
-        aria-label="주 메뉴"
+        aria-label={lang === "en" ? "Main menu" : "주 메뉴"}
         className="hidden lg:flex fixed top-0 left-0 bottom-0 w-56 z-40 flex-col justify-between py-9 pl-7 pr-6"
       >
         {/* Brand — gentle hover wiggle:
@@ -272,7 +278,7 @@ export default function SiteNav({ lang = "ko" }: { lang?: Lang }) {
         <Link
           href="/"
           className="group/brand flex items-center gap-3 focus:outline-none"
-          aria-label="치즈필름 홈으로"
+          aria-label={lang === "en" ? "CheezeFilm home" : "치즈필름 홈으로"}
         >
           <span className="inline-flex w-10 h-10 rounded-2xl bg-cheeze-purple overflow-hidden transition-transform duration-300 ease-out group-hover/brand:-rotate-6 group-hover/brand:scale-105">
             <Image
@@ -401,7 +407,9 @@ export default function SiteNav({ lang = "ko" }: { lang?: Lang }) {
               }`}
             >
               <span className="text-[15px] font-semibold tracking-tight text-cheeze-cream">
-                {openLabel ? "지원하기" : "지원 페이지로"}
+                {lang === "en"
+                  ? (openLabel ? "Apply" : "Go to apply page")
+                  : (openLabel ? "지원하기" : "지원 페이지로")}
               </span>
               <span
                 aria-hidden
@@ -456,7 +464,11 @@ export default function SiteNav({ lang = "ko" }: { lang?: Lang }) {
           <Link
             href="/"
             className="flex items-center gap-3 focus:outline-none group/back"
-            aria-label={isHome ? "치즈필름 홈으로" : "← 치즈필름 홈으로 돌아가기"}
+            aria-label={
+              lang === "en"
+                ? (isHome ? "CheezeFilm home" : "← Back to CheezeFilm home")
+                : (isHome ? "치즈필름 홈으로" : "← 치즈필름 홈으로 돌아가기")
+            }
           >
             {!isHome && (
               <span
@@ -493,7 +505,7 @@ export default function SiteNav({ lang = "ko" }: { lang?: Lang }) {
               className="inline-flex items-center justify-center w-10 h-10 rounded-xl text-cheeze-ink hover:bg-toss-50 active:bg-toss-100 transition-colors"
               aria-expanded={mobileOpen}
               aria-controls="mobile-menu"
-              aria-label="메뉴"
+              aria-label={lang === "en" ? "Menu" : "메뉴"}
             >
               <svg
                 aria-hidden
