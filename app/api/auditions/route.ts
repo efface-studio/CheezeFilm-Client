@@ -9,6 +9,7 @@ import {
   isValidKoreanPhone,
 } from "@/lib/koreanFormat";
 import { detectImageMime } from "@/lib/imageValidate";
+import { isEmail, assertSafePublicUrl } from "@/lib/validate";
 
 export const runtime = "nodejs";
 
@@ -27,10 +28,6 @@ const MIME_TO_EXT: Record<string, string> = {
   "image/webp": "webp",
   "image/heic": "heic",
 };
-
-function isEmail(v: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-}
 
 /**
  * Save the applicant's photo to the `auditions` Storage bucket (private —
@@ -194,6 +191,7 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
+  let safePortfolioUrl: string | null = portfolio_url;
   if (portfolio_url) {
     if (portfolio_url.length > MAX_PORTFOLIO_URL_LEN) {
       return NextResponse.json(
@@ -201,11 +199,18 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
-    // Only http(s) — reject `javascript:`, `data:`, etc. so the admin
-    // panel never renders an active-content link.
-    if (!/^https?:\/\//i.test(portfolio_url)) {
+    // `assertSafePublicUrl` blocks `javascript:` / `data:` schemes AND
+    // hostnames that resolve to internal services (localhost, private
+    // IP ranges, AWS metadata at 169.254.169.254). Without this guard
+    // a stored portfolio_url like `http://169.254.169.254/latest/...`
+    // could be opened by an admin clicking through, leaking cloud
+    // credentials. Length cap above + this scheme/host check together
+    // give us a defendable SSRF posture for stored user URLs.
+    try {
+      safePortfolioUrl = assertSafePublicUrl(portfolio_url);
+    } catch (e) {
       return NextResponse.json(
-        { error: "포트폴리오 URL은 http(s)://로 시작해야 합니다." },
+        { error: e instanceof Error ? e.message : "포트폴리오 URL이 올바르지 않아요." },
         { status: 400 },
       );
     }
@@ -251,7 +256,7 @@ export async function POST(req: Request) {
       experience,
       role_preference,
       intro,
-      portfolio_url,
+      portfolio_url: safePortfolioUrl,
       photo_url,
       photo_urls: photoKeys,
       listing_id,

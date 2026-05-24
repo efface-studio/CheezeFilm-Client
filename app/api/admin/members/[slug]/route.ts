@@ -8,6 +8,7 @@ import {
   type Member,
 } from "@/lib/members";
 import { bumpMembers } from "@/lib/revalidate";
+import { auditLog } from "@/lib/auditLog";
 
 export const runtime = "nodejs";
 
@@ -47,6 +48,13 @@ export async function PATCH(
 
   await updateMember(slug, body);
   bumpMembers();
+  auditLog({
+    action: "update",
+    resource: "member",
+    id: slug,
+    username: session.username,
+    meta: { fields: Object.keys(body).join(",") },
+  });
   return NextResponse.json({ ok: true });
 }
 
@@ -73,5 +81,12 @@ export async function DELETE(
 
   await deleteMember(slug);
   bumpMembers();
+  auditLog({
+    action: "delete",
+    resource: "member",
+    id: slug,
+    username: session.username,
+    meta: { had_photo: !!member.photoPath },
+  });
   return NextResponse.json({ ok: true });
 }

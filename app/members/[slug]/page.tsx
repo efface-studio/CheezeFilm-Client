@@ -5,6 +5,8 @@ import type { Metadata } from "next";
 import { SiteHeader, SiteFooter } from "../../page";
 import { InView } from "@/components/Stagger";
 import { findMember, getMembers } from "@/lib/members";
+// findMember is still used by generateMetadata which only needs a single
+// row; the page itself now reads from the cached full list (see below).
 import { storageUrl } from "@/lib/db";
 import { getAllVideos } from "@/lib/youtube";
 import { getServerLang } from "@/lib/i18n.server";
@@ -96,10 +98,21 @@ export default async function MemberDetailPage({
 }) {
   const { slug: rawSlug } = await params;
   const slug = decodeURIComponent(rawSlug);
-  const [lang, member] = await Promise.all([
+
+  // Fetch language + the full member list + videos in parallel. The full
+  // list serves three purposes: (a) the actual member lookup by slug,
+  // (b) the prev/next navigation, (c) the position index in the No.X
+  // crumb. Previously this called `findMember` *and* `getMembers`
+  // separately — two round-trips, even though `getMembers` already
+  // contains the row we need. (Both are unstable_cache'd so the
+  // practical cost was a duplicate cache deserialization rather than
+  // two Supabase hits, but the simplification is also nice.)
+  const [lang, all, videosResult] = await Promise.all([
     getServerLang(),
-    findMember(slug),
+    getMembers(),
+    getAllVideos().catch(() => ({ videos: [] })),
   ]);
+  const member = all.find((m) => m.slug === slug);
   if (!member) notFound();
 
   const photo = photoUrlFor(member.photoPath);
@@ -114,10 +127,6 @@ export default async function MemberDetailPage({
   // Cross-reference recent videos where this member is in the cast.
   // `cast` info we extracted earlier lives in `member.works[]` (video
   // titles). Match against actual videos to render thumbnails + dates.
-  const [videosResult, all] = await Promise.all([
-    getAllVideos().catch(() => ({ videos: [] })),
-    getMembers(),
-  ]);
   const { videos } = videosResult;
   const workSet = new Set(member.works);
   const matchedAppearances = videos.filter((v) => workSet.has(v.title));

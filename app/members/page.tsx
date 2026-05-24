@@ -107,15 +107,19 @@ export default async function MembersPage() {
                         fill
                         sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                         className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                        // Only the first row is reliably above the fold
-                        // (lg: 3 cols, md: 2 cols, sm: 1 col). Marking 6
-                        // as priority was eagerly preloading the whole
-                        // second row on every viewport, eating bandwidth
-                        // and competing with the actual LCP candidate
-                        // (the hero in the layout above this section).
-                        // Priority drops to 3, the rest lazy-load as the
-                        // user scrolls.
-                        priority={i < 3}
+                        // Mobile shows ~1 card above fold, tablet ~2, lg
+                        // shows 3 — but the hero "The Cast" intro above
+                        // pushes most viewports so even the lg first row
+                        // is only partially visible. Only the very first
+                        // card is unambiguously above the fold; the
+                        // others lazy-load. Previously `priority={i < 3}`
+                        // was eagerly preloading three images even on
+                        // mobile where only one is visible, wasting LCP
+                        // budget. The remaining first-row pair gets
+                        // `eager` loading without `priority` so it doesn't
+                        // contend with the LCP candidate but isn't held
+                        // back by the IntersectionObserver lazy queue.
+                        priority={i === 0}
                         loading={i < 3 ? "eager" : "lazy"}
                       />
                     ) : (
