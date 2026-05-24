@@ -44,16 +44,43 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
+            // Lock down every powerful feature we don't actually use.
+            // Same posture as before plus payment, USB, serial, sensors,
+            // FLoC ancestor topics — defensive defaults so a future page
+            // can't quietly opt in without an explicit policy review.
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+            value: [
+              "camera=()",
+              "microphone=()",
+              "geolocation=()",
+              "browsing-topics=()",
+              "payment=()",
+              "usb=()",
+              "serial=()",
+              "accelerometer=()",
+              "gyroscope=()",
+              "magnetometer=()",
+              "interest-cohort=()",
+            ].join(", "),
           },
           // CSP — allows our own assets + ytimg thumbnails + YouTube embeds +
           // Pretendard CDN + Google Fonts. Tightened beyond Next's defaults.
+          //
+          // Notable choices:
+          //   - `script-src` is `'self' 'unsafe-inline'` only in production;
+          //     dev needs `'unsafe-eval'` because Next's dev runtime (Fast
+          //     Refresh / HMR) uses eval'd modules. Production builds don't,
+          //     so removing it shrinks the XSS blast radius.
+          //   - `'unsafe-inline'` for scripts stays because Next inlines a
+          //     small bootstrap script on every page; replacing it with
+          //     nonces would require per-request CSP injection (middleware).
           {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              process.env.NODE_ENV === "production"
+                ? "script-src 'self' 'unsafe-inline'"
+                : "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
               "font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com",
               // Instagram CDN added so member portraits can render even when
@@ -66,6 +93,9 @@ const nextConfig: NextConfig = {
               "base-uri 'self'",
               "form-action 'self'",
               "object-src 'none'",
+              // Block plugins / Flash / etc. and prevent the page from
+              // upgrading itself into a context that ignores CSP.
+              "upgrade-insecure-requests",
             ].join("; "),
           },
         ],

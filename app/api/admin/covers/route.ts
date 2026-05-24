@@ -3,11 +3,17 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { serverClient, storageUrl } from "@/lib/db";
 import { bumpCovers } from "@/lib/revalidate";
+import { detectImageMime, type DetectedImageMime } from "@/lib/imageValidate";
 
 export const runtime = "nodejs";
 
 const ALLOWED_EXTS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+const ALLOWED_MIME: ReadonlyArray<DetectedImageMime> = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+];
 
 /**
  * Hard cap on how many cover photos can live in the bucket at once.
@@ -143,8 +149,21 @@ export async function POST(req: Request) {
     }
 
     const buf = Buffer.from(await file.arrayBuffer());
+    // Magic-byte check: client-supplied `file.type` is unreliable, so
+    // sniff the bytes and use the detected MIME for the stored
+    // content-type. Reject if the actual content isn't a real image of
+    // an allowed flavour even if the extension said it was.
+    const detected = detectImageMime(buf);
+    if (!detected || !ALLOWED_MIME.includes(detected)) {
+      results.push({
+        name: origName,
+        saved: false,
+        reason: "file content is not a valid JPEG/PNG/WebP image",
+      });
+      continue;
+    }
     const { error } = await sb.storage.from(BUCKET).upload(finalName, buf, {
-      contentType: file.type || "application/octet-stream",
+      contentType: detected,
       upsert: false,
     });
     if (error) {

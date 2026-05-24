@@ -7,14 +7,13 @@
  *     read it via `getServerLang()` (lib/i18n.server.ts). The toggle
  *     button in SiteNav writes it client-side and calls
  *     `router.refresh()`.
- *   - Two helpers for translatable strings:
- *       * `t(key, lang)` — for hardcoded UI strings (nav labels,
- *         section headings, button text). Lookup is in the
- *         `UI_STRINGS` dictionary below.
- *       * `tc(map, key, lang)` — for admin-edited content keys.
- *         When `lang === "en"`, it prefers `${key}.en` from the
- *         content map; falls back to the Korean `${key}` when no
- *         English copy was provided.
+ *   - `t(key, lang)` — for hardcoded UI strings (nav labels, section
+ *     headings, button text). Lookup is in the `UI_STRINGS` dictionary
+ *     below.
+ *   - For admin-edited content keys, use `getContent(map, key, lang)`
+ *     from `lib/content.ts` instead. It carries the same English-fallback
+ *     contract: when `lang === "en"` it prefers `${key}.en` and falls
+ *     back to the Korean `${key}` if no English copy exists.
  *   - Reading cookies in a page opts the route into dynamic
  *     rendering. That's an intentional trade — the streaming
  *     Suspense work in /, /videos still keeps the perceived TTFB
@@ -290,25 +289,7 @@ export function t(key: string, lang: Lang): string {
   return entry.ko;
 }
 
-/**
- * Look up an admin-edited content key with English fallback.
- *
- * Conventions:
- *   - Korean values live under the plain key (e.g. `hero.title.line1`).
- *   - English overrides live under `${key}.en` (e.g.
- *     `hero.title.line1.en`). The admin content editor surfaces both
- *     fields so editors can fill in either or both.
- *   - When lang === "en", we prefer the `.en` variant; if missing,
- *     fall back to the Korean value (so the page never renders empty).
- */
-export function tc(
-  contentMap: Map<string, string>,
-  key: string,
-  lang: Lang,
-): string {
-  if (lang === "en") {
-    const en = contentMap.get(`${key}.en`);
-    if (en && en.trim()) return en;
-  }
-  return contentMap.get(key) ?? "";
-}
+// `tc(map, key, lang)` was removed — the codebase uses
+// `getContent(map, key, lang)` from `lib/content.ts` (which carries the
+// same English-fallback contract) at every call site. Kept the header
+// comment above as the system-of-record for the i18n conventions.

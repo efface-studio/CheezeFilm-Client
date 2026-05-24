@@ -6,7 +6,10 @@ import AutoPrint from "../../AutoPrint";
 import PrintButton from "../../PrintButton";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "오디션 명단 인쇄 | 치즈필름" };
+export const metadata = {
+  title: "오디션 명단 인쇄 | 치즈필름",
+  robots: { index: false, follow: false, nocache: true },
+};
 
 const ROLE_KO: Record<string, string> = {
   lead: "주연",

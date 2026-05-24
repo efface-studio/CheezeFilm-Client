@@ -47,16 +47,6 @@ const ROLE_WORDS = new Set([
   "배우",
 ]);
 
-/** 영상 1편에서 뽑아낸 한 명의 출연자 정보 — 원본 토큰 보존. */
-export type ExtractedPerson = {
-  /** 정규화된 이름. */
-  name: string;
-  /** 발견된 인스타그램 핸들 (있으면). */
-  instagram?: string;
-  /** 어떤 키(`출연` / `주연` …) 라인에서 나왔는지. */
-  source: string;
-};
-
 /** 동일 인물 단위로 묶인 결과 — 작품 목록 + 인스타 핸들이 누적됩니다. */
 export type CastEntry = {
   name: string;

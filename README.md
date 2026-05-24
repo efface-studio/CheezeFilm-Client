@@ -84,7 +84,7 @@ Required:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public | anon key (RLS protects writes) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server only — never expose | bypasses RLS for admin reads / writes |
 | `SESSION_SECRET` | Server only | 32+ char random string for admin session cookie HMAC |
-| `ADMIN_USERNAME`, `ADMIN_PASSWORD` | Server only | bcrypt-hashed password recommended in production |
+| `ADMIN_USERNAME`, `ADMIN_PASSWORD` | Server only | use a long random password (compared in constant time, see `lib/auth.ts`) |
 
 Optional:
 

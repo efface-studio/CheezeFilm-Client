@@ -39,6 +39,13 @@ export async function POST(req: Request) {
   const nickname = (body.nickname ?? "").trim();
   const message = (body.message ?? "").trim();
   const email = (body.email ?? "")?.toString().trim() || null;
+  // Also bound + sanitise the optional "favorite work" field — without
+  // a length cap a single submission could store megabytes of free text,
+  // which the admin dashboard would then have to render.
+  const favoriteWorkRaw = (body.favorite_work ?? "")?.toString().trim() || null;
+  const favorite_work = favoriteWorkRaw && favoriteWorkRaw.length > 100
+    ? favoriteWorkRaw.slice(0, 100)
+    : favoriteWorkRaw;
 
   if (!nickname || nickname.length > 30) {
     return NextResponse.json(
@@ -58,11 +65,19 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-  if (email && !isEmail(email)) {
-    return NextResponse.json(
-      { error: "이메일 형식이 올바르지 않습니다." },
-      { status: 400 },
-    );
+  if (email) {
+    if (email.length > 254) {
+      return NextResponse.json(
+        { error: "이메일이 너무 깁니다." },
+        { status: 400 },
+      );
+    }
+    if (!isEmail(email)) {
+      return NextResponse.json(
+        { error: "이메일 형식이 올바르지 않습니다." },
+        { status: 400 },
+      );
+    }
   }
 
   const sb = serverClient();
@@ -71,7 +86,7 @@ export async function POST(req: Request) {
     .insert({
       nickname,
       email,
-      favorite_work: body.favorite_work ?? null,
+      favorite_work,
       message,
     })
     .select("id")

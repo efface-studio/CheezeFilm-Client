@@ -30,7 +30,13 @@ const IssueCoverPicker = nextDynamic(() => import("./IssueCoverPicker"));
 const CoverPhotosManager = nextDynamic(() => import("./CoverPhotosManager"));
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "관리자 대시보드 | 치즈필름" };
+// Mark every admin response as noindex — overrides the root layout's
+// `index: true`. Search engines (and AI scrapers) shouldn't surface
+// admin URLs in results even though the dashboard itself is auth-gated.
+export const metadata = {
+  title: "관리자 대시보드 | 치즈필름",
+  robots: { index: false, follow: false, nocache: true },
+};
 
 type Tab =
   | "dashboard"
