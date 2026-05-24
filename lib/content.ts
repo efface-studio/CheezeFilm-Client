@@ -442,14 +442,27 @@ export function getContent(
  * and are optional — when none has been set, `valueEn` is `""`.
  */
 export async function getAllContent(): Promise<
-  Array<ContentEntry & { value: string; valueEn: string }>
+  Array<ContentEntry & {
+    value: string;
+    valueEn: string;
+    /** True when `valueEn` is the registry's baked-in `fallbackEn`
+     *  (no admin override saved yet). Lets the editor show the
+     *  English defaults pre-filled but distinguish them from
+     *  custom values the admin has stored. */
+    valueEnIsDefault: boolean;
+  }>
 > {
   const overrides = await loadContentMap();
-  return CONTENT_REGISTRY.map((e) => ({
-    ...e,
-    value: overrides.get(e.key) ?? e.fallback,
-    valueEn: overrides.get(`${e.key}.en`) ?? "",
-  }));
+  return CONTENT_REGISTRY.map((e) => {
+    const enOverride = overrides.get(`${e.key}.en`);
+    const valueEn = enOverride ?? e.fallbackEn ?? "";
+    return {
+      ...e,
+      value: overrides.get(e.key) ?? e.fallback,
+      valueEn,
+      valueEnIsDefault: enOverride === undefined,
+    };
+  });
 }
 
 /**

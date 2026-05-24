@@ -4,7 +4,13 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { ContentEntry } from "@/lib/content";
 
-type Item = ContentEntry & { value: string; valueEn: string };
+type Item = ContentEntry & {
+  value: string;
+  valueEn: string;
+  /** True when valueEn is the registry's fallbackEn (no admin
+   *  override saved yet) — used to dim the field + label the row. */
+  valueEnIsDefault: boolean;
+};
 
 export default function ContentEditor({ items }: { items: Item[] }) {
   const grouped = items.reduce<Record<string, Item[]>>((acc, it) => {
@@ -20,9 +26,9 @@ export default function ContentEditor({ items }: { items: Item[] }) {
         </span>
         <span>
           <strong className="text-zinc-900">사이트의 모든 텍스트</strong>를 여기서
-          바꿀 수 있어요. 한국어와 영어 각각 따로 저장됩니다 —
-          영어를 비워두면 사이트가 영어 모드여도 한국어로 폴백돼요. 저장 즉시
-          메인 사이트에 반영됩니다.
+          바꿀 수 있어요. 한국어와 영어 각각 따로 저장됩니다. <strong>EN</strong> 칸에는
+          기본 영문 번역이 미리 채워져 있고, <span className="inline-block align-middle text-[10px] font-bold tracking-widest uppercase bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded">default</span> 표시는
+          저장되지 않은 기본값임을 뜻해요. 수정하고 저장하면 사이트에 즉시 반영됩니다.
         </span>
       </div>
       {Object.entries(grouped).map(([section, entries]) => (
@@ -66,10 +72,15 @@ function ContentRow({ item }: { item: Item }) {
           item={item}
           variantKey={`${item.key}.en`}
           initialValue={item.valueEn}
-          // English is opt-in — there's no registry fallback. "Default"
-          // means "no English override set yet".
-          isDefault={item.valueEn === ""}
-          fallbackOnReset=""
+          // `valueEnIsDefault` flows from getAllContent — true when
+          // there's no DB override for this key's `.en` variant and
+          // the value shown is the registry's baked-in fallbackEn.
+          // We surface that as a "default" chip in the row label so
+          // the admin sees at a glance which English values are
+          // theirs vs ours.
+          isDefault={item.valueEnIsDefault}
+          showDefaultChip={item.valueEnIsDefault && item.valueEn !== ""}
+          fallbackOnReset={item.fallbackEn ?? ""}
         />
       </div>
     </div>
@@ -88,6 +99,7 @@ function ContentField({
   variantKey,
   initialValue,
   isDefault,
+  showDefaultChip = false,
   fallbackOnReset,
 }: {
   label: string;
@@ -96,6 +108,10 @@ function ContentField({
   variantKey: string;
   initialValue: string;
   isDefault: boolean;
+  /** Show a small "default" chip next to the label to mark the
+   *  field as showing the registry's baked-in value (not a saved
+   *  override). Used on the EN row when admin hasn't customized. */
+  showDefaultChip?: boolean;
   fallbackOnReset: string;
 }) {
   const router = useRouter();
@@ -144,23 +160,33 @@ function ContentField({
 
   return (
     <div className="flex items-start gap-3">
-      <span className={`shrink-0 inline-flex items-center justify-center w-9 h-7 rounded-md text-[10px] font-bold tracking-widest uppercase ${flagClass}`}>
-        {label}
-      </span>
+      <div className="shrink-0 flex flex-col items-start gap-1">
+        <span className={`inline-flex items-center justify-center w-9 h-7 rounded-md text-[10px] font-bold tracking-widest uppercase ${flagClass}`}>
+          {label}
+        </span>
+        {showDefaultChip && (
+          <span
+            className="text-[8px] font-bold tracking-widest uppercase bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded"
+            title="기본 영문 번역값이에요. 수정해서 저장하면 이 키만 따로 저장됩니다."
+          >
+            default
+          </span>
+        )}
+      </div>
       <div className="flex-1 min-w-0">
         {item.type === "longtext" ? (
           <textarea
             value={value}
             onChange={(e) => setValue(e.target.value)}
             rows={Math.min(8, Math.max(2, (value || "").split("\n").length + 1))}
-            placeholder={label === "EN" ? "(영어 미입력 시 한국어로 표시)" : ""}
+            placeholder={label === "EN" ? "(비워두면 한국어로 표시)" : ""}
             className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-sans transition-colors focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 placeholder:text-zinc-400"
           />
         ) : (
           <input
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            placeholder={label === "EN" ? "(영어 미입력 시 한국어로 표시)" : ""}
+            placeholder={label === "EN" ? "(비워두면 한국어로 표시)" : ""}
             className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-sans transition-colors focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 placeholder:text-zinc-400"
           />
         )}
