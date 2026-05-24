@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { InView } from "@/components/Stagger";
 
 /**
- * V2 hero cover — slow cross-fade slideshow.
+ * V2 hero cover — horizontal slide carousel.
  *
  * Two modes (mutually exclusive):
  *   - `photoSrcs` (preferred): landscape group/cast photos dropped into
@@ -18,11 +18,9 @@ import { InView } from "@/components/Stagger";
  * when both are passed so admins can hide the video fallback by simply
  * dropping a photo.
  *
- * Stacks all images with `position: absolute` (via `fill`) and toggles
- * opacity. Only the active one is 100%; the rest sit pre-loaded behind
- * with opacity 0 so the cross-fade has nothing to wait on. The active
- * image is wrapped in the same `.v2-mask` curtain-reveal the original
- * static cover used, so the entrance animation still plays on first load.
+ * Renders all slides side-by-side in a horizontal flex row and translates
+ * the row by `-idx * 100%`. The wrapper is wrapped in `.v2-mask` so the
+ * curtain-reveal entrance animation still plays on first load.
  */
 export default function HeroCover({
   photoSrcs = [],
@@ -36,13 +34,12 @@ export default function HeroCover({
   const slides = mode === "photo" ? photoSrcs : videoIds;
   const [idx, setIdx] = useState(0);
 
-  // 3s per slide. The cross-fade is ~900ms and the active slide
-  // simultaneously runs a 4.5s ken-burns zoom (see globals.css), so
-  // each slide gets ~2.1s of settled view + 900ms of overlap with
-  // the next. Bumped from 2s because the longer ken-burns wants more
-  // room — at 2s the zoom barely got started before the next swap.
-  // Pause when the tab is hidden so the first slide the user sees
-  // is the one we're currently on.
+  // 4.5s per slide. The horizontal slide animation takes ~1.2s, so each
+  // slide gets ~3.3s of settled view before the next one starts moving
+  // in. Previously was 3s, but at that pace the slide barely settles
+  // before the next transition begins — gave the eye no time to actually
+  // *read* the cover. Pause when the tab is hidden so the first slide
+  // the user sees on return is the one we're currently on.
   useEffect(() => {
     if (slides.length <= 1) return;
     let t: ReturnType<typeof setInterval> | null = null;
@@ -50,7 +47,7 @@ export default function HeroCover({
       if (t) return;
       t = setInterval(() => {
         setIdx((i) => (i + 1) % slides.length);
-      }, 3000);
+      }, 4500);
     };
     const stop = () => {
       if (t) clearInterval(t);
@@ -96,13 +93,17 @@ export default function HeroCover({
         {/* Carousel track — a horizontal row of full-width slides.
             We translate the whole row by -idx * 100% so the active
             slide slides into view from the right (or out to the left
-            when we wrap from N-1 → 0). 700ms ease-out matches the rest
-            of the Toss transitions on the page.
-            Active slide also gets a subtle scale via .hero-cover-img,
-            which still styles each <Image> below. */}
+            when we wrap from N-1 → 0).
+
+            1200ms with cubic-bezier(0.22, 1, 0.36, 1) — a slow,
+            slightly-decelerating ease so the slide *arrives* gently
+            rather than snapping into place. Matches Toss's signature
+            "smooth-out" cinematic feel. `will-change: transform` and
+            `transform: translate3d` force GPU compositing so the slide
+            stays buttery even on lower-end devices. */}
         <div
-          className="absolute inset-0 flex transition-transform duration-700 ease-out"
-          style={{ transform: `translateX(-${idx * 100}%)` }}
+          className="hero-cover-track absolute inset-0 flex"
+          style={{ transform: `translate3d(-${idx * 100}%, 0, 0)` }}
         >
           {slides.map((src, i) => {
             const active = i === idx;
