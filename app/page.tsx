@@ -7,8 +7,8 @@ import { storageUrl } from "@/lib/db";
 import { InView, StaggerText } from "@/components/Stagger";
 import HeroCover from "@/components/HeroCover";
 import CountUp from "@/components/CountUp";
-import V2Nav from "@/components/V2Nav";
-import V2SnapScroller from "@/components/V2SnapScroller";
+import SiteNav from "@/components/SiteNav";
+import SnapScroller from "@/components/SnapScroller";
 import CareersReel from "@/components/CareersReel";
 import { getCoverPhotos } from "@/lib/coverPhotos";
 
@@ -19,7 +19,7 @@ import { getCoverPhotos } from "@/lib/coverPhotos";
 // path can lag if a tag invalidation is missed.
 export const revalidate = 300;
 // Page-level metadata — `title.absolute` bypasses the layout's "%s | 치즈필름"
-// template since the brand is already in the V2 home title. `og:image` is
+// template since the brand is already in the home title. `og:image` is
 // re-stated per page because page-level `openGraph` replaces the layout
 // block entirely (Next merges metadata per-field, not deep).
 export const metadata = {
@@ -37,7 +37,7 @@ export const metadata = {
   twitter: { images: ["/cheeze-logo.png"] },
 };
 
-export default async function HomeV2() {
+export default async function HomePage() {
   const [
     { longform, shorts, subscriberCount, viewCount, totalCount },
     contentMap,
@@ -76,19 +76,19 @@ export default async function HomeV2() {
   ).filter(Boolean);
 
   return (
-    // `data-v2-home` opts this page into scroll-snap (see globals.css).
+    // `data-site-home` opts this page into scroll-snap (see globals.css).
     // The `html:has(...)` selector pins each direct `<section>` to a snap
     // point so scrolling rests on a clean section boundary instead of
     // drifting between them.
     <main
-      data-v2-home
+      data-site-home
       className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial flex flex-col lg:pl-56"
     >
-      <V2SnapScroller />
-      <V2Header />
+      <SnapScroller />
+      <SiteHeader />
 
       {/* ── HERO ────────────────────────────────────────
-          `data-nav-section="issue"` tells V2Nav's scroll-spy to treat
+          `data-nav-section="issue"` tells SiteNav's scroll-spy to treat
           the whole hero band as part of the "01 소개" item, so the rail
           highlights 소개 even before the user reaches the
           #issue section proper. The same data attribute is also on the
@@ -105,7 +105,7 @@ export default async function HomeV2() {
               stack on the left without crushing either side. */}
           <div className="lg:col-span-6">
             {/* Toss-style eyebrow: small label pill with a status dot. */}
-            <InView className="v2-fade-up">
+            <InView className="fade-up">
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-toss-50 text-cheeze-purple text-[12px] font-semibold">
                 <span aria-hidden className="block w-1.5 h-1.5 rounded-full bg-cheeze-purple" />
                 웹드라마 스튜디오
@@ -113,7 +113,7 @@ export default async function HomeV2() {
             </InView>
             <InView
               as="h1"
-              className="v2-typewriter mt-5 leading-[1.1] tracking-tight font-extrabold text-cheeze-ink"
+              className="typewriter mt-5 leading-[1.1] tracking-tight font-extrabold text-cheeze-ink"
               style={{ fontSize: "clamp(2.4rem, 6vw, 4.5rem)" }}
             >
               <StaggerText text={c("hero.title.line1")} mode="character" />
@@ -132,7 +132,7 @@ export default async function HomeV2() {
                 />
               </span>
             </InView>
-            <InView className="v2-fade-up" rootMargin="0px 0px -5% 0px">
+            <InView className="fade-up" rootMargin="0px 0px -5% 0px">
               <p
                 className="mt-8 max-w-xl text-[15px] sm:text-[16px] leading-relaxed text-cheeze-ink-soft whitespace-pre-line"
                 style={{ transitionDelay: "300ms" }}
@@ -234,7 +234,7 @@ export default async function HomeV2() {
       {/* ── STORY ───────────────────────────────────── */}
       <section id="issue" className="border-b border-cheeze-purple-deep/15">
         <div className="mx-auto max-w-[100rem] px-6 py-24 grid lg:grid-cols-12 gap-10">
-          <InView as="aside" className="v2-fade-up lg:col-span-2">
+          <InView as="aside" className="fade-up lg:col-span-2">
             <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">
               — Section 01
             </div>
@@ -248,7 +248,7 @@ export default async function HomeV2() {
           <div className="lg:col-span-6">
             <InView
               as="h2"
-              className="v2-title v2-fade-up text-4xl md:text-5xl tracking-tight leading-[1.05]"
+              className="display-title fade-up text-4xl md:text-5xl tracking-tight leading-[1.05]"
               style={{ fontFamily: "var(--font-display)" }}
             >
               {c("story.heading.before")}{" "}
@@ -257,12 +257,12 @@ export default async function HomeV2() {
               </span>{" "}
               {c("story.heading.after")}
             </InView>
-            <InView className="v2-fade-up mt-6 space-y-5 text-cheeze-ink-soft leading-relaxed text-[15px]">
+            <InView className="fade-up mt-6 space-y-5 text-cheeze-ink-soft leading-relaxed text-[15px]">
               <p>{c("story.paragraph1")}</p>
               <p>{c("story.paragraph2")}</p>
             </InView>
           </div>
-          <InView as="aside" className="v2-fade-up lg:col-span-4 lg:border-l lg:border-cheeze-purple-deep/15 lg:pl-8">
+          <InView as="aside" className="fade-up lg:col-span-4 lg:border-l lg:border-cheeze-purple-deep/15 lg:pl-8">
             <blockquote
               className="text-2xl md:text-3xl leading-snug text-cheeze-purple-deep"
               style={{ fontFamily: "var(--font-display)" }}
@@ -292,7 +292,7 @@ export default async function HomeV2() {
       <section id="cast" className="border-b border-cheeze-purple-deep/15">
         <div className="mx-auto max-w-[100rem] px-6 py-24">
           <div className="grid lg:grid-cols-12 mb-12 items-end">
-            <InView className="v2-fade-up lg:col-span-2">
+            <InView className="fade-up lg:col-span-2">
               <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">— Section 02</div>
               <div
                 className="mt-3 text-[3rem] leading-none text-cheeze-purple"
@@ -301,7 +301,7 @@ export default async function HomeV2() {
                 02
               </div>
             </InView>
-            <InView className="v2-fade-up v2-title lg:col-span-7">
+            <InView className="fade-up display-title lg:col-span-7">
               <h2
                 className="text-4xl md:text-5xl tracking-tight"
                 style={{ fontFamily: "var(--font-display)" }}
@@ -355,7 +355,7 @@ export default async function HomeV2() {
                   <InView
                     key={m.slug}
                     as="li"
-                    className="v2-fade-up"
+                    className="fade-up"
                     style={{ transitionDelay: `${i * 60}ms` } as React.CSSProperties}
                   >
                     <Link
@@ -395,7 +395,7 @@ export default async function HomeV2() {
       <section id="films" className="border-b border-cheeze-purple-deep/15">
         <div className="mx-auto max-w-[100rem] px-6 py-24">
           <div className="grid lg:grid-cols-12 mb-12 items-end">
-            <InView className="v2-fade-up lg:col-span-2">
+            <InView className="fade-up lg:col-span-2">
               <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">— Section 03</div>
               <div
                 className="mt-3 text-[3rem] leading-none text-cheeze-purple"
@@ -404,7 +404,7 @@ export default async function HomeV2() {
                 03
               </div>
             </InView>
-            <InView as="div" className="v2-fade-up v2-title lg:col-span-7">
+            <InView as="div" className="fade-up display-title lg:col-span-7">
               <h2
                 className="text-4xl md:text-5xl tracking-tight"
                 style={{ fontFamily: "var(--font-display)" }}
@@ -458,7 +458,7 @@ export default async function HomeV2() {
             if (recent.length === 0) return null;
             return (
               <div className="mt-20 pt-12 border-t border-cheeze-purple-deep/15">
-                <InView className="v2-fade-up flex items-baseline justify-between gap-6 mb-8">
+                <InView className="fade-up flex items-baseline justify-between gap-6 mb-8">
                   <div>
                     <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">
                       — Just dropped
@@ -482,7 +482,7 @@ export default async function HomeV2() {
                   {recent.map((v, i) => (
                     <InView
                       key={v.id}
-                      className="v2-fade-up"
+                      className="fade-up"
                       style={
                         {
                           transitionDelay: `${(i % 3) * 60}ms`,
@@ -493,7 +493,7 @@ export default async function HomeV2() {
                         href={v.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="group block v2-film"
+                        className="group block film"
                       >
                         <div className="aspect-[16/10] relative overflow-hidden bg-cheeze-charcoal">
                           <Image
@@ -539,7 +539,7 @@ export default async function HomeV2() {
       </section>
 
       {/* ── SHORTS strip ─────────────────────────────── */}
-      {/* `data-nav-section="films"` makes V2Nav treat this section as a
+      {/* `data-nav-section="films"` makes SiteNav treat this section as a
           continuation of #films for scroll-spy purposes — so "02 영상" stays
           lit while the user is reading shorts. */}
       {shorts.length > 0 && (
@@ -549,7 +549,7 @@ export default async function HomeV2() {
         >
           <div className="mx-auto max-w-[100rem] px-6 py-20">
             <div className="flex items-baseline justify-between mb-8">
-              <InView className="v2-fade-up">
+              <InView className="fade-up">
                 <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">— Section 03</div>
                 <h2
                   className="mt-2 text-3xl md:text-4xl tracking-tight"
@@ -569,14 +569,14 @@ export default async function HomeV2() {
               {shorts.slice(0, 12).map((v, i) => (
                 <InView
                   key={v.id}
-                  className="v2-fade-up"
+                  className="fade-up"
                   style={{ transitionDelay: `${i * 50}ms` } as React.CSSProperties}
                 >
                   <a
                     href={v.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="group block aspect-[9/16] overflow-hidden bg-cheeze-charcoal relative v2-film"
+                    className="group block aspect-[9/16] overflow-hidden bg-cheeze-charcoal relative film"
                   >
                     <Image
                       src={v.thumbnail}
@@ -605,7 +605,7 @@ export default async function HomeV2() {
           Full details + email CTA live on /careers. */}
       <section id="careers" className="border-b border-cheeze-purple-deep/15">
         <div className="mx-auto max-w-[100rem] px-6 py-24 grid lg:grid-cols-12 gap-x-10 gap-y-12">
-          <InView className="v2-fade-up lg:col-span-2">
+          <InView className="fade-up lg:col-span-2">
             <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">
               — Section 05
             </div>
@@ -619,7 +619,7 @@ export default async function HomeV2() {
 
           {/* Left column — copy + role chips */}
           <div className="lg:col-span-6 flex flex-col">
-            <InView className="v2-fade-up v2-title">
+            <InView className="fade-up display-title">
               <h2
                 className="text-4xl md:text-5xl tracking-tight leading-[1.05]"
                 style={{ fontFamily: "var(--font-display)" }}
@@ -634,7 +634,7 @@ export default async function HomeV2() {
               </p>
             </InView>
 
-            <InView className="v2-fade-up mt-8">
+            <InView className="fade-up mt-8">
               <ol className="grid sm:grid-cols-2 gap-x-6 gap-y-5">
                 {[
                   {
@@ -686,7 +686,7 @@ export default async function HomeV2() {
               </ol>
             </InView>
 
-            <InView className="v2-fade-up mt-10 flex flex-wrap gap-3">
+            <InView className="fade-up mt-10 flex flex-wrap gap-3">
               <Link
                 href="/careers"
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-cheeze-ink text-white text-[14px] font-semibold hover:bg-cheeze-ink-soft transition-colors"
@@ -705,9 +705,9 @@ export default async function HomeV2() {
           </div>
 
           {/* Right column — autoplaying reel */}
-          <InView className="v2-fade-up lg:col-span-4 lg:border-l lg:border-cheeze-purple-deep/15 lg:pl-8">
+          <InView className="fade-up lg:col-span-4 lg:border-l lg:border-cheeze-purple-deep/15 lg:pl-8">
             <div className="text-[10px] tracking-[0.3em] uppercase text-cheeze-olive mb-3 flex items-center gap-2">
-              <span className="v2-pulse-dot" /> Audition reel
+              <span className="pulse-dot" /> Audition reel
             </div>
             <CareersReel
               src="/reels/DQ_oNK3EW_w.mp4"
@@ -735,12 +735,12 @@ export default async function HomeV2() {
         className="bg-cheeze-purple-deep text-cheeze-cream lg:-ml-56 lg:pl-56"
       >
         <div className="mx-auto max-w-[100rem] px-6 py-24 grid lg:grid-cols-12 gap-10 items-end">
-          <InView className="v2-fade-up lg:col-span-7">
+          <InView className="fade-up lg:col-span-7">
             <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-yellow flex items-center gap-2">
-              <span className="v2-pulse-dot" /> Section 05 · Take part
+              <span className="pulse-dot" /> Section 05 · Take part
             </div>
             <h2
-              className="mt-5 text-5xl md:text-6xl tracking-tight leading-[1] text-cheeze-yellow v2-title"
+              className="mt-5 text-5xl md:text-6xl tracking-tight leading-[1] text-cheeze-yellow display-title"
               style={{ fontFamily: "var(--font-display)" }}
             >
               {c("cta.heading.line1")}
@@ -765,7 +765,7 @@ export default async function HomeV2() {
               </Link>
             </div>
           </InView>
-          <InView className="v2-fade-up lg:col-span-5 lg:border-l lg:border-cheeze-cream/15 lg:pl-10 space-y-6">
+          <InView className="fade-up lg:col-span-5 lg:border-l lg:border-cheeze-cream/15 lg:pl-10 space-y-6">
             <ContactRow label="Business" value={c("contact.business")} href={`mailto:${c("contact.business")}`} />
             <ContactRow label="Audition" value={c("contact.audition")} href={`mailto:${c("contact.audition")}`} />
             <ContactRow label="YouTube" value="@CheezeFilmz" href="https://www.youtube.com/@CheezeFilmz" />
@@ -774,22 +774,22 @@ export default async function HomeV2() {
         </div>
       </section>
 
-      <V2Footer isHome />
+      <SiteFooter isHome />
     </main>
   );
 }
 
-// ─── Shared V2 components ────────────────────────────
+// ─── Shared site chrome ────────────────────────────────
 
-// Re-exported as <V2Header /> so the existing `import { V2Header }` call
-// sites across V2 routes keep working. The actual UI now lives in the
-// V2Nav client component — a left side rail on lg+ with IntersectionObserver
+// Re-exported as <SiteHeader /> so the existing `import { SiteHeader }` call
+// sites across routes keep working. The actual UI now lives in the
+// SiteNav client component — a left side rail on lg+ with IntersectionObserver
 // scroll-spy, falling back to a sticky compact top bar on mobile.
-export function V2Header() {
-  return <V2Nav />;
+export function SiteHeader() {
+  return <SiteNav />;
 }
 
-export async function V2Footer({ isHome = false }: { isHome?: boolean } = {}) {
+export async function SiteFooter({ isHome = false }: { isHome?: boolean } = {}) {
   const year = new Date().getFullYear();
   const contentMap = await loadContentMap();
   const c = (key: string) => getContent(contentMap, key);
@@ -963,14 +963,14 @@ export async function V2Footer({ isHome = false }: { isHome?: boolean } = {}) {
           </ul>
         </div>
 
-        {/* Studio info (col-span-4) — 문의 섹션이 v2 home의 상단 contact
+        {/* Studio info (col-span-4) — 문의 섹션이 home의 상단 contact
             섹션과 정확히 같은 정보였어서 중복이었음. 그 자리에 한국 법인
             정보(상호/대표/사업자등록번호 등)를 옮겨 넣었어요. */}
         <div className="md:col-span-4">
           <h4 className="text-[10px] tracking-[0.4em] uppercase text-cheeze-yellow font-bold">
             Studio Info
           </h4>
-          <V2CompanyStrip contentMap={contentMap} />
+          <CompanyStrip contentMap={contentMap} />
         </div>
       </div>
 
@@ -1003,7 +1003,7 @@ export async function V2Footer({ isHome = false }: { isHome?: boolean } = {}) {
 
 /** 한국 푸터 컨벤션 — 상호·대표·사업자등록번호 등을 footer 4-col 안에
  *  맞춰 세로 리스트로. 좁은 영역에 가로 wrap 으로 흩뿌리면 가독성 떨어짐. */
-function V2CompanyStrip({ contentMap }: { contentMap: Map<string, string> }) {
+function CompanyStrip({ contentMap }: { contentMap: Map<string, string> }) {
   const c = (key: string) => getContent(contentMap, key);
   const items = [
     { label: "상호", value: c("company.name") },
@@ -1043,7 +1043,7 @@ function Stat({
   decimals?: number;
 }) {
   return (
-    <InView className="v2-fade-up px-4 first:pl-0">
+    <InView className="fade-up px-4 first:pl-0">
       <div className="text-[28px] md:text-[32px] font-extrabold text-cheeze-ink tracking-tight tabular-nums leading-none">
         <CountUp value={value} suffix={suffix} fallback={fallback} decimals={decimals} duration={1400} />
       </div>
@@ -1094,14 +1094,14 @@ function FilmCard({
 }) {
   return (
     <InView
-      className="v2-fade-up"
+      className="fade-up"
       style={{ transitionDelay: `${delay}ms` } as React.CSSProperties}
     >
       <a
         href={videoId ? `https://www.youtube.com/watch?v=${videoId}` : "https://www.youtube.com/@CheezeFilmz/videos"}
         target="_blank"
         rel="noreferrer"
-        className="group block v2-film"
+        className="group block film"
       >
         <div className="aspect-[3/4] relative overflow-hidden bg-cheeze-charcoal">
           {videoId && (
@@ -1121,7 +1121,7 @@ function FilmCard({
           <div className="absolute inset-x-0 bottom-0 p-4">
             <div className="text-[10px] tracking-[0.3em] uppercase text-cheeze-cream/80">{year}</div>
           </div>
-          <div className="v2-film__hint">
+          <div className="film__hint">
             <span className="text-[11px] tracking-widest uppercase">▸ Watch</span>
           </div>
         </div>

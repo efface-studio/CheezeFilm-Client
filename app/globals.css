@@ -16,7 +16,7 @@
 */
 
 :root {
-  /* Brand palette — original V2 editorial values kept for places we
+  /* Brand palette — original editorial values kept for places we
      still call them out as accents (logo chip, footer band, etc.). The
      Toss-redesign pass introduced new semantic neutrals below that
      replace cream/ink/olive across most of the site. */
@@ -116,27 +116,27 @@ body {
   overflow-x: hidden;
 }
 
-/* Overscroll handling for V2 routes.
+/* Overscroll handling for routes.
  *
  * Rubber-band exposes the <html> background as a colored stripe past
  * either edge of the page. We tried two prior fixes — both failed:
  *   1. `html:has(main.editorial)` swap to purple — Tailwind v4's
  *      Lightning CSS silently dropped the `:has()` rule from the
  *      production bundle (CSS chunks didn't contain it).
- *   2. `html.v2-editorial { background: purple }` — landed, but the
+ *   2. `html.editorial-canvas { background: purple }` — landed, but the
  *      *top* rubber-band also turned purple, which broke the cream
  *      hero band.
  *
- * Cleanest answer: disable the rubber-band entirely on V2 routes.
+ * Cleanest answer: disable the rubber-band entirely on routes.
  * Editorial sites do this all the time — the page stops crisply at
  * the footer instead of revealing canvas. Cream stays cream, purple
  * stays purple, no flash on either end.
  *
  * `overscroll-behavior` applied to <html> turns off the bounce for
- * the document. V2Nav toggles `.v2-editorial` on mount, so admin
+ * the document. V2Nav toggles `.editorial-canvas` on mount, so admin
  * and other surfaces keep their native bounce.
  */
-html.v2-editorial {
+html.editorial-canvas {
   overscroll-behavior-y: none;
 }
 
@@ -378,13 +378,13 @@ body {
   ::view-transition-new(root) { animation: none; }
 }
 
-/* ─── V2 editorial animations ───────────────────────────────
+/* ─── editorial animations ───────────────────────────────
    Subtle, magazine-grade motion. No bouncy springs or playful jelly —
    firm easing, longer durations, content-led reveals. All triggered by
    our <Reveal> component setting data-revealed="true". */
 
 /* Vertical rule that grows down from its anchor — used as section markers. */
-.v2-vrule {
+.vrule {
   display: block;
   width: 1px;
   background: var(--cheeze-purple-deep);
@@ -392,10 +392,10 @@ body {
   transform: scaleY(0);
   transition: transform 700ms cubic-bezier(0.65, 0, 0.35, 1) 100ms;
 }
-.v2-vrule[data-revealed="true"] { transform: scaleY(1); }
+.vrule[data-revealed="true"] { transform: scaleY(1); }
 
 /* Horizontal rule that draws left-to-right. */
-.v2-hrule {
+.hrule {
   display: block;
   height: 1px;
   background: currentColor;
@@ -403,57 +403,57 @@ body {
   transform: scaleX(0);
   transition: transform 800ms cubic-bezier(0.65, 0, 0.35, 1) 100ms;
 }
-.v2-hrule[data-revealed="true"] { transform: scaleX(1); }
+.hrule[data-revealed="true"] { transform: scaleX(1); }
 
 /* Editorial title underline: removed in the Toss redesign — the gold
    strike-through reads as theatrical chrome. Rule is kept as no-op so
-   any `.v2-title` JSX still mounts cleanly. */
-.v2-title { display: inline-block; }
-.v2-title::after { display: none; }
+   any `.display-title` JSX still mounts cleanly. */
+.display-title { display: inline-block; }
+.display-title::after { display: none; }
 
 /* Image mask reveal — opens like a curtain on scroll-in.
    The wrapper clips, and the inner img scales down slightly so the
    final motion is "image pushes open the mask".
 
    NOTE: previous version put `clip-path: inset(0 0 100% 0)` on the base
-   `.v2-mask` and unrolled it via `[data-revealed="true"]`. Under Tailwind
+   `.mask-reveal` and unrolled it via `[data-revealed="true"]`. Under Tailwind
    v4's @layer ordering that override silently lost the cascade and the
    element stayed permanently hidden. The current arrangement is
-   inverted — base state is visible, and `.v2-mask-pre[data-revealed]`
+   inverted — base state is visible, and `.mask-pre[data-revealed]`
    layered ON TOP via the InView class flip closes it briefly before the
    intersection observer opens it. */
-.v2-mask {
+.mask-reveal {
   overflow: hidden;
   transition: clip-path 1000ms cubic-bezier(0.65, 0, 0.35, 1) 60ms;
 }
-.v2-mask > img,
-.v2-mask > .v2-mask-img {
+.mask-reveal > img,
+.mask-reveal > .mask-img {
   transition: transform 1400ms cubic-bezier(0.2, 0.7, 0.2, 1) 60ms;
 }
-.v2-mask:not([data-revealed="true"]) {
+.mask-reveal:not([data-revealed="true"]) {
   clip-path: inset(0 0 100% 0);
 }
-.v2-mask:not([data-revealed="true"]) > img,
-.v2-mask:not([data-revealed="true"]) > .v2-mask-img {
+.mask-reveal:not([data-revealed="true"]) > img,
+.mask-reveal:not([data-revealed="true"]) > .mask-img {
   transform: scale(1.08);
 }
 
-/* Block fade-up — preferred over generic .reveal in V2 (longer, firmer). */
-.v2-fade-up {
+/* Block fade-up — preferred over generic .reveal in editorial pages (longer, firmer). */
+.fade-up {
   opacity: 0;
   transform: translateY(28px);
   transition:
     opacity 800ms cubic-bezier(0.2, 0.7, 0.2, 1),
     transform 800ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
-.v2-fade-up[data-revealed="true"] {
+.fade-up[data-revealed="true"] {
   opacity: 1;
   transform: translateY(0);
 }
 
 /* Word-level stagger for hero titles. Each child <span> picks its own
    delay via --li. Pair with the Stagger client component (mode="word"). */
-.v2-stagger > * {
+.stagger > * {
   display: inline-block;
   opacity: 0;
   transform: translateY(0.5em);
@@ -462,57 +462,63 @@ body {
     transform 700ms cubic-bezier(0.2, 0.7, 0.2, 1);
   transition-delay: calc(var(--li, 0) * 55ms);
 }
-.v2-stagger[data-revealed="true"] > * {
+.stagger[data-revealed="true"] > * {
   opacity: 1;
   transform: translateY(0);
 }
 
-/* Character-level "typewriter" stagger — same wiring but tighter
-   per-character delays and a much shorter per-char fade, so each
-   syllable feels like it's been *struck* onto the page instead of
-   gently rising into place. Pair with <StaggerText mode="character">. */
-.v2-typewriter > * {
+/* Character-level "typewriter" stagger — same wiring as .stagger but
+   per-character (not per-word). Each syllable rises and fades in
+   sequence so the title reads as if it's being *typed* onto the page.
+   Pair with <StaggerText mode="character">.
+
+   Timings are deliberately slow:
+   - 260ms per-char fade so each glyph eases in (was 140ms — too snappy).
+   - 110ms per-char delay so the whole "스토리를 굽는 사람들." takes
+     ~1.5s to land (was 70ms; the line resolved too quickly to read as
+     a deliberate type-in). */
+.typewriter > * {
   display: inline-block;
   opacity: 0;
-  transform: translateY(0.15em);
+  transform: translateY(0.18em);
   transition:
-    opacity 140ms ease-out,
-    transform 140ms ease-out;
-  transition-delay: calc(var(--li, 0) * 70ms);
+    opacity 260ms ease-out,
+    transform 260ms ease-out;
+  transition-delay: calc(var(--li, 0) * 110ms);
 }
-.v2-typewriter[data-revealed="true"] > * {
+.typewriter[data-revealed="true"] > * {
   opacity: 1;
   transform: translateY(0);
 }
 
 /* Auto-scrolling marquee — same animation as v1's but renamed for clarity.
    Use on a fixed-width track inside an overflow-hidden parent. */
-@keyframes v2-marquee {
+@keyframes marquee {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
-.v2-marquee {
+.marquee {
   display: inline-flex;
   gap: 4rem;
-  animation: v2-marquee 35s linear infinite;
+  animation: marquee 35s linear infinite;
   white-space: nowrap;
   will-change: transform;
 }
-.v2-marquee-stage:hover .v2-marquee { animation-play-state: paused; }
+.marquee-stage:hover .marquee { animation-play-state: paused; }
 
 /* Film card hover — soft zoom + bottom-bar slide up */
-.v2-film {
+.film {
   position: relative;
   overflow: hidden;
   isolation: isolate;
 }
-.v2-film img {
+.film img {
   transition: transform 700ms cubic-bezier(0.2, 0.7, 0.2, 1),
               filter 500ms ease;
   will-change: transform;
 }
-.v2-film:hover img { transform: scale(1.06); filter: brightness(1.06); }
-.v2-film__hint {
+.film:hover img { transform: scale(1.06); filter: brightness(1.06); }
+.film__hint {
   position: absolute;
   inset-inline: 0;
   bottom: 0;
@@ -524,40 +530,40 @@ body {
   transition: transform 500ms cubic-bezier(0.2, 0.7, 0.2, 1),
               opacity 400ms ease;
 }
-.v2-film:hover .v2-film__hint {
+.film:hover .film__hint {
   transform: translateY(0);
   opacity: 1;
 }
 
 /* A pulsing accent dot used in nav active states or "live" markers */
-@keyframes v2-pulse-dot {
+@keyframes pulse-dot {
   0%, 100% { box-shadow: 0 0 0 0 rgba(244,194,53,0.6); }
   50%      { box-shadow: 0 0 0 8px rgba(244,194,53,0); }
 }
-.v2-pulse-dot {
+.pulse-dot {
   display: inline-block;
   width: 6px; height: 6px;
   border-radius: 999px;
   background: var(--cheeze-yellow);
-  animation: v2-pulse-dot 1800ms ease-out infinite;
+  animation: pulse-dot 1800ms ease-out infinite;
 }
 
 /* Same pulse ring but smaller — used inside the rail CTA's status
    pip so the dot keeps its 1.5px size while the radiating ring is
    still readable against the deep-purple background. */
-.v2-cta-pulse {
-  animation: v2-pulse-dot 1800ms ease-out infinite;
+.cta-pulse {
+  animation: pulse-dot 1800ms ease-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .v2-vrule, .v2-hrule, .v2-mask, .v2-fade-up,
-  .v2-stagger > *, .v2-typewriter > *, .v2-title::after {
+  .vrule, .hrule, .mask-reveal, .fade-up,
+  .stagger > *, .typewriter > *, .display-title::after {
     transition: none !important;
     transform: none !important;
     clip-path: none !important;
     opacity: 1 !important;
   }
-  .v2-marquee, .v2-pulse-dot, .v2-cta-pulse { animation: none !important; }
+  .marquee, .pulse-dot, .cta-pulse { animation: none !important; }
 }
 
 /* Vignette: removed in the Toss redesign (the projected-screen feel
@@ -621,29 +627,29 @@ body {
   z-index: 1;
 }
 
-/* ── V2 home scroll snap ─────────────────────────────────────
+/* ── home scroll snap ─────────────────────────────────────
    Each top-level <section> on `/` becomes a snap stop so the
    page rests on a clean boundary as the user scrolls. `proximity`
    keeps it gentle — only snaps when the user releases near a
    section edge, never fights mid-section scrolling for tall
    sections.
 
-   The `.v2-snap` class is toggled on <html> by a tiny client
-   component on the V2 home page (V2SnapScroller). We use a class
+   The `.snap-scroll` class is toggled on <html> by a tiny client
+   component on the home page (V2SnapScroller). We use a class
    rather than `html:has(...)` because Tailwind v4's CSS pipeline
    silently strips `:has()` rules in some configurations. */
-.v2-snap {
+.snap-scroll {
   scroll-snap-type: y proximity;
 }
-.v2-snap main[data-v2-home] > section {
+.snap-scroll main[data-site-home] > section {
   scroll-snap-align: start;
   scroll-snap-stop: normal;
 }
 /* Touch + reduced-motion: scroll-snap interacts badly with momentum
    scrolling on phones, and reduced-motion users prefer linear scroll. */
 @media (pointer: coarse), (prefers-reduced-motion: reduce) {
-  .v2-snap,
-  .v2-snap main[data-v2-home] > section {
+  .snap-scroll,
+  .snap-scroll main[data-site-home] > section {
     scroll-snap-type: none;
     scroll-snap-align: none;
   }
@@ -667,7 +673,7 @@ body {
    *arrives* gently rather than snapping into place).
 
    `will-change: transform` keeps the layer promoted on GPU so the slide
-   stays buttery on lower-end devices. The `.v2-film img` hover scale
+   stays buttery on lower-end devices. The `.film img` hover scale
    still applies to each <Image> child but doesn't interfere — hover
    targets the inner img, the slide targets the outer track. */
 .hero-cover-track {
@@ -680,10 +686,10 @@ body {
   }
 }
 
-/* V2 nav rail — pending pulse used by `LinkPending` while Next is
+/* Site nav rail — pending pulse used by `LinkPending` while Next is
    transitioning to a new route. Pulses yellow opacity so the user sees
    "click registered" even on slow dev routes. */
-@keyframes v2-link-pending {
+@keyframes link-pending {
   0%, 100% { opacity: 0.3; }
   50%      { opacity: 1; }
 }

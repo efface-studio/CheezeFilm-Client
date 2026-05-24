@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { V2Header, V2Footer } from "../../page";
+import { SiteHeader, SiteFooter } from "../../page";
 import { InView } from "@/components/Stagger";
 import { findMember, getMembers } from "@/lib/members";
 import { storageUrl } from "@/lib/db";
@@ -36,7 +36,7 @@ export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
     return all.map((m) => ({ slug: m.slug }));
   } catch (err) {
     console.warn(
-      "[v2/members/[slug]] skipping prerender — getMembers failed:",
+      "[members/[slug]] skipping prerender — getMembers failed:",
       err,
     );
     return [];
@@ -116,13 +116,13 @@ export default async function MemberDetailPage({
 
   return (
     <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial flex flex-col">
-      <V2Header />
+      <SiteHeader />
 
       {/* ── HERO ─────────────────────────────────────── */}
       <section className="border-b border-cheeze-purple-deep/15">
         <div className="mx-auto max-w-[100rem] px-6 py-16 grid lg:grid-cols-12 gap-x-10 gap-y-10">
           {/* Crumb + portrait */}
-          <InView className="v2-fade-up lg:col-span-5">
+          <InView className="fade-up lg:col-span-5">
             <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive mb-5">
               <Link href="/members" className="hover:text-cheeze-purple">
                 ← Cast
@@ -132,7 +132,7 @@ export default async function MemberDetailPage({
                 No.{String(idx + 1).padStart(2, "0")}
               </span>
             </div>
-            <div className="v2-film aspect-[3/4] relative overflow-hidden bg-cheeze-purple-deep">
+            <div className="film aspect-[3/4] relative overflow-hidden bg-cheeze-purple-deep">
               {photo ? (
                 <Image
                   src={photo}
@@ -159,7 +159,7 @@ export default async function MemberDetailPage({
 
           {/* Copy */}
           <div className="lg:col-span-7 flex flex-col">
-            <InView className="v2-fade-up">
+            <InView className="fade-up">
               <div className="text-[11px] tracking-[0.45em] uppercase text-cheeze-purple mb-3">
                 {member.roleLabel}
                 {member.uncertain && (
@@ -249,7 +249,7 @@ export default async function MemberDetailPage({
       {appearances.length > 0 && (
         <section className="border-b border-cheeze-purple-deep/15">
           <div className="mx-auto max-w-[100rem] px-6 py-16">
-            <InView className="v2-fade-up">
+            <InView className="fade-up">
               <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">
                 — Appearances
               </div>
@@ -271,7 +271,7 @@ export default async function MemberDetailPage({
                   href={v.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="group block v2-film"
+                  className="group block film"
                 >
                   <div className="aspect-[16/10] relative overflow-hidden bg-cheeze-charcoal">
                     <Image
@@ -349,7 +349,7 @@ export default async function MemberDetailPage({
         </div>
       </section>
 
-      <V2Footer />
+      <SiteFooter />
     </main>
   );
 }

@@ -14,7 +14,7 @@
  *     reading as the studio "굽는 중" (literally "baking"),
  *   - a small status line + helper sit below.
  */
-export default function V2Loading() {
+export default function SiteLoading() {
   return (
     <main className="min-h-screen bg-white text-cheeze-ink flex flex-col items-center justify-center px-6">
       {/* Logo + halo. The halos are absolutely-positioned siblings that
@@ -24,14 +24,14 @@ export default function V2Loading() {
       <div className="relative w-20 h-20 grid place-items-center">
         <span
           aria-hidden
-          className="absolute inset-0 rounded-3xl bg-cheeze-yellow/40 v2-loading-halo"
+          className="absolute inset-0 rounded-3xl bg-cheeze-yellow/40 loading-halo"
         />
         <span
           aria-hidden
-          className="absolute inset-0 rounded-3xl bg-cheeze-yellow/40 v2-loading-halo"
+          className="absolute inset-0 rounded-3xl bg-cheeze-yellow/40 loading-halo"
           style={{ animationDelay: "700ms" }}
         />
-        <div className="relative w-16 h-16 rounded-3xl bg-cheeze-purple overflow-hidden shadow-lg shadow-cheeze-purple/20 v2-loading-breathe">
+        <div className="relative w-16 h-16 rounded-3xl bg-cheeze-purple overflow-hidden shadow-lg shadow-cheeze-purple/20 loading-breathe">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/cheeze-logo.png"
@@ -52,7 +52,7 @@ export default function V2Loading() {
           {[0, 1, 2].map((i) => (
             <span
               key={i}
-              className="block w-1.5 h-1.5 rounded-full bg-cheeze-purple/50 v2-loading-dot"
+              className="block w-1.5 h-1.5 rounded-full bg-cheeze-purple/50 loading-dot"
               style={{ animationDelay: `${i * 150}ms` }}
             />
           ))}
@@ -66,35 +66,35 @@ export default function V2Loading() {
       </div>
 
       <style>{`
-        @keyframes v2-loading-halo {
+        @keyframes loading-halo {
           0%   { transform: scale(0.92); opacity: 0; }
           25%  { opacity: 0.55; }
           100% { transform: scale(1.9);  opacity: 0; }
         }
-        .v2-loading-halo {
-          animation: v2-loading-halo 1800ms cubic-bezier(0.22, 0.8, 0.4, 1) infinite;
+        .loading-halo {
+          animation: loading-halo 1800ms cubic-bezier(0.22, 0.8, 0.4, 1) infinite;
         }
 
-        @keyframes v2-loading-breathe {
+        @keyframes loading-breathe {
           0%, 100% { transform: scale(1); }
           50%      { transform: scale(1.03); }
         }
-        .v2-loading-breathe {
-          animation: v2-loading-breathe 1800ms cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        .loading-breathe {
+          animation: loading-breathe 1800ms cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
-        @keyframes v2-loading-dot {
+        @keyframes loading-dot {
           0%, 80%, 100% { transform: translateY(0);    opacity: 0.4; }
           40%           { transform: translateY(-4px); opacity: 1;   }
         }
-        .v2-loading-dot {
-          animation: v2-loading-dot 1100ms ease-in-out infinite;
+        .loading-dot {
+          animation: loading-dot 1100ms ease-in-out infinite;
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .v2-loading-halo,
-          .v2-loading-breathe,
-          .v2-loading-dot {
+          .loading-halo,
+          .loading-breathe,
+          .loading-dot {
             animation: none !important;
           }
         }

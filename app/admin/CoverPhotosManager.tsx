@@ -10,11 +10,11 @@ type Cover = { name: string; url: string; size: number };
 const DEFAULT_MAX_COVERS = 10;
 
 /**
- * Admin UI for V2 hero cover photos.
+ * Admin UI for hero cover photos.
  *
  * Reads /api/admin/covers for the current list, lets the admin drag-drop
  * (or click to browse) new photos, and delete individual ones. Files land
- * in /public/covers/ and the public V2 home auto-detects them on its next
+ * in /public/covers/ and the public home auto-detects them on its next
  * request — no rebuild needed.
  */
 export default function CoverPhotosManager() {
@@ -177,7 +177,7 @@ export default function CoverPhotosManager() {
           <div className="text-sm text-cheeze-ink-soft">불러오는 중…</div>
         ) : covers.length === 0 ? (
           <div className="text-sm text-cheeze-ink-soft border border-cheeze-purple-deep/10 rounded-md p-6 text-center bg-white">
-            아직 올라온 사진이 없어요. 위에서 업로드하면 V2 홈에 바로 뜹니다.
+            아직 올라온 사진이 없어요. 위에서 업로드하면 홈에 바로 뜹니다.
           </div>
         ) : (
           <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">

@@ -24,7 +24,7 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
  * Vercel doesn't propagate secrets unless we explicitly add them per
  * branch). When this returns false, callers should return an "empty"
  * result instead of throwing — that lets Next.js still prerender every
- * static V2 page with registry fallbacks.
+ * static page with registry fallbacks.
  */
 export function hasSupabaseServerEnv(): boolean {
   return Boolean(SUPABASE_URL && SERVICE_KEY);

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { getAllVideos } from "@/lib/youtube";
-import { V2Header, V2Footer } from "../page";
+import { SiteHeader, SiteFooter } from "../page";
 import { InView } from "@/components/Stagger";
-import VideosV2Grid from "./VideosV2Grid";
+import VideosGrid from "./VideosGrid";
 
 export const revalidate = 3600;
 export const metadata = {
@@ -22,7 +22,7 @@ export const metadata = {
 
 type SearchParams = Promise<{ kind?: string }>;
 
-export default async function V2VideosPage({ searchParams }: { searchParams: SearchParams }) {
+export default async function VideosPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const initialKind: "longform" | "shorts" =
     params.kind === "shorts" ? "shorts" : "longform";
@@ -30,17 +30,17 @@ export default async function V2VideosPage({ searchParams }: { searchParams: Sea
 
   return (
     <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial flex flex-col">
-      <V2Header />
+      <SiteHeader />
 
       <section className="border-b border-cheeze-purple-deep/15">
         <div className="mx-auto max-w-[100rem] px-6 py-16 grid lg:grid-cols-12 gap-x-10 gap-y-8 items-end">
-          <InView className="v2-fade-up lg:col-span-2">
+          <InView className="fade-up lg:col-span-2">
             <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">— Filmography</div>
             <div className="mt-2 text-[3rem] leading-none text-cheeze-purple" style={{ fontFamily: "var(--font-display)" }}>
               02
             </div>
           </InView>
-          <InView className="v2-fade-up v2-title lg:col-span-7">
+          <InView className="fade-up display-title lg:col-span-7">
             <h1
               className="text-5xl md:text-7xl tracking-[-0.02em] leading-[0.95]"
               style={{ fontFamily: "var(--font-display)" }}
@@ -51,7 +51,7 @@ export default async function V2VideosPage({ searchParams }: { searchParams: Sea
               매주 굽고 있는 모든 한 컷. 검색해서 찾아보세요.
             </p>
           </InView>
-          <InView className="v2-fade-up lg:col-span-3 lg:text-right">
+          <InView className="fade-up lg:col-span-3 lg:text-right">
             <div className="flex flex-col lg:items-end gap-1 text-sm">
               <span>
                 <span
@@ -85,7 +85,7 @@ export default async function V2VideosPage({ searchParams }: { searchParams: Sea
       </section>
 
       <section className="mx-auto max-w-[100rem] px-6 py-14">
-        <VideosV2Grid longform={longform} shorts={shorts} initialKind={initialKind} />
+        <VideosGrid longform={longform} shorts={shorts} initialKind={initialKind} />
       </section>
 
       {source === "rss" && (
@@ -108,7 +108,7 @@ export default async function V2VideosPage({ searchParams }: { searchParams: Sea
         </section>
       )}
 
-      <V2Footer />
+      <SiteFooter />
     </main>
   );
 }

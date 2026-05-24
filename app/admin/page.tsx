@@ -171,7 +171,7 @@ export default async function AdminPage({
               first so admins see the "live" source at the top. */}
           <SectionHeader
             title="표지 사진"
-            subtitle="V2 홈 hero에서 2초마다 넘어가는 가로형 사진들. 비어있으면 아래 표지 영상이 폴백으로 떠요."
+            subtitle="홈 hero에서 2초마다 넘어가는 가로형 사진들. 비어있으면 아래 표지 영상이 폴백으로 떠요."
           >
             <CoverPhotosManager />
           </SectionHeader>

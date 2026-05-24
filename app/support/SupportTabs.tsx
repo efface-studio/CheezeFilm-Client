@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import V2AuditionForm from "./V2AuditionForm";
-import V2FanForm from "./V2FanForm";
+import AuditionForm from "./AuditionForm";
+import FanForm from "./FanForm";
 
 type Tab = "audition" | "fan";
 
@@ -24,7 +24,7 @@ export type CastChoice = {
   roleLabel: string;
 };
 
-export default function V2SupportTabs({
+export default function SupportTabs({
   initialTab,
   favoriteCastChoices,
 }: {
@@ -56,9 +56,9 @@ export default function V2SupportTabs({
       </div>
 
       {tab === "audition" ? (
-        <V2AuditionForm onSwitchToFan={() => setTab("fan")} />
+        <AuditionForm onSwitchToFan={() => setTab("fan")} />
       ) : (
-        <V2FanForm castChoices={favoriteCastChoices} />
+        <FanForm castChoices={favoriteCastChoices} />
       )}
     </div>
   );

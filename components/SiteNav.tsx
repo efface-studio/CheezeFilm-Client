@@ -21,14 +21,14 @@ function LinkPending() {
       className="absolute -left-7 top-1/2 -translate-y-1/2 h-px w-7 bg-cheeze-yellow"
       style={{
         opacity: 0,
-        animation: "v2-link-pending 1s ease-in-out 120ms infinite",
+        animation: "link-pending 1s ease-in-out 120ms infinite",
       }}
     />
   );
 }
 
 /**
- * V2 navigation — left side rail on lg+, compact top bar on mobile.
+ * Editorial navigation — left side rail on lg+, compact top bar on mobile.
  *
  * Replaces the previous full-width horizontal top bar. The side rail
  *  - sits flush against the left edge (no border on desktop, blends into the
@@ -52,7 +52,7 @@ type NavItem = {
   routeMatch?: string;
 };
 
-// The rail is the "table of contents" for the V2 home spread, so every
+// The rail is the "table of contents" for the home spread, so every
 // item scrolls within `/` instead of jumping to a separate route. The
 // dedicated detail pages (`/videos`, `/members`, `/careers`)
 // are still reachable — each home section has a "더 보기 →" CTA into
@@ -88,7 +88,7 @@ function deriveOpenLabel(roleTypes: Set<OpenRoleType>): string {
   return "";
 }
 
-export default function V2Nav() {
+export default function SiteNav() {
   const pathname = usePathname();
   const isHome = pathname === "/";
   const [activeId, setActiveId] = useState<NavItem["sectionId"] | null>(null);
@@ -102,17 +102,17 @@ export default function V2Nav() {
   // have flipped a listing open in another tab).
   const [openLabel, setOpenLabel] = useState<string | null>(null);
 
-  // Mark <html> as a V2 editorial route while mounted. Used by globals.css
+  // Mark <html> as a editorial route while mounted. Used by globals.css
   // to swap the canvas background to purple-deep so bottom rubber-band
   // doesn't expose a cream stripe under the footer. We can't use
   // `html:has(main.editorial)` — Tailwind v4's Lightning CSS silently
   // drops the `:has()` rule from the build — so we toggle a class
-  // instead. V2Nav is rendered on every V2 page, so this fires on
+  // instead. SiteNav is rendered on every page, so this fires on
   // home + every subpage.
   useEffect(() => {
     const html = document.documentElement;
-    html.classList.add("v2-editorial");
-    return () => html.classList.remove("v2-editorial");
+    html.classList.add("editorial-canvas");
+    return () => html.classList.remove("editorial-canvas");
   }, []);
 
   useEffect(() => {
@@ -149,7 +149,7 @@ export default function V2Nav() {
       setActiveId(null);
       return;
     }
-    // All four sectionIds have a matching element on the V2 home: #issue,
+    // All four sectionIds have a matching element on the home: #issue,
     // #films, #cast are anchor sections, and #careers is a teaser band
     // that links out to the full /careers page. With careers in the
     // list the rail highlights "04 채용" as the user scrolls past it.
@@ -384,7 +384,7 @@ export default function V2Nav() {
               <div className="flex items-center gap-1.5 text-[11px] text-cheeze-cream/75">
                 <span
                   aria-hidden
-                  className="block w-1.5 h-1.5 rounded-full bg-cheeze-yellow v2-cta-pulse"
+                  className="block w-1.5 h-1.5 rounded-full bg-cheeze-yellow cta-pulse"
                 />
                 {openLabel}
               </div>
@@ -482,7 +482,7 @@ export default function V2Nav() {
               onClick={() => setMobileOpen((v) => !v)}
               className="inline-flex items-center justify-center w-10 h-10 rounded-xl text-cheeze-ink hover:bg-toss-50 active:bg-toss-100 transition-colors"
               aria-expanded={mobileOpen}
-              aria-controls="v2-mobile-menu"
+              aria-controls="mobile-menu"
               aria-label="메뉴"
             >
               <svg
@@ -512,7 +512,7 @@ export default function V2Nav() {
 
         {/* Collapsible nav row */}
         <nav
-          id="v2-mobile-menu"
+          id="mobile-menu"
           hidden={!mobileOpen}
           className="border-t border-cheeze-purple-deep/15 bg-cheeze-cream/95"
         >

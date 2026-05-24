@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import Confetti from "@/components/Confetti";
-import type { CastChoice } from "./V2SupportTabs";
+import type { CastChoice } from "./SupportTabs";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -20,7 +20,7 @@ type Status = "idle" | "submitting" | "success" | "error";
  * The API still stores under `favorite_work` (no DB migration) — we
  * just write the chosen member's name into that field.
  */
-export default function V2FanForm({
+export default function FanForm({
   castChoices,
 }: {
   castChoices: CastChoice[];

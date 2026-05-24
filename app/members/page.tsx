@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { V2Header, V2Footer } from "../page";
+import { SiteHeader, SiteFooter } from "../page";
 import { InView } from "@/components/Stagger";
 import { getMembers } from "@/lib/members";
 import { storageUrl } from "@/lib/db";
@@ -29,21 +29,21 @@ function photoUrlFor(photoPath?: string) {
   return photoPath ? storageUrl("members", photoPath) : null;
 }
 
-export default async function V2MembersPage() {
+export default async function MembersPage() {
   const members = await getMembers();
   return (
     <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial flex flex-col">
-      <V2Header />
+      <SiteHeader />
 
       <section className="border-b border-cheeze-purple-deep/15">
         <div className="mx-auto max-w-[100rem] px-6 py-16 grid lg:grid-cols-12 gap-x-10 gap-y-8">
-          <InView className="v2-fade-up lg:col-span-2">
+          <InView className="fade-up lg:col-span-2">
             <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">— Cast & Crew</div>
             <div className="mt-2 text-[3rem] leading-none text-cheeze-purple" style={{ fontFamily: "var(--font-display)" }}>
               03
             </div>
           </InView>
-          <InView className="v2-fade-up v2-title lg:col-span-7">
+          <InView className="fade-up display-title lg:col-span-7">
             <h1
               className="text-5xl md:text-7xl tracking-[-0.02em] leading-[0.95]"
               style={{ fontFamily: "var(--font-display)" }}
@@ -54,7 +54,7 @@ export default async function V2MembersPage() {
               카메라 앞과 뒤, 함께 한 컷을 굽는 사람들. {members.length}명의 명단.
             </p>
           </InView>
-          <InView className="v2-fade-up lg:col-span-3 lg:text-right text-xs text-cheeze-olive tracking-widest uppercase leading-relaxed">
+          <InView className="fade-up lg:col-span-3 lg:text-right text-xs text-cheeze-olive tracking-widest uppercase leading-relaxed">
             정보는 공식 인스타그램·위키트리·위키백과를 교차 확인했어요. 잘못된 부분은 {" "}
             <Link href="/support?tab=fan" className="text-cheeze-purple underline-offset-4 hover:underline">
               여기로
@@ -72,7 +72,7 @@ export default async function V2MembersPage() {
               <InView
                 key={m.slug}
                 as="article"
-                className="v2-fade-up group"
+                className="fade-up group"
                 style={{ transitionDelay: `${(i % 3) * 80}ms` } as React.CSSProperties}
               >
                 {/* Card is now a Link to the member's detail page — the
@@ -83,7 +83,7 @@ export default async function V2MembersPage() {
                   href={`/members/${encodeURIComponent(m.slug)}`}
                   className="block"
                 >
-                  <div className="v2-film aspect-[3/4] bg-cheeze-purple-deep relative overflow-hidden">
+                  <div className="film aspect-[3/4] bg-cheeze-purple-deep relative overflow-hidden">
                     {photo ? (
                       <Image
                         src={photo}
@@ -153,7 +153,7 @@ export default async function V2MembersPage() {
         </div>
       </section>
 
-      <V2Footer />
+      <SiteFooter />
     </main>
   );
 }
