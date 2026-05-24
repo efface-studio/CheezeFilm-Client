@@ -74,19 +74,44 @@ function resolveMemberPhoto(photoPath: string | undefined) {
 }
 
 /**
- * Audition profile photos changed storage strategy mid-flight:
- *   - Older entries: `photo_url` is a full https URL (legacy public
- *     bucket / direct upload). Display as-is.
- *   - Newer entries (post-security pass): `photo_url` is a bucket-
- *     relative key like "1716567000-abc12345.jpg". Build the public
- *     URL via `storageUrl("auditions", key)`.
- * This helper covers both so the admin always shows the actual face,
- * not a broken-image icon pointing at a relative path.
+ * Audition photos resolver. The `auditions` Supabase Storage bucket is
+ * **private** — public URLs return 400 — so we issue a short-lived
+ * signed URL via the service-role client. The bucket policy spec
+ * (supabase/schema.sql) explicitly notes it private so applicant
+ * photos aren't world-readable.
+ *
+ * Two shapes have ever been stored in `photo_url`:
+ *   - legacy entries: full `https://…` URL (some were uploaded to
+ *     the public bucket before the security pass) → return as-is.
+ *   - current entries: bucket-relative key like
+ *     "1716567000-abc12345.jpg" → mint a signed URL for it.
+ *
+ * Returns `null` when nothing is stored, OR when the signed URL
+ * mint fails (we'd rather show the "사진 없음" placeholder than a
+ * broken-image icon).
  */
-function resolveAuditionPhoto(stored: string | null | undefined): string | null {
+async function resolveAuditionPhoto(
+  stored: string | null | undefined,
+): Promise<string | null> {
   if (!stored) return null;
   if (stored.startsWith("http://") || stored.startsWith("https://")) return stored;
-  return storageUrl("auditions", stored);
+  try {
+    const sb = serverClient();
+    // 1-hour TTL is plenty for admin browsing — the dossier panel
+    // doesn't stay open that long and revisiting fires a fresh
+    // server render anyway.
+    const { data, error } = await sb.storage
+      .from("auditions")
+      .createSignedUrl(stored, 3600);
+    if (error || !data?.signedUrl) {
+      console.warn("[admin] signed URL failed for", stored, error?.message);
+      return null;
+    }
+    return data.signedUrl;
+  } catch (err) {
+    console.warn("[admin] signed URL threw for", stored, err);
+    return null;
+  }
 }
 
 export default async function AdminPage({
@@ -591,11 +616,12 @@ function AuditionsTable({ items }: { items: Audition[] }) {
  *   - Bottom: full-width status actions bar
  */
 async function AuditionDetail({ audition: a }: { audition: Audition }) {
-  // listingSummary hits Supabase, so it returns a Promise. The previous
-  // sync version stored the Promise in `listing` and React happened to
-  // print [object Promise] / nothing depending on the moment — fixed
-  // by awaiting it now.
-  const listing = await listingSummary(a.listing_id);
+  // listingSummary + photo URL both hit Supabase, so we run them in
+  // parallel — saves one network roundtrip per expanded row.
+  const [listing, photoSrc] = await Promise.all([
+    listingSummary(a.listing_id),
+    resolveAuditionPhoto(a.photo_url),
+  ]);
   const submitted = new Date(a.created_at);
   const submittedStr = `${submitted.getFullYear()}.${String(submitted.getMonth() + 1).padStart(2, "0")}.${String(submitted.getDate()).padStart(2, "0")} ${String(submitted.getHours()).padStart(2, "0")}:${String(submitted.getMinutes()).padStart(2, "0")}`;
   return (
@@ -604,9 +630,6 @@ async function AuditionDetail({ audition: a }: { audition: Audition }) {
         {/* ── Left rail ── */}
         <aside className="space-y-4">
           {/* Photo card */}
-          {(() => {
-            const photoSrc = resolveAuditionPhoto(a.photo_url);
-            return (
           <div className="relative w-full max-w-[200px]">
             {photoSrc ? (
               <a
@@ -631,8 +654,6 @@ async function AuditionDetail({ audition: a }: { audition: Audition }) {
               #{String(a.id).padStart(4, "0")}
             </div>
           </div>
-            );
-          })()}
 
           {/* Facts — Toss-style soft card. Dropped the bordered table
               look, swapped the broken ▣-prefixed purple link for a
