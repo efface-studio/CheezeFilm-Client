@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { getAllVideos } from "@/lib/youtube";
 import { SiteHeader, SiteFooter } from "../page";
 import { InView } from "@/components/Stagger";
@@ -26,12 +27,36 @@ export default async function VideosPage({ searchParams }: { searchParams: Searc
   const params = await searchParams;
   const initialKind: "longform" | "shorts" =
     params.kind === "shorts" ? "shorts" : "longform";
-  const { longform, shorts, source, totalCount } = await getAllVideos();
 
+  // The page shell renders immediately. Everything that requires
+  // `getAllVideos()` (slow on cold serverless — ~500 YouTube probes)
+  // is wrapped in a Suspense boundary so it streams in. User sees the
+  // header + filmography heading right away instead of a full-page
+  // loading overlay for several seconds.
   return (
     <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial flex flex-col">
       <SiteHeader />
 
+      <Suspense fallback={<VideosShellSkeleton />}>
+        <VideosShell initialKind={initialKind} />
+      </Suspense>
+
+      <SiteFooter />
+    </main>
+  );
+}
+
+/** Renders the hero stats + grid + RSS note. Awaits the slow video
+    fetch. Wrapped in <Suspense> by the page so it streams. */
+async function VideosShell({
+  initialKind,
+}: {
+  initialKind: "longform" | "shorts";
+}) {
+  const { longform, shorts, source, totalCount } = await getAllVideos();
+
+  return (
+    <>
       <section className="border-b border-cheeze-purple-deep/15">
         <div className="mx-auto max-w-[100rem] px-6 py-16 grid lg:grid-cols-12 gap-x-10 gap-y-8 items-end">
           <InView className="fade-up lg:col-span-2">
@@ -84,13 +109,6 @@ export default async function VideosPage({ searchParams }: { searchParams: Searc
         </div>
       </section>
 
-      {/* w-full is critical here. In a `flex flex-col` parent, an
-          `mx-auto` child gets `margin-left: auto; margin-right: auto`
-          which in flex cross-axis takes priority over `align-items:
-          stretch` — collapsing the section to its widest child's
-          intrinsic width. For shorts (9:16 cards with no natural
-          width via Next/Image fill), that collapse produced a narrow
-          shifted grid. Explicit `w-full` overrides the auto-shrink. */}
       <section className="w-full max-w-[100rem] mx-auto px-6 py-14">
         <VideosGrid longform={longform} shorts={shorts} initialKind={initialKind} />
       </section>
@@ -114,8 +132,62 @@ export default async function VideosPage({ searchParams }: { searchParams: Searc
           </div>
         </section>
       )}
+    </>
+  );
+}
 
-      <SiteFooter />
-    </main>
+/** Skeleton rendered while VideosShell suspends. Mirrors the final
+    layout so there's no jarring shift when content swaps in. Lives
+    inside a single shimmer keyframe scoped to this component. */
+function VideosShellSkeleton() {
+  return (
+    <>
+      <section className="border-b border-cheeze-purple-deep/15">
+        <div className="mx-auto max-w-[100rem] px-6 py-16 grid lg:grid-cols-12 gap-x-10 gap-y-8 items-end">
+          <div className="lg:col-span-2">
+            <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">— Filmography</div>
+            <div className="mt-2 text-[3rem] leading-none text-cheeze-purple" style={{ fontFamily: "var(--font-display)" }}>
+              02
+            </div>
+          </div>
+          <div className="lg:col-span-7">
+            <h1
+              className="text-5xl md:text-7xl tracking-[-0.02em] leading-[0.95]"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              All Films.
+            </h1>
+            <p className="mt-5 text-cheeze-ink-soft max-w-xl">
+              매주 굽고 있는 모든 한 컷. 검색해서 찾아보세요.
+            </p>
+          </div>
+          <div className="lg:col-span-3 lg:text-right">
+            <div className="inline-block h-8 w-32 rounded-full bg-toss-100 shimmer" />
+          </div>
+        </div>
+      </section>
+      <section className="w-full max-w-[100rem] mx-auto px-6 py-14">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="space-y-3">
+              <div className="aspect-[16/10] rounded-2xl bg-toss-100 shimmer" />
+              <div className="h-5 w-3/4 rounded-md bg-toss-100 shimmer" />
+              <div className="h-3 w-1/4 rounded-md bg-toss-100 shimmer" />
+            </div>
+          ))}
+        </div>
+      </section>
+      <style>{`
+        @keyframes shimmer {
+          0%   { opacity: 0.55; }
+          50%  { opacity: 0.85; }
+          100% { opacity: 0.55; }
+        }
+        .shimmer { animation: shimmer 1400ms ease-in-out infinite; }
+        @media (prefers-reduced-motion: reduce) {
+          .shimmer { animation: none !important; opacity: 0.7 !important; }
+        }
+      `}</style>
+    </>
   );
 }
