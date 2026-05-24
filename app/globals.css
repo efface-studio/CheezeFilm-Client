@@ -659,15 +659,26 @@ body {
    Resetting `animation` on every active flip requires the
    keyframe to be applied via a data attribute rather than a
    transition (transitions don't "restart" on prop change). */
-/* Hero cover slideshow.
-   Was a stacked cross-fade with ken-burns scale — now a horizontal
-   slide carousel that translates a single flex row by -idx * 100%.
-   Animation lives on the JSX (`transition-transform duration-700
-   ease-out` on the track), so no CSS rules are needed here for the
-   slide motion itself.
-   Old `.hero-cover-img` rules removed; the `<Image>` no longer carries
-   that class. The `.v2-film img` hover transform still applies and is
-   harmless because the track isn't hover-scaled. */
+/* Hero cover slideshow — horizontal slide carousel.
+   Was a stacked cross-fade with ken-burns scale → simplified to a flex
+   row that translates by `-idx * 100%`. The transition lives here (not
+   on a Tailwind utility) because we want a custom 1200ms duration with
+   the Toss "smooth-out" cubic-bezier (steep deceleration so the slide
+   *arrives* gently rather than snapping into place).
+
+   `will-change: transform` keeps the layer promoted on GPU so the slide
+   stays buttery on lower-end devices. The `.v2-film img` hover scale
+   still applies to each <Image> child but doesn't interfere — hover
+   targets the inner img, the slide targets the outer track. */
+.hero-cover-track {
+  transition: transform 1200ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-cover-track {
+    transition: none !important;
+  }
+}
 
 /* V2 nav rail — pending pulse used by `LinkPending` while Next is
    transitioning to a new route. Pulses yellow opacity so the user sees
