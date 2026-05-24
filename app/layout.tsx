@@ -94,7 +94,8 @@ export default function RootLayout({
     >
       <head>
         {/* Resource hints — give the browser a head start on hosts we know
-            we'll hit. preconnect actually opens a TCP+TLS handshake early;
+            we'll hit. preconnect actually opens a TCP+TLS handshake early
+            (so the first real request skips ~100–300ms of round-trip);
             dns-prefetch is the cheaper fallback for hosts we may not even
             use on every page. */}
         <link
@@ -102,7 +103,26 @@ export default function RootLayout({
           href="https://cdn.jsdelivr.net"
           crossOrigin="anonymous"
         />
-        <link rel="dns-prefetch" href="https://i.ytimg.com" />
+        {/* i.ytimg.com promoted from dns-prefetch → preconnect: every
+            video card on /, /videos, /admin loads its thumbnail from
+            here, so opening the TLS connection eagerly trims the LCP
+            on the films grid. */}
+        <link
+          rel="preconnect"
+          href="https://i.ytimg.com"
+          crossOrigin="anonymous"
+        />
+        {/* Same for the Supabase Storage origin — member portraits,
+            cover photos, and audition uploads all hit it. Read the
+            project URL from the public env var; if missing (e.g. local
+            dev without .env.local set) we just skip the hint. */}
+        {process.env.NEXT_PUBLIC_SUPABASE_URL && (
+          <link
+            rel="preconnect"
+            href={process.env.NEXT_PUBLIC_SUPABASE_URL}
+            crossOrigin="anonymous"
+          />
+        )}
         <link rel="dns-prefetch" href="https://www.youtube.com" />
         <link rel="dns-prefetch" href="https://scontent.cdninstagram.com" />
       </head>
