@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
  *
  *   mode="word"      (default) → one span per word, whitespace pass-through
  *   mode="character" → one span per Unicode grapheme. Use with the
- *                      `.v2-typewriter` parent class for the input/typing
+ *                      `.typewriter` parent class for the input/typing
  *                      look. `Array.from()` correctly handles Korean
  *                      syllables (each precomposed Hangul block = one item).
  */

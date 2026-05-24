@@ -3,7 +3,7 @@ import { hasSupabaseServerEnv, serverClient, storageUrl } from "./db";
 
 /**
  * Returns the public URLs of every landscape cover photo in the
- * Supabase `covers` Storage bucket. The V2 home hero uses them as a
+ * Supabase `covers` Storage bucket. The home hero uses them as a
  * cross-fade slideshow, falling back to YouTube video thumbnails when
  * this list is empty.
  *

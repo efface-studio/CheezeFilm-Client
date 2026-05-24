@@ -27,7 +27,7 @@ const ROLE_LABEL: Record<Listing["role_type"], string> = {
   staff: "스태프",
 };
 
-export default function V2AuditionForm({
+export default function AuditionForm({
   onSwitchToFan,
 }: {
   onSwitchToFan?: () => void;

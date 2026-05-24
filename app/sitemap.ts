@@ -4,7 +4,7 @@ import { getAllListings } from "@/lib/auditionListings";
 
 /**
  * Dynamic sitemap. The site lives at the root path now (V1 was retired
- * in #26 and V2 was promoted out of `/v2` in #45), so every URL here is
+ * in #26 and the home was reorganised in #45), so every URL here is
  * a top-level path. We list the main routes (root, members index,
  * support, videos, careers) plus per-member detail pages and
  * currently-public audition listings.

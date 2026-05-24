@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { V2Header, V2Footer } from "../page";
+import { SiteHeader, SiteFooter } from "../page";
 import { InView } from "@/components/Stagger";
 import CareersReel from "@/components/CareersReel";
 
@@ -32,15 +32,15 @@ export const metadata = {
  * them from /admin instead of an inbox. No `mailto:` anywhere on this
  * page.
  *
- * Layout follows the V2 editorial grid: ledger-style number rail on the
+ * Layout follows the editorial grid: ledger-style number rail on the
  * left of each section, big display-serif headline, body type at 15px.
  */
 const APPLY_HREF = "/support?tab=audition";
 
-export default async function V2CareersPage() {
+export default async function CareersPage() {
   return (
     <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial flex flex-col">
-      <V2Header />
+      <SiteHeader />
 
       {/* ── HERO ──────────────────────────────────────────
           Editorial cover — giant "04" watermark behind huge headline, copy
@@ -60,9 +60,9 @@ export default async function V2CareersPage() {
         </div>
         <div className="relative mx-auto max-w-[100rem] px-6 pt-16 pb-14 grid lg:grid-cols-12 gap-x-10 gap-y-10">
           <div className="lg:col-span-7 flex flex-col">
-            <InView className="v2-fade-up">
+            <InView className="fade-up">
               <div className="text-[10px] tracking-[0.45em] uppercase text-cheeze-purple flex items-center gap-2">
-                <span className="v2-pulse-dot" />
+                <span className="pulse-dot" />
                 Now casting · Now hiring
               </div>
               <h1
@@ -92,13 +92,13 @@ export default async function V2CareersPage() {
             </InView>
 
             {/* Stat strip — magazine masthead figures. */}
-            <InView className="v2-fade-up mt-10 grid grid-cols-3 max-w-2xl border-y border-cheeze-purple-deep/20 divide-x divide-cheeze-purple-deep/15">
+            <InView className="fade-up mt-10 grid grid-cols-3 max-w-2xl border-y border-cheeze-purple-deep/20 divide-x divide-cheeze-purple-deep/15">
               <Stat number={ROLES.length} label="Open roles" />
               <Stat number="1st" label="배우 우선" accent="text-cheeze-purple-deep" />
               <Stat number="11.30" label="우선 검토" />
             </InView>
 
-            <InView className="v2-fade-up mt-8 flex flex-wrap gap-3">
+            <InView className="fade-up mt-8 flex flex-wrap gap-3">
               <Link
                 href={APPLY_HREF}
                 className="group/cta inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-cheeze-ink text-white text-[14px] font-semibold hover:bg-cheeze-ink-soft transition-colors"
@@ -123,9 +123,9 @@ export default async function V2CareersPage() {
 
           {/* Right — reel video only, with caption underneath. No dense
               ledger; the WHO section handles the role list. */}
-          <InView className="v2-fade-up lg:col-span-5 lg:pl-8 lg:border-l lg:border-cheeze-purple-deep/15">
+          <InView className="fade-up lg:col-span-5 lg:pl-8 lg:border-l lg:border-cheeze-purple-deep/15">
             <div className="text-[10px] tracking-[0.3em] uppercase text-cheeze-olive mb-3 flex items-center gap-2">
-              <span className="v2-pulse-dot" /> Audition reel
+              <span className="pulse-dot" /> Audition reel
             </div>
             <CareersReel
               src="/reels/DQ_oNK3EW_w.mp4"
@@ -153,7 +153,7 @@ export default async function V2CareersPage() {
           supporting copy plays second fiddle on the right. */}
       <section className="bg-cheeze-charcoal text-cheeze-cream lg:-ml-56 lg:pl-56 border-b border-cheeze-charcoal">
         <div className="mx-auto max-w-[100rem] px-6 py-24 grid lg:grid-cols-12 gap-x-10 gap-y-12">
-          <InView className="v2-fade-up lg:col-span-2">
+          <InView className="fade-up lg:col-span-2">
             <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-yellow/80">
               — Why us
             </div>
@@ -164,7 +164,7 @@ export default async function V2CareersPage() {
               01
             </div>
           </InView>
-          <InView className="v2-fade-up lg:col-span-6">
+          <InView className="fade-up lg:col-span-6">
             {/* Decorative open quote */}
             <span
               aria-hidden
@@ -185,7 +185,7 @@ export default async function V2CareersPage() {
               — Studio Cheeze, 2026
             </div>
           </InView>
-          <InView className="v2-fade-up lg:col-span-4 lg:border-l lg:border-cheeze-cream/15 lg:pl-8 space-y-5 text-cheeze-cream/80 text-[14px] leading-relaxed">
+          <InView className="fade-up lg:col-span-4 lg:border-l lg:border-cheeze-cream/15 lg:pl-8 space-y-5 text-cheeze-cream/80 text-[14px] leading-relaxed">
             <p>
               대형 제작사처럼 분업화된 시스템보다, 한 사람이 처음부터 끝까지
               작품에 깊게 관여하는 환경을 만들고 있어요. 본인 손으로 청춘
@@ -209,7 +209,7 @@ export default async function V2CareersPage() {
         className="border-b border-cheeze-purple-deep/15 scroll-mt-8"
       >
         <div className="mx-auto max-w-[100rem] px-6 pt-20 pb-24">
-          <InView className="v2-fade-up flex items-end justify-between gap-6 mb-12">
+          <InView className="fade-up flex items-end justify-between gap-6 mb-12">
             <div>
               <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">
                 — Casting call · 02
@@ -233,7 +233,7 @@ export default async function V2CareersPage() {
           {(() => {
             const lead = ROLES[0];
             return (
-              <InView className="v2-fade-up bg-cheeze-yellow text-cheeze-purple-deep grid md:grid-cols-12 gap-x-10 gap-y-6 p-8 md:p-12 relative overflow-hidden">
+              <InView className="fade-up bg-cheeze-yellow text-cheeze-purple-deep grid md:grid-cols-12 gap-x-10 gap-y-6 p-8 md:p-12 relative overflow-hidden">
                 {/* Big "01" watermark */}
                 <span
                   aria-hidden
@@ -291,7 +291,7 @@ export default async function V2CareersPage() {
                 <InView
                   as="li"
                   key={r.title}
-                  className="v2-fade-up group border-b border-cheeze-purple-deep/15"
+                  className="fade-up group border-b border-cheeze-purple-deep/15"
                   style={{ transitionDelay: `${i * 60}ms` } as React.CSSProperties}
                 >
                   <div className="grid lg:grid-cols-12 gap-x-10 gap-y-3 py-6 lg:py-8 items-baseline cursor-default">
@@ -352,10 +352,10 @@ export default async function V2CareersPage() {
           triage, so the email block is gone. */}
       <section className="bg-cheeze-purple-deep text-cheeze-cream lg:-ml-56 lg:pl-56">
         <div className="mx-auto max-w-[100rem] px-6 py-24">
-          <InView className="v2-fade-up flex items-end justify-between gap-6 mb-14">
+          <InView className="fade-up flex items-end justify-between gap-6 mb-14">
             <div>
               <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-yellow flex items-center gap-2">
-                <span className="v2-pulse-dot" /> How to apply · 03
+                <span className="pulse-dot" /> How to apply · 03
               </div>
               <h2
                 className="mt-5 text-5xl md:text-6xl tracking-tight leading-[1] text-cheeze-yellow"
@@ -393,7 +393,7 @@ export default async function V2CareersPage() {
               <InView
                 key={s.step}
                 as="li"
-                className="v2-fade-up relative"
+                className="fade-up relative"
                 style={{ transitionDelay: `${i * 100}ms` } as React.CSSProperties}
               >
                 <div
@@ -431,7 +431,7 @@ export default async function V2CareersPage() {
               email — a single primary button to the form, plus the two
               utility rows (fan letter, on-site visit) tucked alongside
               so the visual weight doesn't shout. */}
-          <InView className="v2-fade-up mt-14 grid lg:grid-cols-12 gap-x-10 gap-y-10 items-center">
+          <InView className="fade-up mt-14 grid lg:grid-cols-12 gap-x-10 gap-y-10 items-center">
             <div className="lg:col-span-7">
               <div className="text-[10px] tracking-[0.3em] uppercase text-cheeze-yellow/70 mb-3">
                 Apply now
@@ -481,7 +481,7 @@ export default async function V2CareersPage() {
         </div>
       </section>
 
-      <V2Footer />
+      <SiteFooter />
     </main>
   );
 }

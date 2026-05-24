@@ -25,7 +25,7 @@ function formatDuration(sec: number | undefined) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-export default function VideosV2Grid({
+export default function VideosGrid({
   longform,
   shorts,
   initialKind,
@@ -140,7 +140,7 @@ export default function VideosV2Grid({
             key={v.id}
             type="button"
             onClick={() => onOpen(v)}
-            className="group text-left v2-film"
+            className="group text-left film"
           >
             <div className="aspect-[16/10] relative overflow-hidden bg-cheeze-charcoal">
               <Image
@@ -157,7 +157,7 @@ export default function VideosV2Grid({
                   {formatDuration(v.durationSec)}
                 </span>
               )}
-              <div className="v2-film__hint">
+              <div className="film__hint">
                 <span className="text-[11px] tracking-widest uppercase">▸ Play</span>
               </div>
             </div>
@@ -175,25 +175,26 @@ export default function VideosV2Grid({
 
   function ShortsGrid({ videos, onOpen }: { videos: Video[]; onOpen: (v: Video) => void }) {
     return (
-      // 1 / 2 / 2 columns. User: "훨씬 더 키워 한 3배정도, 롱폼에서
-      // 좌우 쓰는 넓이만큼 써도 됨". 3-col still looked small because
-      // the 9:16 aspect renders each card narrow. Capping at 2 cols
-      // on sm+ makes each card ~50% wider (and proportionally taller),
-      // which is roughly the 3× area increase the user asked for.
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      // 2 / 3 / 4 columns. User asked for "한줄에 4개씩" with cards
+      // 1.3–1.5× the original (smaller) size — not the recent
+      // oversized 2-col layout. At 4 cols on lg the 9:16 cards land
+      // around 270px wide on a 1100px content area, which is
+      // ~1.4× the very first iteration's width and matches what
+      // YouTube/Instagram show for shorts thumbnails.
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
         {videos.map((v) => (
           <button
             key={v.id}
             type="button"
             onClick={() => onOpen(v)}
-            className="group text-left v2-film"
+            className="group text-left film"
           >
             <div className="aspect-[9/16] relative overflow-hidden rounded-2xl bg-cheeze-charcoal">
               <Image
                 src={v.thumbnail}
                 alt={v.title}
                 fill
-                sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+                sizes="(min-width: 1024px) 22vw, (min-width: 640px) 30vw, 45vw"
                 className="object-cover"
                 loading="lazy"
               />

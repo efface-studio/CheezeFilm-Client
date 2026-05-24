@@ -165,7 +165,7 @@ export default function IssueCoverPicker({
           )}
           {savedAt && !isDirty() && (
             <span className="ml-3 text-emerald-600 text-xs">
-              저장 완료 — V2 홈에 즉시 반영됨.
+              저장 완료 — 홈에 즉시 반영됨.
             </span>
           )}
         </div>

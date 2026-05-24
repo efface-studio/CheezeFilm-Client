@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { InView } from "@/components/Stagger";
 
 /**
- * V2 hero cover — horizontal slide carousel.
+ * hero cover — horizontal slide carousel.
  *
  * Two modes (mutually exclusive):
  *   - `photoSrcs` (preferred): landscape group/cast photos dropped into
@@ -19,7 +19,7 @@ import { InView } from "@/components/Stagger";
  * dropping a photo.
  *
  * Renders all slides side-by-side in a horizontal flex row and translates
- * the row by `-idx * 100%`. The wrapper is wrapped in `.v2-mask` so the
+ * the row by `-idx * 100%`. The wrapper is wrapped in `.mask-reveal` so the
  * curtain-reveal entrance animation still plays on first load.
  */
 export default function HeroCover({
@@ -73,13 +73,13 @@ export default function HeroCover({
         href={`https://www.youtube.com/watch?v=${activeSlide}`}
         target="_blank"
         rel="noreferrer"
-        className="group block v2-film"
+        className="group block film"
         aria-label="현재 표지 영상 보기"
       >
         {props.children}
       </a>
     ) : (
-      <div className="group block v2-film">{props.children}</div>
+      <div className="group block film">{props.children}</div>
     );
 
   // Slightly wider aspect so the cover reads bigger on the home spread
@@ -89,7 +89,7 @@ export default function HeroCover({
 
   return (
     <Wrapper>
-      <InView className={`v2-mask ${aspectClass} relative bg-cheeze-charcoal overflow-hidden`}>
+      <InView className={`mask-reveal ${aspectClass} relative bg-cheeze-charcoal overflow-hidden`}>
         {/* Carousel track — a horizontal row of full-width slides.
             We translate the whole row by -idx * 100% so the active
             slide slides into view from the right (or out to the left
