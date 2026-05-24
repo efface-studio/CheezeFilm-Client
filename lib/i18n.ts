@@ -368,7 +368,11 @@ export function t(key: string, lang: Lang): string {
     }
     return key;
   }
-  if (lang === "en" && entry.en) return entry.en;
+  // Must use `!== undefined`, not a truthy check — some keys
+  // legitimately translate to an empty string in EN (e.g.
+  // `openroles.unit` where KO uses "건" but English has no counter
+  // word). A truthy check on `""` would fall back to Korean.
+  if (lang === "en" && entry.en !== undefined) return entry.en;
   return entry.ko;
 }
 
