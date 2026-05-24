@@ -16,6 +16,20 @@ import CareersReel from "@/components/CareersReel";
 import { getCoverPhotos } from "@/lib/coverPhotos";
 import { getOpenListings, formatDeadline } from "@/lib/auditionListings";
 
+/** Per-role color accents for the open-roles preview cards.
+ *  - Lead    → brand purple (the headline slot)
+ *  - Support → teal   (secondary cast)
+ *  - Extra   → amber  (small parts; warm but lower-priority)
+ *  - Staff   → zinc   (off-camera; neutral)
+ *  Tailwind classes only; no per-color CSS so the bundle stays flat.
+ */
+const ROLE_ACCENT: Record<string, { ribbon: string; chip: string }> = {
+  lead:    { ribbon: "bg-cheeze-purple",      chip: "bg-cheeze-purple/12 text-cheeze-purple-deep" },
+  support: { ribbon: "bg-teal-500",            chip: "bg-teal-50 text-teal-700" },
+  extra:   { ribbon: "bg-amber-400",           chip: "bg-amber-50 text-amber-800" },
+  staff:   { ribbon: "bg-zinc-400",            chip: "bg-zinc-100 text-zinc-700" },
+};
+
 // ISR — the home pulls Supabase content, members, videos, and cover photos.
 // All of those are also wrapped in `unstable_cache` keyed by content/members/
 // listings/covers tags, so admin writes use `revalidateTag` to flush
@@ -520,43 +534,81 @@ export default async function HomePage() {
                 already filters by these listings. */}
             {openListings.length > 0 && (
               <InView className="fade-up mt-10 pt-8 border-t border-cheeze-purple-deep/10">
-                <div className="flex items-baseline justify-between mb-4">
-                  <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive flex items-center gap-2">
+                {/* Section header with live status dot + count, plus
+                    an "Apply" link on the right. Spacing matches the
+                    Toss reference: dense uppercase eyebrow, no extra
+                    chrome around the count. */}
+                <div className="flex items-baseline justify-between mb-5">
+                  <div className="text-[10px] tracking-[0.35em] uppercase text-cheeze-olive flex items-center gap-2">
                     <span className="pulse-dot" />
-                    {t("openroles.label", lang)} · {openListings.length}
-                    {t("openroles.unit", lang)}
+                    <span className="font-bold text-cheeze-ink-soft">
+                      {t("openroles.label", lang)}
+                    </span>
+                    <span className="text-cheeze-olive/40">·</span>
+                    <span className="font-bold text-cheeze-purple-deep tabular-nums">
+                      {openListings.length}
+                      {t("openroles.unit", lang)}
+                    </span>
                   </div>
                   <Link
                     href="/support?tab=audition"
-                    className="text-[11px] tracking-widest uppercase font-bold text-cheeze-purple hover:text-cheeze-purple-deep"
+                    className="inline-flex items-center gap-1.5 text-[11px] tracking-widest uppercase font-bold text-cheeze-purple-deep hover:text-cheeze-purple group/all"
                   >
                     {t("openroles.viewAll", lang)}
+                    <span
+                      aria-hidden
+                      className="transition-transform group-hover/all:translate-x-0.5"
+                    >
+                      →
+                    </span>
                   </Link>
                 </div>
-                <ul className="grid sm:grid-cols-2 gap-2">
-                  {openListings.slice(0, 4).map((l) => (
-                    <li key={l.id}>
-                      <Link
-                        href="/support?tab=audition"
-                        className="group/listing flex items-center gap-3 rounded-2xl border border-cheeze-purple-deep/10 bg-white px-4 py-3 hover:border-cheeze-purple-deep/30 hover:shadow-[0_2px_12px_-4px_rgba(85,34,163,0.18)] transition-all"
-                      >
-                        <span className="shrink-0 inline-flex items-center justify-center min-w-[3rem] h-7 px-2 rounded-full bg-cheeze-yellow/15 text-cheeze-purple-deep text-[10px] font-bold tracking-widest uppercase">
-                          {t(`role.type.${l.role_type}`, lang)}
-                        </span>
-                        <span className="flex-1 min-w-0 text-[13px] font-semibold text-cheeze-ink truncate group-hover/listing:text-cheeze-purple transition-colors">
-                          {l.title}
-                        </span>
-                        {l.deadline && (
-                          <span className="shrink-0 text-[10px] font-mono tabular-nums text-cheeze-olive">
-                            {formatDeadline(l.deadline) ?? l.deadline}
+                {/* Role-type color accents. Each card gets a 1.5px
+                    left ribbon in its role's color so the list reads
+                    as scannable at a glance. Color choices map to the
+                    role's "weight" — lead=brand purple, support=teal,
+                    extra=amber, staff=zinc. */}
+                <ul className="grid sm:grid-cols-2 gap-2.5">
+                  {openListings.slice(0, 4).map((l) => {
+                    const accent = ROLE_ACCENT[l.role_type] ?? ROLE_ACCENT.staff;
+                    return (
+                      <li key={l.id}>
+                        <Link
+                          href="/support?tab=audition"
+                          className="group/listing relative flex items-center gap-3 overflow-hidden rounded-2xl bg-white pl-5 pr-4 py-3.5 ring-1 ring-cheeze-purple-deep/[0.08] hover:ring-cheeze-purple-deep/25 hover:shadow-[0_4px_20px_-6px_rgba(85,34,163,0.22)] hover:-translate-y-px transition-all"
+                        >
+                          {/* Left accent ribbon — colored by role type */}
+                          <span
+                            aria-hidden
+                            className={`absolute left-0 inset-y-0 w-1 ${accent.ribbon}`}
+                          />
+                          {/* Role-type chip */}
+                          <span
+                            className={`shrink-0 inline-flex items-center justify-center h-6 px-2.5 rounded-md text-[10px] font-bold tracking-[0.15em] uppercase ${accent.chip}`}
+                          >
+                            {t(`role.type.${l.role_type}`, lang)}
                           </span>
-                        )}
-                        <span aria-hidden className="shrink-0 text-cheeze-purple/40 group-hover/listing:text-cheeze-purple group-hover/listing:translate-x-0.5 transition-all">
-                          →
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
+                          {/* Title — main affordance */}
+                          <span className="flex-1 min-w-0 text-[14px] font-semibold text-cheeze-ink truncate group-hover/listing:text-cheeze-purple-deep transition-colors">
+                            {l.title}
+                          </span>
+                          {/* Deadline — only shows date, not time, to
+                              keep cards readable */}
+                          {l.deadline && (
+                            <span className="shrink-0 hidden sm:inline-block text-[11px] font-mono tabular-nums text-cheeze-olive/80">
+                              {formatDeadline(l.deadline)?.slice(0, 10) ?? l.deadline}
+                            </span>
+                          )}
+                          <span
+                            aria-hidden
+                            className="shrink-0 text-cheeze-purple/30 group-hover/listing:text-cheeze-purple group-hover/listing:translate-x-0.5 transition-all"
+                          >
+                            →
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
               </InView>
             )}
