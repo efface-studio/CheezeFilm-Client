@@ -4,6 +4,8 @@ import { SiteHeader, SiteFooter } from "../page";
 import { InView } from "@/components/Stagger";
 import { getMembers } from "@/lib/members";
 import { storageUrl } from "@/lib/db";
+import { getServerLang } from "@/lib/i18n.server";
+import { t } from "@/lib/i18n";
 
 // Members rarely change; the cached list comes from `getMembers()`
 // (unstable_cache, tag: "members"). Admin writes flush via revalidateTag.
@@ -30,7 +32,7 @@ function photoUrlFor(photoPath?: string) {
 }
 
 export default async function MembersPage() {
-  const members = await getMembers();
+  const [lang, members] = await Promise.all([getServerLang(), getMembers()]);
   return (
     <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial flex flex-col">
       <SiteHeader />
@@ -38,7 +40,7 @@ export default async function MembersPage() {
       <section className="border-b border-cheeze-purple-deep/15">
         <div className="mx-auto max-w-[100rem] px-6 py-16 grid lg:grid-cols-12 gap-x-10 gap-y-8">
           <InView className="fade-up lg:col-span-2">
-            <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">— Cast & Crew</div>
+            <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">{t("members.section.eyebrow", lang)}</div>
             <div className="mt-2 text-[3rem] leading-none text-cheeze-purple" style={{ fontFamily: "var(--font-display)" }}>
               03
             </div>
@@ -51,15 +53,28 @@ export default async function MembersPage() {
               The Cast.
             </h1>
             <p className="mt-5 text-cheeze-ink-soft max-w-xl">
-              카메라 앞과 뒤, 함께 한 컷을 굽는 사람들. {members.length}명의 명단.
+              {lang === "en"
+                ? `On both sides of the camera, baking together. ${members.length} people in all.`
+                : `카메라 앞과 뒤, 함께 한 컷을 굽는 사람들. ${members.length}명의 명단.`}
             </p>
           </InView>
           <InView className="fade-up lg:col-span-3 lg:text-right text-xs text-cheeze-olive tracking-widest uppercase leading-relaxed">
-            정보는 공식 인스타그램·위키트리·위키백과를 교차 확인했어요. 잘못된 부분은 {" "}
-            <Link href="/support?tab=fan" className="text-cheeze-purple underline-offset-4 hover:underline">
-              여기로
-            </Link>{" "}
-            알려주세요.
+            {lang === "en" ? (
+              <>
+                Profile info is cross-checked against official Instagram, Wikitree, and Wikipedia. Spot a mistake?{" "}
+                <Link href="/support?tab=fan" className="text-cheeze-purple underline-offset-4 hover:underline">
+                  Let us know here
+                </Link>.
+              </>
+            ) : (
+              <>
+                정보는 공식 인스타그램·위키트리·위키백과를 교차 확인했어요. 잘못된 부분은{" "}
+                <Link href="/support?tab=fan" className="text-cheeze-purple underline-offset-4 hover:underline">
+                  여기로
+                </Link>{" "}
+                알려주세요.
+              </>
+            )}
           </InView>
         </div>
       </section>
@@ -112,7 +127,7 @@ export default async function MembersPage() {
                         {m.roleLabel}
                       </div>
                       <span className="text-cheeze-yellow text-xs tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity">
-                        프로필 →
+                        {lang === "en" ? "Profile →" : "프로필 →"}
                       </span>
                     </div>
                   </div>

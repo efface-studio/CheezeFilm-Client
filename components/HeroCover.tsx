@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { InView } from "@/components/Stagger";
+import { t, type Lang } from "@/lib/i18n";
 
 /**
  * hero cover — horizontal slide carousel.
@@ -25,9 +26,11 @@ import { InView } from "@/components/Stagger";
 export default function HeroCover({
   photoSrcs = [],
   videoIds = [],
+  lang = "ko",
 }: {
   photoSrcs?: string[];
   videoIds?: string[];
+  lang?: Lang;
 }) {
   const mode: "photo" | "video" | null =
     photoSrcs.length > 0 ? "photo" : videoIds.length > 0 ? "video" : null;
@@ -119,7 +122,7 @@ export default function HeroCover({
               >
                 <Image
                   src={url}
-                  alt={active ? "치즈필름 표지" : ""}
+                  alt={active ? t("hero.cover.alt", lang) : ""}
                   fill
                   sizes="(min-width: 1024px) 50vw, 100vw"
                   className="object-cover"
@@ -158,13 +161,13 @@ export default function HeroCover({
 
         <div className="absolute inset-x-0 bottom-0 p-5">
           <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-yellow/90 mb-2">
-            Now Featured · Cover
+            {t("hero.cover.eyebrow", lang)}
           </div>
           <div
             className="text-cheeze-cream text-2xl leading-tight"
             style={{ fontFamily: "var(--font-display)" }}
           >
-            이번 호의 한 컷.
+            {t("hero.cover.title", lang)}
           </div>
         </div>
       </InView>

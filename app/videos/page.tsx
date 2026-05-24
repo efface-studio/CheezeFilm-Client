@@ -4,6 +4,8 @@ import { getAllVideos } from "@/lib/youtube";
 import { SiteHeader, SiteFooter } from "../page";
 import { InView } from "@/components/Stagger";
 import VideosGrid from "./VideosGrid";
+import { getServerLang } from "@/lib/i18n.server";
+import { t, type Lang } from "@/lib/i18n";
 
 export const revalidate = 3600;
 export const metadata = {
@@ -24,7 +26,7 @@ export const metadata = {
 type SearchParams = Promise<{ kind?: string }>;
 
 export default async function VideosPage({ searchParams }: { searchParams: SearchParams }) {
-  const params = await searchParams;
+  const [lang, params] = await Promise.all([getServerLang(), searchParams]);
   const initialKind: "longform" | "shorts" =
     params.kind === "shorts" ? "shorts" : "longform";
 
@@ -37,8 +39,8 @@ export default async function VideosPage({ searchParams }: { searchParams: Searc
     <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial flex flex-col">
       <SiteHeader />
 
-      <Suspense fallback={<VideosShellSkeleton />}>
-        <VideosShell initialKind={initialKind} />
+      <Suspense fallback={<VideosShellSkeleton lang={lang} />}>
+        <VideosShell initialKind={initialKind} lang={lang} />
       </Suspense>
 
       <SiteFooter />
@@ -50,8 +52,10 @@ export default async function VideosPage({ searchParams }: { searchParams: Searc
     fetch. Wrapped in <Suspense> by the page so it streams. */
 async function VideosShell({
   initialKind,
+  lang,
 }: {
   initialKind: "longform" | "shorts";
+  lang: Lang;
 }) {
   const { longform, shorts, source, totalCount } = await getAllVideos();
 
@@ -85,7 +89,7 @@ async function VideosShell({
                 >
                   {longform.length}
                 </span>{" "}
-                <span className="text-cheeze-olive text-xs uppercase tracking-widest">롱폼</span>
+                <span className="text-cheeze-olive text-xs uppercase tracking-widest">{t("videos.tab.longform", lang)}</span>
               </span>
               <span>
                 <span
@@ -94,7 +98,7 @@ async function VideosShell({
                 >
                   {shorts.length}
                 </span>{" "}
-                <span className="text-cheeze-olive text-xs uppercase tracking-widest">쇼츠</span>
+                <span className="text-cheeze-olive text-xs uppercase tracking-widest">{t("videos.tab.shorts", lang)}</span>
               </span>
               {totalCount && totalCount > longform.length + shorts.length && (
                 <span className="text-[11px] text-cheeze-olive tracking-widest uppercase">
@@ -102,7 +106,7 @@ async function VideosShell({
                 </span>
               )}
               {source === "rss" && (
-                <span className="text-[10px] text-cheeze-olive">RSS · 최근 15편</span>
+                <span className="text-[10px] text-cheeze-olive">{lang === "en" ? "RSS · last 15" : "RSS · 최근 15편"}</span>
               )}
             </div>
           </InView>
@@ -110,7 +114,7 @@ async function VideosShell({
       </section>
 
       <section className="w-full max-w-[100rem] mx-auto px-6 py-14">
-        <VideosGrid longform={longform} shorts={shorts} initialKind={initialKind} />
+        <VideosGrid longform={longform} shorts={shorts} initialKind={initialKind} lang={lang} />
       </section>
 
       {source === "rss" && (
@@ -120,14 +124,15 @@ async function VideosShell({
               — Editor's note
             </div>
             <p>
-              지금은 YouTube RSS로 최신 15편만 가져오고 있어요. 전체 503편을 띄우려면
-              관리자 → 사이트 설정에서 YouTube Data API 키를 입력하세요.
+              {lang === "en"
+                ? "We're currently only pulling the latest 15 videos via YouTube RSS. To show all 503, add a YouTube Data API key in admin → site settings."
+                : "지금은 YouTube RSS로 최신 15편만 가져오고 있어요. 전체 503편을 띄우려면 관리자 → 사이트 설정에서 YouTube Data API 키를 입력하세요."}
             </p>
             <Link
               href="/admin"
               className="mt-3 inline-block text-cheeze-purple font-bold tracking-widest uppercase text-xs hover:text-cheeze-purple-deep"
             >
-              관리자로 →
+              {lang === "en" ? "Go to admin →" : "관리자로 →"}
             </Link>
           </div>
         </section>
@@ -139,7 +144,7 @@ async function VideosShell({
 /** Skeleton rendered while VideosShell suspends. Mirrors the final
     layout so there's no jarring shift when content swaps in. Lives
     inside a single shimmer keyframe scoped to this component. */
-function VideosShellSkeleton() {
+function VideosShellSkeleton({ lang }: { lang: Lang }) {
   return (
     <>
       <section className="border-b border-cheeze-purple-deep/15">
@@ -158,7 +163,9 @@ function VideosShellSkeleton() {
               All Films.
             </h1>
             <p className="mt-5 text-cheeze-ink-soft max-w-xl">
-              매주 굽고 있는 모든 한 컷. 검색해서 찾아보세요.
+              {lang === "en"
+                ? "Every frame we're baking, week by week. Search through them."
+                : "매주 굽고 있는 모든 한 컷. 검색해서 찾아보세요."}
             </p>
           </div>
           <div className="lg:col-span-3 lg:text-right">
