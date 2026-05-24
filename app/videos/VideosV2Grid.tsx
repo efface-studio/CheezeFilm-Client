@@ -175,12 +175,13 @@ export default function VideosV2Grid({
 
   function ShortsGrid({ videos, onOpen }: { videos: Video[]; onOpen: (v: Video) => void }) {
     return (
-      // 2 / 3 / 4 columns. Was lg:grid-cols-5 — with the 9:16 portraits
-      // the cards were rendering ~245px wide and felt cramped on the
-      // big editorial container. 4-col on lg lands each card at ~370px
-      // (much closer to the YouTube Shorts feed look), and the title
-      // / SHORTS chip have room to breathe.
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+      // 2 / 3 / 3 / 4 columns. Bumped lg down from 4 → 3 because the
+      // user still wanted the shorts bigger; with the page on
+      // max-w-[100rem] the lg breakpoint typically renders around
+      // 1100-1300px and 3 cols there lands each card at ~370-440px.
+      // Restored 4 cols only at xl (1280px+) where there's actual
+      // room without shrinking each card again.
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {videos.map((v) => (
           <button
             key={v.id}
