@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import nextDynamic from "next/dynamic";
 import { getSession } from "@/lib/auth";
 import {
   serverClient,
@@ -11,14 +12,22 @@ import { getMembers } from "@/lib/members";
 import { getAllContent, loadContentMap, getContent } from "@/lib/content";
 import AdminShell from "./AdminShell";
 import AdminActions from "./AdminActions";
-import ContentEditor from "./ContentEditor";
 import AdminListToolbar from "./AdminListToolbar";
-import MembersCrud from "./MembersCrud";
-import ListingsCrud from "./ListingsCrud";
-import IssueCoverPicker from "./IssueCoverPicker";
-import CoverPhotosManager from "./CoverPhotosManager";
 import { getAllListings, listingSummary } from "@/lib/auditionListings";
 import { getAllVideos } from "@/lib/youtube";
+
+// Tab-specific heavy components — split into their own chunks so a
+// dashboard-only visit doesn't ship ~3000 lines of CRUD JS to the
+// browser. Each `dynamic()` import becomes a separate chunk that's
+// only fetched when its tab is actually active.
+//
+// Sizes: MembersCrud 736LOC, ListingsCrud 631LOC, IssueCoverPicker
+// 329LOC, CoverPhotosManager 222LOC, ContentEditor 141LOC.
+const ContentEditor = nextDynamic(() => import("./ContentEditor"));
+const ListingsCrud = nextDynamic(() => import("./ListingsCrud"));
+const MembersCrud = nextDynamic(() => import("./MembersCrud"));
+const IssueCoverPicker = nextDynamic(() => import("./IssueCoverPicker"));
+const CoverPhotosManager = nextDynamic(() => import("./CoverPhotosManager"));
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "관리자 대시보드 | 치즈필름" };
@@ -58,13 +67,22 @@ export default async function AdminPage({
     ? (params.tab as Tab)
     : "dashboard";
 
+  // Tab-aware fetches. Auditions + fanMessages run on every tab
+  // because AdminShell reads pending/unread counts into the nav badges.
+  // Everything else only fires for the tab that uses it — saves
+  // 1–3 Supabase roundtrips per render on most navigations.
+  const needsMembers = tab === "dashboard" || tab === "members";
+  const needsListings = tab === "listings";
+  const needsContentItems = tab === "content";
+  const needsContentMap = tab === "issue";
+
   const sb = serverClient();
   const [
     auditionsResult,
     fanMessagesResult,
+    members,
     listings,
     contentItems,
-    members,
     contentMap,
   ] = await Promise.all([
     sb
@@ -75,10 +93,10 @@ export default async function AdminPage({
       .from("fan_messages")
       .select("*")
       .order("created_at", { ascending: false }),
-    getAllListings(),
-    getAllContent(),
-    getMembers(),
-    loadContentMap(),
+    needsMembers ? getMembers() : Promise.resolve([] as Awaited<ReturnType<typeof getMembers>>),
+    needsListings ? getAllListings() : Promise.resolve([] as Awaited<ReturnType<typeof getAllListings>>),
+    needsContentItems ? getAllContent() : Promise.resolve([] as Awaited<ReturnType<typeof getAllContent>>),
+    needsContentMap ? loadContentMap() : Promise.resolve(new Map<string, string>()),
   ]);
   const auditions = (auditionsResult.data ?? []) as Audition[];
   const fanMessages = ((fanMessagesResult.data ?? []) as FanMessage[]).map(

@@ -13,10 +13,12 @@ import { getAllListings } from "@/lib/auditionListings";
  * don't track an `updated_at` so we fall back to `now()`; listings
  * carry `updated_at` in the DB.
  *
- * Disable static generation — listings change as admins post/close
- * them, and we want a fresh snapshot per crawl.
+ * Cache for an hour. Crawlers don't need second-precise sitemaps,
+ * and the underlying `getMembers` / `getAllListings` are themselves
+ * `unstable_cache`-wrapped (revalidated via tags on admin mutations).
+ * Using ISR here saves a couple of Supabase roundtrips per crawl.
  */
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://cheezefilm.kr"
