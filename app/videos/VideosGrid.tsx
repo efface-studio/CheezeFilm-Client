@@ -175,18 +175,22 @@ export default function VideosGrid({
 
   function ShortsGrid({ videos, onOpen }: { videos: Video[]; onOpen: (v: Video) => void }) {
     return (
-      // "Full bleed" pattern: break the grid out of the page's
-      // max-w-[100rem] (1600px) container on wide screens so each
-      // 9:16 card lands much bigger. The classic recipe:
-      //   width: 100vw
-      //   margin-left/right: calc(50% - 50vw)
-      // The negative margin equals (parent's left edge - viewport left)
-      // so the element snaps to viewport edges. On a 1920px screen the
-      // card width grows from ~370px → ~440px (much closer to the
-      // user's "3배" request). On screens narrower than 1600px the
-      // calc resolves to 0 so layout is unchanged.
-      // `px-10` keeps the cards from kissing the viewport edges.
-      <div className="w-screen mx-[calc(50%-50vw)] px-10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+      // Full-bleed + max 3 cols. User pushed back twice on card
+      // size — 4 cols even at full-bleed still rendered cards
+      // around ~370px, which felt small for 9:16 thumbnails. At
+      // 3 cols on a 1920px viewport with the full-bleed breakout
+      // each card lands at ~610px wide × ~1085px tall — roughly
+      // 3× the area of the original 4-col inside-container layout.
+      //
+      // Full-bleed recipe (unchanged):
+      //   w-screen + mx-[calc(50%-50vw)]
+      // Negative margins cancel the parent's centering so the grid
+      // snaps to viewport edges on screens wider than the 100rem cap.
+      // On narrower screens the calc resolves to 0 and the grid stays
+      // inside the page container.
+      //
+      // Columns: 1 / 2 / 3 across base / sm / lg.
+      <div className="w-screen mx-[calc(50%-50vw)] px-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7">
         {videos.map((v) => (
           <button
             key={v.id}
@@ -199,20 +203,20 @@ export default function VideosGrid({
                 src={v.thumbnail}
                 alt={v.title}
                 fill
-                sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+                sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                 className="object-cover"
                 loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-cheeze-charcoal/85 to-transparent" />
-              <span className="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-white/95 text-cheeze-ink text-[11px] font-bold px-3 py-1.5">
-                <span aria-hidden className="block w-1.5 h-1.5 rounded-full bg-red-500" />
+              <span className="absolute top-5 left-5 inline-flex items-center gap-2 rounded-full bg-white/95 text-cheeze-ink text-[13px] font-bold px-4 py-2">
+                <span aria-hidden className="block w-2 h-2 rounded-full bg-red-500" />
                 SHORTS
               </span>
-              <div className="absolute inset-x-4 bottom-4 text-[16px] font-bold leading-snug text-cheeze-cream line-clamp-2 drop-shadow-md">
+              <div className="absolute inset-x-6 bottom-6 text-[20px] font-bold leading-snug text-cheeze-cream line-clamp-2 drop-shadow-lg">
                 {v.title}
               </div>
             </div>
-            <div className="mt-3 px-1 text-[13px] text-cheeze-ink-soft">
+            <div className="mt-4 px-1 text-[15px] text-cheeze-ink-soft">
               {formatDate(v.publishedAt)}
             </div>
           </button>
