@@ -6,7 +6,6 @@ import { getContent, loadContentMap } from "@/lib/content";
 import { getMembers } from "@/lib/members";
 import { storageUrl } from "@/lib/db";
 import { getServerLang } from "@/lib/i18n.server";
-import { tc } from "@/lib/i18n";
 import { InView, StaggerText } from "@/components/Stagger";
 import HeroCover from "@/components/HeroCover";
 import CountUp from "@/components/CountUp";
@@ -57,7 +56,7 @@ export default async function HomePage() {
   // `c(key)` now picks the English variant (`${key}.en`) when the
   // user is in EN mode and that variant has been set in admin →
   // 콘텐츠. Falls back to Korean otherwise so the page never blanks.
-  const c = (key: string) => tc(contentMap, key, lang);
+  const c = (key: string) => getContent(contentMap, key, lang);
 
   // Admin-set hero video slots (10 max). When the admin hasn't picked
   // one for a slot we used to fall back to `longform[i]?.id`, but that
@@ -617,7 +616,7 @@ export async function SiteFooter({ isHome = false }: { isHome?: boolean } = {}) 
     getServerLang(),
     loadContentMap(),
   ]);
-  const c = (key: string) => tc(contentMap, key, lang);
+  const c = (key: string) => getContent(contentMap, key, lang);
   return (
     // On home we have the side rail on lg+, so main carries `lg:pl-56`. We
     // need the purple footer to reach the page edge while keeping its inner
@@ -829,7 +828,7 @@ export async function SiteFooter({ isHome = false }: { isHome?: boolean } = {}) 
 /** 한국 푸터 컨벤션 — 상호·대표·사업자등록번호 등을 footer 4-col 안에
  *  맞춰 세로 리스트로. 좁은 영역에 가로 wrap 으로 흩뿌리면 가독성 떨어짐. */
 function CompanyStrip({ contentMap, lang }: { contentMap: Map<string, string>; lang: import("@/lib/i18n").Lang }) {
-  const c = (key: string) => tc(contentMap, key, lang);
+  const c = (key: string) => getContent(contentMap, key, lang);
   const items = [
     { label: "상호", value: c("company.name") },
     { label: "대표", value: c("company.ceo") },
@@ -865,7 +864,7 @@ function CompanyStrip({ contentMap, lang }: { contentMap: Map<string, string>; l
 /** Sync stats — uses only contentMap. Shown as the Suspense fallback
     for LiveStatsBar so the strip is never blank during stream. */
 function StatsBar({ contentMap, lang }: { contentMap: Map<string, string>; lang: import("@/lib/i18n").Lang }) {
-  const c = (key: string) => tc(contentMap, key, lang);
+  const c = (key: string) => getContent(contentMap, key, lang);
   return (
     <div className="mx-auto max-w-[100rem] px-6 py-7 grid grid-cols-2 md:grid-cols-4 divide-x divide-cheeze-purple-deep/10">
       <Stat
@@ -897,7 +896,7 @@ function StatsBar({ contentMap, lang }: { contentMap: Map<string, string>; lang:
     count from the YouTube Data API. Falls back to contentMap values
     when the API is missing or returns nothing. */
 async function LiveStatsBar({ contentMap, lang }: { contentMap: Map<string, string>; lang: import("@/lib/i18n").Lang }) {
-  const c = (key: string) => tc(contentMap, key, lang);
+  const c = (key: string) => getContent(contentMap, key, lang);
   const { longform, shorts, subscriberCount, viewCount, totalCount } = await getAllVideos();
   const liveSubscribersM =
     typeof subscriberCount === "number" ? subscriberCount / 1_000_000 : null;
