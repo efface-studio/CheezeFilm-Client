@@ -106,8 +106,16 @@ export default async function MembersPage() {
                         fill
                         sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                         className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                        // 첫 6장만 viewport 안에 들 가능성 큰 LCP 후보 — priority
-                        priority={i < 6}
+                        // Only the first row is reliably above the fold
+                        // (lg: 3 cols, md: 2 cols, sm: 1 col). Marking 6
+                        // as priority was eagerly preloading the whole
+                        // second row on every viewport, eating bandwidth
+                        // and competing with the actual LCP candidate
+                        // (the hero in the layout above this section).
+                        // Priority drops to 3, the rest lazy-load as the
+                        // user scrolls.
+                        priority={i < 3}
+                        loading={i < 3 ? "eager" : "lazy"}
                       />
                     ) : (
                       <span

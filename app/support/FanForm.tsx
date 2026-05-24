@@ -180,6 +180,7 @@ export default function FanForm({
                           fill
                           sizes="(min-width: 768px) 12vw, (min-width: 640px) 18vw, 30vw"
                           className="object-cover"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="absolute inset-0 grid place-items-center text-[24px] font-bold text-cheeze-ink-soft">

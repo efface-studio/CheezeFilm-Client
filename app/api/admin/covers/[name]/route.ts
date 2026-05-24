@@ -21,8 +21,29 @@ export async function DELETE(
   }
 
   const { name: raw } = await params;
-  const decoded = decodeURIComponent(raw);
-  if (decoded !== path.basename(decoded) || decoded.includes("..")) {
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    return NextResponse.json({ error: "Invalid name" }, { status: 400 });
+  }
+  // Belt-and-braces filename validation. Beyond the original `basename`
+  // check (catches `/`), we also reject:
+  //   - empty / dotfile names
+  //   - backslash (Windows-style separator that Supabase Storage keys treat as path)
+  //   - NUL byte (truncates strings in some downstream tools)
+  //   - any `..` segment
+  // and require the name to match a conservative allowlist of chars +
+  // the configured allowed extensions.
+  if (
+    !decoded ||
+    decoded !== path.basename(decoded) ||
+    decoded.includes("..") ||
+    decoded.includes("\\") ||
+    decoded.includes("\0") ||
+    decoded.startsWith(".") ||
+    !/^[a-zA-Z0-9._-]+$/.test(decoded)
+  ) {
     return NextResponse.json({ error: "Invalid name" }, { status: 400 });
   }
 

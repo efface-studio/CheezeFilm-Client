@@ -14,6 +14,11 @@ export const runtime = "nodejs";
 
 type Body = Partial<Omit<AuditionListing, "id" | "created_at" | "updated_at">>;
 
+// Matches caps in app/api/admin/audition-listings/route.ts. Keep in sync.
+const MAX_TITLE_LEN = 200;
+const MAX_DESCRIPTION_LEN = 10_000;
+const MAX_REQUIREMENTS_LEN = 5_000;
+
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -42,8 +47,37 @@ export async function PATCH(
   if (body.status !== undefined && !STATUSES.includes(body.status as never)) {
     return NextResponse.json({ error: "잘못된 status" }, { status: 400 });
   }
-  if (body.title !== undefined && !String(body.title).trim()) {
-    return NextResponse.json({ error: "제목은 비울 수 없습니다." }, { status: 400 });
+  if (body.title !== undefined) {
+    const t = String(body.title).trim();
+    if (!t) {
+      return NextResponse.json({ error: "제목은 비울 수 없습니다." }, { status: 400 });
+    }
+    if (t.length > MAX_TITLE_LEN) {
+      return NextResponse.json(
+        { error: `제목은 ${MAX_TITLE_LEN}자 이하로 작성해주세요.` },
+        { status: 400 },
+      );
+    }
+  }
+  // Same length-cap guards as the create endpoint so PATCH can't be
+  // used as an escape hatch around POST validation.
+  if (
+    body.description !== undefined &&
+    String(body.description).length > MAX_DESCRIPTION_LEN
+  ) {
+    return NextResponse.json(
+      { error: `설명은 ${MAX_DESCRIPTION_LEN}자 이하로 작성해주세요.` },
+      { status: 400 },
+    );
+  }
+  if (
+    body.requirements !== undefined &&
+    String(body.requirements).length > MAX_REQUIREMENTS_LEN
+  ) {
+    return NextResponse.json(
+      { error: `요건은 ${MAX_REQUIREMENTS_LEN}자 이하로 작성해주세요.` },
+      { status: 400 },
+    );
   }
 
   await updateListing(numericId, body);

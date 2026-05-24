@@ -203,20 +203,3 @@ export async function deleteMember(slug: string): Promise<void> {
   const { error } = await sb.from("members").delete().eq("slug", slug);
   if (error) throw error;
 }
-
-export function getRoleColorClass(accent: Member["accent"]) {
-  switch (accent) {
-    case "purple":
-      return "bg-cheeze-purple text-cheeze-yellow";
-    case "yellow":
-      return "bg-cheeze-yellow text-cheeze-purple-deep";
-    case "wine":
-      return "bg-cheeze-wine text-cheeze-cream";
-    case "charcoal":
-      return "bg-cheeze-charcoal text-cheeze-yellow";
-    case "olive":
-      return "bg-cheeze-olive text-cheeze-cream";
-    case "cream":
-      return "bg-cheeze-cream-deep text-cheeze-purple-deep";
-  }
-}

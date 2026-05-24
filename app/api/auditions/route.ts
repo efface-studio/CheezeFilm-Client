@@ -8,6 +8,7 @@ import {
   isValidBirthdate,
   isValidKoreanPhone,
 } from "@/lib/koreanFormat";
+import { detectImageMime } from "@/lib/imageValidate";
 
 export const runtime = "nodejs";
 
@@ -16,6 +17,8 @@ const AUDITION_LIMIT = 5;
 const AUDITION_WINDOW = 60 * 60_000;
 
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024; // 8 MB
+const MAX_PORTFOLIO_URL_LEN = 500;
+const MAX_EXPERIENCE_LEN = 2000;
 
 const MIME_TO_EXT: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -35,16 +38,41 @@ function isEmail(v: string) {
  * straight into the `photo_url` column.
  */
 async function savePhoto(file: File): Promise<string> {
-  const ext = MIME_TO_EXT[file.type];
-  if (!ext) throw new Error("프로필 사진은 JPEG / PNG / WebP / HEIC 만 됩니다.");
+  // Cheap guards first — reject obvious wrong types and oversized files
+  // before reading bytes into memory.
+  if (!MIME_TO_EXT[file.type])
+    throw new Error("프로필 사진은 JPEG / PNG / WebP / HEIC 만 됩니다.");
   if (file.size > MAX_PHOTO_BYTES)
     throw new Error("프로필 사진은 8MB 이하로 올려주세요.");
+  // Magic-byte check — browsers let users set any MIME they want, so
+  // an HTML page can arrive labelled `image/jpeg`. The bucket stores
+  // content-type verbatim, so a polyglot would be served as an "image"
+  // to anyone with a signed URL. Use the detected MIME for both the
+  // file extension and the upload's stored content-type — never trust
+  // the client-supplied `file.type` past this point.
+  const buf = Buffer.from(await file.arrayBuffer());
+  const detected = detectImageMime(buf);
+  if (
+    !detected ||
+    !(["image/jpeg", "image/png", "image/webp", "image/heic"] as const).includes(
+      detected,
+    )
+  ) {
+    throw new Error("프로필 사진 형식이 올바르지 않아요. (JPEG / PNG / WebP / HEIC)");
+  }
+  const ext =
+    detected === "image/jpeg"
+      ? "jpg"
+      : detected === "image/png"
+        ? "png"
+        : detected === "image/webp"
+          ? "webp"
+          : "heic";
   const key = `${Date.now()}-${randomUUID().slice(0, 8)}.${ext}`;
   const sb = serverClient();
-  const buf = Buffer.from(await file.arrayBuffer());
   const { error } = await sb.storage
     .from("auditions")
-    .upload(key, buf, { contentType: file.type, upsert: false });
+    .upload(key, buf, { contentType: detected, upsert: false });
   if (error) throw new Error(`사진 저장 실패: ${error.message}`);
   // Store the bucket-relative key. Admin UI builds a signed URL when
   // it needs to display the photo (private bucket).
@@ -157,6 +185,30 @@ export async function POST(req: Request) {
       { error: "자기소개는 2000자 이하로 작성해주세요." },
       { status: 400 },
     );
+  }
+  // Bound the optional free-text fields so a single submission can't
+  // store megabytes (or smuggle huge HTML into the admin export).
+  if (experience && experience.length > MAX_EXPERIENCE_LEN) {
+    return NextResponse.json(
+      { error: `경력은 ${MAX_EXPERIENCE_LEN}자 이하로 작성해주세요.` },
+      { status: 400 },
+    );
+  }
+  if (portfolio_url) {
+    if (portfolio_url.length > MAX_PORTFOLIO_URL_LEN) {
+      return NextResponse.json(
+        { error: "포트폴리오 URL이 너무 깁니다." },
+        { status: 400 },
+      );
+    }
+    // Only http(s) — reject `javascript:`, `data:`, etc. so the admin
+    // panel never renders an active-content link.
+    if (!/^https?:\/\//i.test(portfolio_url)) {
+      return NextResponse.json(
+        { error: "포트폴리오 URL은 http(s)://로 시작해야 합니다." },
+        { status: 400 },
+      );
+    }
   }
 
   // At least one photo required.

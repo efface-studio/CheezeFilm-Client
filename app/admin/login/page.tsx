@@ -3,7 +3,11 @@ import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import LoginForm from "./LoginForm";
 
-export const metadata = { title: "관리자 로그인 | 치즈필름" };
+// noindex — admin login shouldn't surface in search engines / AI scrapers.
+export const metadata = {
+  title: "관리자 로그인 | 치즈필름",
+  robots: { index: false, follow: false, nocache: true },
+};
 
 /**
  * Admin login — Toss-inspired surface.

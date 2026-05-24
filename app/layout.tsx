@@ -1,22 +1,17 @@
 import type { Metadata } from "next";
-import { Gowun_Dodum, Black_Han_Sans } from "next/font/google";
 import "./globals.css";
 import CursorSpotlight from "@/components/CursorSpotlight";
 import PageTransition from "@/components/PageTransition";
 
-const gowunDodum = Gowun_Dodum({
-  weight: "400",
-  variable: "--font-gowun-dodum",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const blackHanSans = Black_Han_Sans({
-  weight: "400",
-  variable: "--font-black-han-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
+// next/font imports for Gowun_Dodum and Black_Han_Sans were removed —
+// after the Toss redesign every JSX call site that hard-codes
+// `style={{ fontFamily: "var(--font-display)" }}` resolves to Pretendard
+// (see `globals.css` :root → `--font-sans` / `--font-display`). The
+// `--font-gowun-dodum` / `--font-black-han-sans` CSS variables were
+// never referenced anywhere, so `next/font` was emitting two font
+// subsets on every page for no visible effect. Removing them trims
+// ~50KB of build-time woff2 emission and skips the per-page
+// `<link rel="preload">` injection that next/font would otherwise add.
 
 // Canonical origin for og:image, twitter cards, and the sitemap. Override
 // with NEXT_PUBLIC_SITE_URL once we know the production domain.
@@ -88,10 +83,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="ko"
-      className={`${gowunDodum.variable} ${blackHanSans.variable} h-full`}
-    >
+    <html lang="ko" className="h-full">
       <head>
         {/* Resource hints — give the browser a head start on hosts we know
             we'll hit. preconnect actually opens a TCP+TLS handshake early

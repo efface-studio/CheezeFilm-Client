@@ -352,6 +352,10 @@ export default async function HomePage() {
                           fill
                           sizes="(min-width: 1024px) 16vw, (min-width: 768px) 32vw, 50vw"
                           className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          // Cast strip sits below hero + stats + issue —
+                          // never the LCP. Lazy so first paint isn't
+                          // contending with 12 portrait fetches.
+                          loading="lazy"
                         />
                       </div>
                       <div className="mt-3 px-1">
@@ -1048,7 +1052,12 @@ async function FilmsGrid({ heroVideos, lang }: { heroVideos: string[]; lang: imp
                       sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                       loading="lazy"
-                      quality={85}
+                      // No `quality={85}` here — these thumbs are below
+                      // the fold (Hero + Stats + Issue + Cast sections
+                      // render above them) and lazy-loaded. Default 75
+                      // ships ~15-20% smaller AVIF/WebP per thumb with
+                      // no perceptible quality loss for YouTube poster
+                      // shots at this size.
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-cheeze-charcoal/60 via-transparent to-transparent" />
                     {i === 0 && (

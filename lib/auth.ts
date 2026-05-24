@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { timingSafeEqual } from "node:crypto";
 
 const SESSION_COOKIE = "cheeze_admin_session";
 const SESSION_DURATION = 60 * 60 * 8; // 8 hours
@@ -10,6 +11,28 @@ function getSecret() {
     throw new Error("SESSION_SECRET is not defined");
   }
   return new TextEncoder().encode(secret);
+}
+
+/**
+ * Constant-time string comparison. Naïve `===` short-circuits at the
+ * first differing byte, leaking secret length / prefix through CPU-time
+ * differences. Pad both buffers to the same length before comparing so
+ * `timingSafeEqual` (which requires equal-length inputs) can be used
+ * regardless of attacker-supplied length.
+ */
+function safeEquals(a: string, b: string): boolean {
+  const aBuf = Buffer.from(a, "utf8");
+  const bBuf = Buffer.from(b, "utf8");
+  // Compare against a zero-padded copy so an early length-mismatch
+  // shortcut doesn't leak the secret's true length. We still return
+  // `false` for mismatched lengths after the constant-time pass.
+  const len = Math.max(aBuf.length, bBuf.length);
+  const aPad = Buffer.alloc(len);
+  const bPad = Buffer.alloc(len);
+  aBuf.copy(aPad);
+  bBuf.copy(bPad);
+  const equal = timingSafeEqual(aPad, bPad);
+  return equal && aBuf.length === bBuf.length;
 }
 
 export async function createSession(username: string) {
@@ -50,9 +73,18 @@ export async function getSession(): Promise<{ username: string } | null> {
   }
 }
 
+/**
+ * Constant-time credential check. Both checks run regardless of whether
+ * the username matched so attackers can't distinguish "no such user"
+ * from "wrong password" through response time. `verifyCredentials` is
+ * also why `safeEquals` zero-pads — without it, the username check would
+ * leak the configured admin-name length.
+ */
 export function verifyCredentials(username: string, password: string) {
-  return (
-    username === process.env.ADMIN_USERNAME &&
-    password === process.env.ADMIN_PASSWORD
-  );
+  const expectedUser = process.env.ADMIN_USERNAME;
+  const expectedPass = process.env.ADMIN_PASSWORD;
+  if (!expectedUser || !expectedPass) return false;
+  const userOk = safeEquals(username, expectedUser);
+  const passOk = safeEquals(password, expectedPass);
+  return userOk && passOk;
 }
