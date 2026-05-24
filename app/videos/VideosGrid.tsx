@@ -175,22 +175,18 @@ export default function VideosGrid({
 
   function ShortsGrid({ videos, onOpen }: { videos: Video[]; onOpen: (v: Video) => void }) {
     return (
-      // Full-bleed + max 3 cols. User pushed back twice on card
-      // size — 4 cols even at full-bleed still rendered cards
-      // around ~370px, which felt small for 9:16 thumbnails. At
-      // 3 cols on a 1920px viewport with the full-bleed breakout
-      // each card lands at ~610px wide × ~1085px tall — roughly
-      // 3× the area of the original 4-col inside-container layout.
+      // Width: matches the longform grid above (no full-bleed). The
+      // parent <section> caps content at max-w-[100rem] (1600px),
+      // and the longform grid uses `sm:grid-cols-2 lg:grid-cols-3`
+      // inside it — we match those breakpoints here so a shorts
+      // card sits at the same horizontal slot as a longform card,
+      // just rendered taller because of the 9:16 aspect.
       //
-      // Full-bleed recipe (unchanged):
-      //   w-screen + mx-[calc(50%-50vw)]
-      // Negative margins cancel the parent's centering so the grid
-      // snaps to viewport edges on screens wider than the 100rem cap.
-      // On narrower screens the calc resolves to 0 and the grid stays
-      // inside the page container.
-      //
-      // Columns: 1 / 2 / 3 across base / sm / lg.
-      <div className="w-screen mx-[calc(50%-50vw)] px-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7">
+      // Earlier iterations tried full-bleed (w-screen + negative
+      // margins) to make cards huge on wide screens; user feedback
+      // was "too big, match the longform width". This version drops
+      // the breakout entirely.
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10">
         {videos.map((v) => (
           <button
             key={v.id}
@@ -198,7 +194,7 @@ export default function VideosGrid({
             onClick={() => onOpen(v)}
             className="group text-left film"
           >
-            <div className="aspect-[9/16] relative overflow-hidden rounded-3xl bg-cheeze-charcoal">
+            <div className="aspect-[9/16] relative overflow-hidden rounded-2xl bg-cheeze-charcoal">
               <Image
                 src={v.thumbnail}
                 alt={v.title}
@@ -208,15 +204,15 @@ export default function VideosGrid({
                 loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-cheeze-charcoal/85 to-transparent" />
-              <span className="absolute top-5 left-5 inline-flex items-center gap-2 rounded-full bg-white/95 text-cheeze-ink text-[13px] font-bold px-4 py-2">
-                <span aria-hidden className="block w-2 h-2 rounded-full bg-red-500" />
+              <span className="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-white/95 text-cheeze-ink text-[11px] font-bold px-3 py-1.5">
+                <span aria-hidden className="block w-1.5 h-1.5 rounded-full bg-red-500" />
                 SHORTS
               </span>
-              <div className="absolute inset-x-6 bottom-6 text-[20px] font-bold leading-snug text-cheeze-cream line-clamp-2 drop-shadow-lg">
+              <div className="absolute inset-x-5 bottom-5 text-[17px] font-bold leading-snug text-cheeze-cream line-clamp-2 drop-shadow-md">
                 {v.title}
               </div>
             </div>
-            <div className="mt-4 px-1 text-[15px] text-cheeze-ink-soft">
+            <div className="mt-3 px-1 text-[13px] text-cheeze-ink-soft">
               {formatDate(v.publishedAt)}
             </div>
           </button>
