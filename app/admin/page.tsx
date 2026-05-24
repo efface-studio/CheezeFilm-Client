@@ -73,6 +73,22 @@ function resolveMemberPhoto(photoPath: string | undefined) {
   return photoPath ? storageUrl("members", photoPath) : null;
 }
 
+/**
+ * Audition profile photos changed storage strategy mid-flight:
+ *   - Older entries: `photo_url` is a full https URL (legacy public
+ *     bucket / direct upload). Display as-is.
+ *   - Newer entries (post-security pass): `photo_url` is a bucket-
+ *     relative key like "1716567000-abc12345.jpg". Build the public
+ *     URL via `storageUrl("auditions", key)`.
+ * This helper covers both so the admin always shows the actual face,
+ * not a broken-image icon pointing at a relative path.
+ */
+function resolveAuditionPhoto(stored: string | null | undefined): string | null {
+  if (!stored) return null;
+  if (stored.startsWith("http://") || stored.startsWith("https://")) return stored;
+  return storageUrl("auditions", stored);
+}
+
 export default async function AdminPage({
   searchParams,
 }: {
@@ -588,17 +604,20 @@ async function AuditionDetail({ audition: a }: { audition: Audition }) {
         {/* ── Left rail ── */}
         <aside className="space-y-4">
           {/* Photo card */}
+          {(() => {
+            const photoSrc = resolveAuditionPhoto(a.photo_url);
+            return (
           <div className="relative w-full max-w-[200px]">
-            {a.photo_url ? (
+            {photoSrc ? (
               <a
-                href={a.photo_url}
+                href={photoSrc}
                 target="_blank"
                 rel="noreferrer"
                 className="block aspect-[4/5] overflow-hidden rounded-md ring-1 ring-zinc-300 shadow-sm hover:ring-purple-400 transition"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={a.photo_url}
+                  src={photoSrc}
                   alt={`${a.name} 프로필`}
                   className="w-full h-full object-cover"
                 />
@@ -612,6 +631,8 @@ async function AuditionDetail({ audition: a }: { audition: Audition }) {
               #{String(a.id).padStart(4, "0")}
             </div>
           </div>
+            );
+          })()}
 
           {/* Facts — Toss-style soft card. Dropped the bordered table
               look, swapped the broken ▣-prefixed purple link for a
