@@ -98,16 +98,21 @@ export default function PageTransition({
     return () => document.removeEventListener("click", onClick, true);
   }, [pathname, router]);
 
-  // While in the admin shell, don't re-key on every route change — that would
-  // re-mount the whole shell and re-run the slide-in keyframe each tab switch.
-  // Inside admin the sidebar/header should stay put.
-  const inAdmin = pathname?.startsWith("/admin") ?? false;
-  return (
-    <div
-      key={inAdmin ? "__admin-shell__" : pathname}
-      className={inAdmin ? "" : "page-slide-in"}
-    >
-      {children}
-    </div>
-  );
+  // Don't re-key the wrapper. The View Transitions API (Chrome/Edge/
+  // Safari 17.4+) handles the slide animation natively without needing
+  // React to unmount/remount the tree — which means cached components
+  // (hero cover image, font swaps, IntersectionObserver state, etc.)
+  // survive navigation and don't re-paint from scratch.
+  //
+  // Previously this wrapper was keyed by `pathname` and carried a
+  // `.page-slide-in` keyframe. That gave Firefox a fallback animation,
+  // but the side effect was that every navigation back to `/` fully
+  // unmounted HeroCover and re-rendered the cover image from opacity 0
+  // — users saw the cover "loading" again each time. The stable key
+  // keeps HeroCover's DOM node alive across route changes, so the
+  // already-decoded image reappears instantly.
+  //
+  // Firefox users lose the fallback fade-in, but content swap is
+  // already visually fast and the route URL update is instant.
+  return <div>{children}</div>;
 }

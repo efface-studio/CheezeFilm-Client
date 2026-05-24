@@ -123,8 +123,15 @@ export default function HeroCover({
                   fill
                   sizes="(min-width: 1024px) 50vw, 100vw"
                   className="object-cover"
+                  // Only the first slide is eager+priority. The rest
+                  // load lazily — they're translated off-screen until
+                  // the carousel rotates to them ~4.5s later, plenty
+                  // of time for a lazy fetch. Eagerly loading all
+                  // slides on mount used to contend with the first
+                  // for bandwidth and slowed the LCP.
                   priority={i === 0}
-                  loading="eager"
+                  loading={i === 0 ? "eager" : "lazy"}
+                  fetchPriority={i === 0 ? "high" : "low"}
                 />
               </div>
             );
