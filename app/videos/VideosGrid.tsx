@@ -175,18 +175,20 @@ export default function VideosGrid({
 
   function ShortsGrid({ videos, onOpen }: { videos: Video[]; onOpen: (v: Video) => void }) {
     return (
-      // Width: matches the longform grid above (no full-bleed). The
-      // parent <section> caps content at max-w-[100rem] (1600px),
-      // and the longform grid uses `sm:grid-cols-2 lg:grid-cols-3`
-      // inside it — we match those breakpoints here so a shorts
-      // card sits at the same horizontal slot as a longform card,
-      // just rendered taller because of the 9:16 aspect.
+      // Width matches the longform grid exactly — same Tailwind class
+      // pattern, just `lg:grid-cols-4` instead of `lg:grid-cols-3`
+      // because shorts are 9:16 and 4 per row reads fine.
       //
-      // Earlier iterations tried full-bleed (w-screen + negative
-      // margins) to make cards huge on wide screens; user feedback
-      // was "too big, match the longform width". This version drops
-      // the breakout entirely.
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10">
+      // CRITICAL: do NOT add `grid-cols-1` as the default. The
+      // longform grid above omits the base count and lets the grid
+      // implicitly be a single column on mobile. When ShortsGrid had
+      // `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3` set, the parent
+      // section (which has `mx-auto` on a flex-col parent) auto-margins
+      // were resolving the section to the grid's min-content width
+      // instead of stretching to max-w-[100rem]. Dropping the explicit
+      // `grid-cols-1` and using `w-full` forces full-width stretch on
+      // both grids and makes the shorts grid align with longform.
+      <div className="w-full grid sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12">
         {videos.map((v) => (
           <button
             key={v.id}

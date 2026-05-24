@@ -84,7 +84,14 @@ export default async function VideosPage({ searchParams }: { searchParams: Searc
         </div>
       </section>
 
-      <section className="mx-auto max-w-[100rem] px-6 py-14">
+      {/* w-full is critical here. In a `flex flex-col` parent, an
+          `mx-auto` child gets `margin-left: auto; margin-right: auto`
+          which in flex cross-axis takes priority over `align-items:
+          stretch` — collapsing the section to its widest child's
+          intrinsic width. For shorts (9:16 cards with no natural
+          width via Next/Image fill), that collapse produced a narrow
+          shifted grid. Explicit `w-full` overrides the auto-shrink. */}
+      <section className="w-full max-w-[100rem] mx-auto px-6 py-14">
         <VideosGrid longform={longform} shorts={shorts} initialKind={initialKind} />
       </section>
 
