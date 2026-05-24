@@ -90,11 +90,12 @@ export default async function V2SupportPage({ searchParams }: { searchParams: Se
         </div>
       </section>
 
-      {/* Widened to max-w-7xl so the 3-column listings grid has lots of
-          horizontal room (each card lands ~390px wide on desktop).
-          The fan-letter form caps itself with `max-w-xl` so its inputs
-          don't stretch to the full container. */}
-      <section className="mx-auto max-w-7xl px-6 py-16">
+      {/* Container widened from max-w-7xl → max-w-[100rem] (1600px) so
+          the audition apply form + listings grid use the full editorial
+          page width instead of leaving 400px of empty cream on each
+          side. The fan-letter form has its own `max-w-3xl` cap so its
+          inputs don't stretch unhelpfully. */}
+      <section className="mx-auto max-w-[100rem] px-6 py-16">
         <V2SupportTabs
           initialTab={initialTab}
           favoriteCastChoices={favoriteCastChoices}
