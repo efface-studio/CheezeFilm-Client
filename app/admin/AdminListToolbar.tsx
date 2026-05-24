@@ -53,7 +53,7 @@ export default function AdminListToolbar({
                 ? "이름·이메일·자기소개로 검색"
                 : "닉네임·메시지로 검색"
             }
-            className="w-full rounded-xl border border-zinc-200 bg-zinc-50 focus:bg-white pl-10 pr-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition-colors placeholder:text-zinc-400"
+            className="w-full h-10 rounded-lg border border-zinc-200 bg-white pl-9 pr-3 text-[13px] font-medium focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-colors placeholder:text-zinc-400 hover:border-zinc-300"
           />
           {/* Inline SVG glyph — keeps the look consistent with the rest of
               the admin shell (Pretendard + monochrome) instead of relying
@@ -61,7 +61,7 @@ export default function AdminListToolbar({
           <svg
             aria-hidden
             viewBox="0 0 20 20"
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400"
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
@@ -114,10 +114,13 @@ function ExportMenu({ scope }: { scope: "audition" | "fan" }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-800 active:scale-[0.98] transition-all"
+        className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-lg bg-zinc-900 text-white text-[13px] font-bold hover:bg-zinc-800 active:scale-[0.98] transition-all"
         aria-expanded={open}
         aria-haspopup="menu"
       >
+        <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path d="M8 2v8m0 0l-3-3m3 3l3-3M3 13h10" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
         내보내기
         <svg
           aria-hidden

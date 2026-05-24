@@ -80,7 +80,7 @@ export default function ListingsCrud({ listings }: { listings: Listing[] }) {
         <button
           type="button"
           onClick={() => setEditing("new")}
-          className="text-sm font-semibold px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700 inline-flex items-center gap-1.5"
+          className="text-sm font-bold px-4 py-2 rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 active:scale-[0.98] transition-all inline-flex items-center gap-1.5"
         >
           <span className="text-base leading-none">+</span> 새 공고
         </button>
@@ -482,14 +482,14 @@ function ListingEditor({
               type="button"
               onClick={onCancel}
               disabled={busy}
-              className="text-xs font-semibold px-3 py-2 rounded border border-zinc-300 text-zinc-700 hover:bg-zinc-100 disabled:opacity-50"
+              className="text-xs font-bold px-3 py-2 rounded-lg border border-zinc-200 text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
             >
               취소
             </button>
             <button
               type="submit"
               disabled={busy || !l.title.trim()}
-              className="text-xs font-semibold px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700 disabled:bg-zinc-300 disabled:cursor-not-allowed"
+              className="text-xs font-bold px-4 py-2 rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 active:scale-[0.98] transition-all disabled:bg-zinc-300 disabled:cursor-not-allowed"
             >
               {busy ? "저장 중…" : submitLabel}
             </button>

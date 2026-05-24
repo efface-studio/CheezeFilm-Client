@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import nextDynamic from "next/dynamic";
 import { getSession } from "@/lib/auth";
 import {
@@ -13,6 +12,15 @@ import { getAllContent, loadContentMap, getContent } from "@/lib/content";
 import AdminShell from "./AdminShell";
 import AdminActions from "./AdminActions";
 import AdminListToolbar from "./AdminListToolbar";
+import {
+  PageHeader,
+  KpiTile,
+  Panel,
+  EmptyState,
+  StatusPill,
+  TabSkeleton,
+  type AuditionStatus,
+} from "./AdminUI";
 import { getAllListings, listingSummary } from "@/lib/auditionListings";
 import { getAllVideos } from "@/lib/youtube";
 
@@ -21,13 +29,27 @@ import { getAllVideos } from "@/lib/youtube";
 // browser. Each `dynamic()` import becomes a separate chunk that's
 // only fetched when its tab is actually active.
 //
+// `loading` props show a layout-matching skeleton (TabSkeleton) while
+// the chunk downloads, instead of a blank pane that makes admins
+// think the click broke.
+//
 // Sizes: MembersCrud 736LOC, ListingsCrud 631LOC, IssueCoverPicker
 // 329LOC, CoverPhotosManager 222LOC, ContentEditor 141LOC.
-const ContentEditor = nextDynamic(() => import("./ContentEditor"));
-const ListingsCrud = nextDynamic(() => import("./ListingsCrud"));
-const MembersCrud = nextDynamic(() => import("./MembersCrud"));
-const IssueCoverPicker = nextDynamic(() => import("./IssueCoverPicker"));
-const CoverPhotosManager = nextDynamic(() => import("./CoverPhotosManager"));
+const ContentEditor = nextDynamic(() => import("./ContentEditor"), {
+  loading: () => <TabSkeleton kind="form" />,
+});
+const ListingsCrud = nextDynamic(() => import("./ListingsCrud"), {
+  loading: () => <TabSkeleton kind="list" />,
+});
+const MembersCrud = nextDynamic(() => import("./MembersCrud"), {
+  loading: () => <TabSkeleton kind="list" />,
+});
+const IssueCoverPicker = nextDynamic(() => import("./IssueCoverPicker"), {
+  loading: () => <TabSkeleton kind="grid" />,
+});
+const CoverPhotosManager = nextDynamic(() => import("./CoverPhotosManager"), {
+  loading: () => <TabSkeleton kind="grid" />,
+});
 
 export const dynamic = "force-dynamic";
 // Mark every admin response as noindex — overrides the root layout's
@@ -190,69 +212,79 @@ export default async function AdminPage({
       )}
 
       {tab === "issue" && (
-        <div className="space-y-12">
-          {/* Photos win over videos when both are present — list them
-              first so admins see the "live" source at the top. */}
-          <SectionHeader
-            title="표지 사진"
-            subtitle="홈 hero에서 2초마다 넘어가는 가로형 사진들. 비어있으면 아래 표지 영상이 폴백으로 떠요."
-          >
-            <CoverPhotosManager />
-          </SectionHeader>
-          <SectionHeader
-            title="표지 영상 (폴백)"
-            subtitle="표지 사진이 한 장도 없을 때만 표시되는 유튜브 표지 영상 (최대 10개)"
-          >
-            <IssueCoverPicker
-              videos={pickerVideos}
-              initial={Array.from({ length: 10 }, (_, i) =>
-                getContent(contentMap, `works.${i + 1}.videoId`).trim(),
-              )}
-            />
-          </SectionHeader>
+        <div>
+          <PageHeader
+            title="이번 호 표지"
+            subtitle="홈 hero에 표시되는 표지 사진(우선) 및 폴백 영상을 관리합니다."
+          />
+          <div className="space-y-10">
+            <section>
+              <SubSectionHeader
+                title="표지 사진"
+                subtitle="홈 hero에서 2초마다 넘어가는 가로형 사진들. 비어있으면 아래 표지 영상이 폴백으로 떠요."
+              />
+              <CoverPhotosManager />
+            </section>
+            <section>
+              <SubSectionHeader
+                title="표지 영상 (폴백)"
+                subtitle="표지 사진이 한 장도 없을 때만 표시되는 유튜브 표지 영상 (최대 10개)"
+              />
+              <IssueCoverPicker
+                videos={pickerVideos}
+                initial={Array.from({ length: 10 }, (_, i) =>
+                  getContent(contentMap, `works.${i + 1}.videoId`).trim(),
+                )}
+              />
+            </section>
+          </div>
         </div>
       )}
 
       {tab === "listings" && (
-        <SectionHeader
-          title="지원 공고"
-          subtitle={`총 ${listings.length}건 · 모집중 ${listings.filter((l) => l.status === "open").length}건`}
-        >
+        <div>
+          <PageHeader
+            title="지원 공고"
+            subtitle={`총 ${listings.length}건 · 모집중 ${listings.filter((l) => l.status === "open").length}건`}
+          />
           <ListingsCrud listings={listings} />
-        </SectionHeader>
+        </div>
       )}
 
       {tab === "auditions" && (
-        <SectionHeader
-          title="오디션 지원"
-          subtitle={`총 ${auditionStats.total}건 · 검토 대기 ${auditionStats.pending}건`}
-        >
+        <div>
+          <PageHeader
+            title="오디션 지원"
+            subtitle={`총 ${auditionStats.total}건 · 검토 대기 ${auditionStats.pending}건`}
+          />
           <AdminListToolbar
             scope="audition"
             total={auditions.length}
           />
           <AuditionsTable items={auditions} />
-        </SectionHeader>
+        </div>
       )}
 
       {tab === "fan" && (
-        <SectionHeader
-          title="응원 메시지"
-          subtitle={`총 ${fanStats.total}건 · 안 읽음 ${fanStats.unread}건`}
-        >
+        <div>
+          <PageHeader
+            title="응원 메시지"
+            subtitle={`총 ${fanStats.total}건 · 안 읽음 ${fanStats.unread}건`}
+          />
           <AdminListToolbar
             scope="fan"
             total={fanMessages.length}
           />
           <FanMessagesTable items={fanMessages} />
-        </SectionHeader>
+        </div>
       )}
 
       {tab === "members" && (
-        <SectionHeader
-          title="멤버 관리"
-          subtitle={`총 ${members.length}명 · 사진 ${memberPhotos.filter((p) => p.photoUrl).length}건 등록`}
-        >
+        <div>
+          <PageHeader
+            title="멤버 관리"
+            subtitle={`총 ${members.length}명 · 사진 ${memberPhotos.filter((p) => p.photoUrl).length}건 등록`}
+          />
           <MembersCrud
             members={memberPhotos.map((p) => {
               const full = members.find((m) => m.slug === p.slug)!;
@@ -274,16 +306,17 @@ export default async function AdminPage({
               };
             })}
           />
-        </SectionHeader>
+        </div>
       )}
 
       {tab === "content" && (
-        <SectionHeader
-          title="사이트 콘텐츠"
-          subtitle="사이트에 표시되는 모든 텍스트를 여기서 편집"
-        >
+        <div>
+          <PageHeader
+            title="사이트 콘텐츠"
+            subtitle="사이트에 표시되는 모든 텍스트를 여기서 편집"
+          />
           <ContentEditor items={contentItems} />
-        </SectionHeader>
+        </div>
       )}
     </AdminShell>
   );
@@ -308,275 +341,144 @@ function DashboardView({
   recentMessages: FanMessage[];
   trend: { auditions7: number; auditionsPrev7: number; fan7: number; fanPrev7: number };
 }) {
+  const auditionDelta = trend.auditions7 - trend.auditionsPrev7;
+  const fanDelta = trend.fan7 - trend.fanPrev7;
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-900">대시보드</h1>
-        <p className="text-sm text-zinc-500 mt-1">
-          오늘 들어온 응답을 한눈에 확인하세요.
-        </p>
-      </div>
+    <div>
+      <PageHeader
+        title="대시보드"
+        subtitle="오늘 들어온 응답을 한눈에 확인하세요."
+      />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard
-          label="전체 오디션"
-          value={auditionStats.total}
-          accent="purple"
-          hint={`검토 대기 ${auditionStats.pending}`}
+      {/* KPI grid — 2 columns on phone, 4 on desktop. Tiles are
+          intentionally denser than the previous KpiCard (less padding,
+          smaller value type) to feel like a real product metric strip. */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <KpiTile
+          label="검토 대기"
+          value={auditionStats.pending}
+          hint={`전체 오디션 ${auditionStats.total}`}
         />
-        <KpiCard
+        <KpiTile
           label="안 읽은 응원"
           value={fanStats.unread}
-          accent="yellow"
-          hint={`전체 ${fanStats.total}`}
+          hint={`전체 메시지 ${fanStats.total}`}
         />
-        <KpiCard
+        <KpiTile
           label="합격자"
           value={auditionStats.accepted}
-          accent="emerald"
           hint={`검토중 ${auditionStats.reviewing}`}
         />
-        <KpiCard
+        <KpiTile
           label="멤버 사진"
           value={`${memberPhotoCount} / ${memberCount}`}
-          accent="zinc"
-          hint="등록률"
+          hint={`${Math.round((memberPhotoCount / Math.max(1, memberCount)) * 100)}% 등록`}
         />
       </div>
 
-      {/* 7-day trend */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <TrendCard
+      {/* 7-day trend — same width as the KPI grid; treated as a second
+          row of compact tiles so the eye sweeps left-to-right naturally. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+        <KpiTile
           label="최근 7일 오디션"
-          current={trend.auditions7}
-          previous={trend.auditionsPrev7}
+          value={trend.auditions7}
+          hint={`지난 주 ${trend.auditionsPrev7}건`}
+          delta={auditionDelta}
         />
-        <TrendCard
+        <KpiTile
           label="최근 7일 응원"
-          current={trend.fan7}
-          previous={trend.fanPrev7}
+          value={trend.fan7}
+          hint={`지난 주 ${trend.fanPrev7}건`}
+          delta={fanDelta}
         />
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        <PanelCard
+      {/* Inbox-style panels — sit below the strip and act as
+          actionable lists. Items disappear once they're processed. */}
+      <div className="grid lg:grid-cols-2 gap-4">
+        <Panel
           title="검토 대기 오디션"
-          link={{ href: "/admin?tab=auditions", label: "전체 보기 →" }}
+          link={{ href: "/admin?tab=auditions", label: "전체 보기" }}
         >
           {recentAuditions.length === 0 ? (
             <EmptyState>✓ 검토 대기 중인 오디션이 없어요.</EmptyState>
           ) : (
-            <ul className="divide-y divide-zinc-100">
+            <ul className="divide-y divide-zinc-100 -m-4">
               {recentAuditions.map((a) => (
-                <li key={a.id} className="py-3 flex items-start justify-between gap-3">
+                <li key={a.id} className="px-4 py-3 flex items-start justify-between gap-3 hover:bg-zinc-50 transition-colors">
                   <div className="min-w-0">
-                    <div className="text-sm font-semibold text-zinc-900 truncate">
+                    <div className="text-[13px] font-semibold text-zinc-900 truncate">
                       {a.name}
-                      <span className="ml-2 text-zinc-400 font-normal text-xs">
+                      <span className="ml-2 text-zinc-400 font-mono font-normal text-[11px] tabular-nums">
                         #{String(a.id).padStart(4, "0")}
                       </span>
                     </div>
-                    <div className="text-xs text-zinc-500 truncate">
+                    <div className="text-[11px] text-zinc-500 truncate mt-0.5">
                       {a.email} · {new Date(a.created_at).toLocaleString("ko-KR")}
                     </div>
                   </div>
-                  <StatusBadge status={a.status} />
+                  <StatusPill status={a.status as AuditionStatus} />
                 </li>
               ))}
             </ul>
           )}
-        </PanelCard>
+        </Panel>
 
-        <PanelCard
+        <Panel
           title="안 읽은 응원"
-          link={{ href: "/admin?tab=fan", label: "전체 보기 →" }}
+          link={{ href: "/admin?tab=fan", label: "전체 보기" }}
         >
           {recentMessages.length === 0 ? (
             <EmptyState>✓ 모든 응원을 확인했어요.</EmptyState>
           ) : (
-            <ul className="divide-y divide-zinc-100">
+            <ul className="divide-y divide-zinc-100 -m-4">
               {recentMessages.map((m) => (
-                <li key={m.id} className="py-3">
+                <li key={m.id} className="px-4 py-3 hover:bg-zinc-50 transition-colors">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="text-sm font-semibold text-zinc-900">
+                    <div className="text-[13px] font-semibold text-zinc-900">
                       {m.nickname}
                     </div>
                     {!m.is_read && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-purple-600" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-600" aria-label="안 읽음" />
                     )}
                   </div>
-                  <p className="mt-1 text-sm text-zinc-600 line-clamp-2">
+                  <p className="mt-1 text-[12px] text-zinc-600 line-clamp-2 leading-relaxed">
                     {m.message}
                   </p>
-                  <div className="mt-1 text-xs text-zinc-400">
+                  <div className="mt-1 text-[10px] text-zinc-400 tabular-nums">
                     {new Date(m.created_at).toLocaleString("ko-KR")}
                   </div>
                 </li>
               ))}
             </ul>
           )}
-        </PanelCard>
+        </Panel>
       </div>
     </div>
   );
 }
 
-function TrendCard({
-  label,
-  current,
-  previous,
-}: {
-  label: string;
-  current: number;
-  previous: number;
-}) {
-  const delta = current - previous;
-  const pct =
-    previous === 0
-      ? current === 0
-        ? 0
-        : 100
-      : Math.round((delta / previous) * 100);
-  const isUp = delta > 0;
-  const isFlat = delta === 0;
-  const color = isFlat
-    ? "text-zinc-500"
-    : isUp
-      ? "text-emerald-600"
-      : "text-rose-600";
-  return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-5 flex items-center justify-between gap-4">
-      <div>
-        <div className="text-[12px] text-zinc-500 font-semibold">{label}</div>
-        <div className="mt-1.5 flex items-baseline gap-2">
-          <span className="text-3xl font-extrabold text-zinc-900 tabular-nums leading-none">
-            {current}
-          </span>
-          <span className="text-[11px] text-zinc-400 tabular-nums">
-            지난 주 {previous}
-          </span>
-        </div>
-      </div>
-      <div className={`text-sm font-bold tabular-nums ${color}`}>
-        {isFlat ? "—" : (isUp ? "+" : "") + pct + "%"}
-      </div>
-    </div>
-  );
-}
-
-function KpiCard({
-  label,
-  value,
-  hint,
-  // accent kept in the signature for caller stability but no longer wired
-  // to a pastel band — the card design is now monochrome with a single
-  // hint chip in zinc, which reads as a real product KPI rather than a
-  // generic "AI dashboard" pastel grid.
-}: {
-  label: string;
-  value: number | string;
-  hint?: string;
-  accent: "purple" | "yellow" | "emerald" | "zinc";
-}) {
-  return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-5 hover:border-zinc-300 transition-colors">
-      <div className="text-[12px] font-semibold text-zinc-500 mb-2">
-        {label}
-      </div>
-      <div className="flex items-baseline justify-between gap-2">
-        <div className="text-3xl font-extrabold text-zinc-900 tabular-nums leading-none">
-          {value}
-        </div>
-        {hint && (
-          <div className="text-[11px] font-medium text-zinc-400 tabular-nums">
-            {hint}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function PanelCard({
-  title,
-  link,
-  children,
-}: {
-  title: string;
-  link?: { href: string; label: string };
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-5">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-zinc-900">{title}</h3>
-        {link && (
-          <Link
-            href={link.href}
-            className="text-xs font-bold text-zinc-500 hover:text-zinc-900 transition-colors"
-          >
-            {link.label}
-          </Link>
-        )}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function EmptyState({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="py-10 text-center text-sm text-zinc-400">{children}</div>
-  );
-}
-
-function SectionHeader({
+/**
+ * Smaller header used inside a page section (e.g. "표지 사진" and
+ * "표지 영상" inside the 이번 호 tab). Lighter weight than PageHeader
+ * because it's a sub-grouping.
+ */
+function SubSectionHeader({
   title,
   subtitle,
-  children,
 }: {
   title: string;
   subtitle?: string;
-  children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-900">{title}</h1>
-        {subtitle && <p className="text-sm text-zinc-500 mt-1">{subtitle}</p>}
-      </div>
-      {children}
+    <div className="mb-4">
+      <h2 className="text-[15px] font-bold text-zinc-900">{title}</h2>
+      {subtitle && <p className="text-[12px] text-zinc-500 mt-1">{subtitle}</p>}
     </div>
   );
 }
 
 // ─── Auditions ────────────────────────────────────────────
-
-function statusKo(status: Audition["status"]) {
-  switch (status) {
-    case "pending": return "대기";
-    case "reviewing": return "검토중";
-    case "accepted": return "합격";
-    case "rejected": return "불합격";
-  }
-}
-function statusColor(status: Audition["status"]) {
-  switch (status) {
-    case "pending": return "bg-zinc-100 text-zinc-700";
-    case "reviewing": return "bg-amber-100 text-amber-800";
-    case "accepted": return "bg-emerald-100 text-emerald-800";
-    case "rejected": return "bg-rose-100 text-rose-800";
-  }
-}
-function StatusBadge({ status }: { status: Audition["status"] }) {
-  return (
-    <span
-      className={`text-[11px] font-bold px-2 py-0.5 rounded ${statusColor(status)}`}
-    >
-      {statusKo(status)}
-    </span>
-  );
-}
 
 const ROLE_PREF_KO: Record<string, string> = {
   lead: "주연",
@@ -595,38 +497,60 @@ const GENDER_KO: Record<string, string> = {
   other: "기타",
 };
 
+/**
+ * Auditions list — real admin table feel.
+ *
+ * The whole table sits inside a single bordered surface with a sticky
+ * column header row. Each row is a <details> that expands inline to
+ * show the candidate dossier. `grid` template ensures columns line up
+ * with the header.
+ */
 function AuditionsTable({ items }: { items: Audition[] }) {
   if (items.length === 0)
     return <EmptyCard>아직 접수된 오디션 지원이 없습니다.</EmptyCard>;
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white overflow-hidden divide-y divide-zinc-100">
-      {items.map((a) => (
-        <details
-          key={a.id}
-          className="group"
-          data-aud-row
-          data-aud-search={`${a.name} ${a.email} ${a.phone ?? ""} ${a.intro} ${a.role_preference ?? ""} ${a.experience ?? ""}`}
-        >
-          <summary className="cursor-pointer list-none px-4 py-3 grid grid-cols-[auto_1fr_auto] sm:grid-cols-[80px_1fr_auto_auto_auto] gap-3 items-center hover:bg-zinc-50">
-            <span className="text-xs font-mono text-zinc-500">
-              #{String(a.id).padStart(4, "0")}
-            </span>
-            <span className="min-w-0">
-              <span className="font-semibold text-zinc-900">{a.name}</span>
-              {a.age && <span className="ml-2 text-zinc-400 text-xs">{a.age}세</span>}
-              <span className="block text-xs text-zinc-500 truncate">{a.email}</span>
-            </span>
-            <span className="text-zinc-600 text-sm hidden sm:inline">{rolePrefKo(a.role_preference) ?? "—"}</span>
-            <StatusBadge status={a.status} />
-            <span className="text-xs text-zinc-400 hidden sm:inline">
-              {new Date(a.created_at).toLocaleDateString("ko-KR")}
-              <span className="ml-2 text-purple-700 group-open:rotate-180 inline-block transition-transform">▾</span>
-            </span>
-          </summary>
-          <AuditionDetail audition={a} />
-        </details>
-      ))}
+    <div className="rounded-lg border border-zinc-200 bg-white overflow-hidden">
+      {/* Sticky header row — matches the column template of each
+          summary row below (and the responsive collapse points). */}
+      <div className="hidden sm:grid sticky top-14 z-10 grid-cols-[88px_1fr_120px_88px_110px_24px] gap-3 items-center px-4 py-2.5 bg-zinc-50/95 backdrop-blur border-b border-zinc-200 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+        <span>ID</span>
+        <span>지원자</span>
+        <span>포지션</span>
+        <span>상태</span>
+        <span>제출일</span>
+        <span />
+      </div>
+      <div className="divide-y divide-zinc-100">
+        {items.map((a) => (
+          <details
+            key={a.id}
+            className="group"
+            data-aud-row
+            data-aud-search={`${a.name} ${a.email} ${a.phone ?? ""} ${a.intro} ${a.role_preference ?? ""} ${a.experience ?? ""}`}
+          >
+            <summary className="cursor-pointer list-none grid grid-cols-[1fr_auto_24px] sm:grid-cols-[88px_1fr_120px_88px_110px_24px] gap-3 items-center px-4 py-3 hover:bg-zinc-50 transition-colors text-[13px]">
+              <span className="hidden sm:inline text-[11px] font-mono text-zinc-500 tabular-nums">
+                #{String(a.id).padStart(4, "0")}
+              </span>
+              <span className="min-w-0">
+                <span className="font-semibold text-zinc-900">{a.name}</span>
+                {a.age && <span className="ml-1.5 text-zinc-400 text-[11px]">{a.age}세</span>}
+                <span className="block text-[11px] text-zinc-500 truncate mt-0.5">{a.email}</span>
+              </span>
+              <span className="hidden sm:inline text-zinc-700 text-[12px]">{rolePrefKo(a.role_preference) ?? "—"}</span>
+              <StatusPill status={a.status as AuditionStatus} />
+              <span className="hidden sm:inline text-[11px] text-zinc-500 tabular-nums">
+                {new Date(a.created_at).toLocaleDateString("ko-KR")}
+              </span>
+              <span className="text-zinc-400 text-xs group-open:rotate-180 transition-transform justify-self-end">
+                <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="currentColor"><path d="M3 6l5 5 5-5z" /></svg>
+              </span>
+            </summary>
+            <AuditionDetail audition={a} />
+          </details>
+        ))}
+      </div>
     </div>
   );
 }
@@ -671,7 +595,7 @@ async function AuditionDetail({ audition: a }: { audition: Audition }) {
                 사진 없음
               </div>
             )}
-            <div className="absolute -top-2 -left-2 bg-zinc-900 text-white text-[10px] font-mono px-1.5 py-0.5 rounded-sm shadow-sm">
+            <div className="absolute -top-2 -left-2 bg-zinc-900 text-white text-[10px] font-mono px-1.5 py-0.5 rounded-sm shadow-sm tabular-nums">
               #{String(a.id).padStart(4, "0")}
             </div>
           </div>
@@ -822,52 +746,100 @@ function FactRow({
 
 // ─── Fan Messages ─────────────────────────────────────────
 
+/**
+ * Fan messages list — now a real admin inbox table, not the previous
+ * "two-column card wall" which read like a marketing block. Each row
+ * is a single line at rest (sender · short preview · status pill ·
+ * date) and expands to show the full message + actions inline.
+ *
+ * Same `<details>` pattern as the auditions table so keyboard
+ * navigation (Tab → Enter) is consistent.
+ */
 function FanMessagesTable({ items }: { items: FanMessage[] }) {
   if (items.length === 0)
     return <EmptyCard>아직 받은 응원 메시지가 없습니다.</EmptyCard>;
+
   return (
-    <div className="grid md:grid-cols-2 gap-4">
-      {items.map((m) => (
-        <div
-          key={m.id}
-          data-fan-row
-          data-fan-search={`${m.nickname} ${m.email ?? ""} ${m.message} ${m.favorite_work ?? ""}`}
-          className={`rounded-xl border bg-white p-5 transition-colors ${m.is_read ? "border-zinc-200" : "border-zinc-300"}`}
-        >
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <div className="flex items-center gap-2">
-              {!m.is_read && (
-                <span className="w-2 h-2 rounded-full bg-purple-600 shrink-0" />
-              )}
-              <div>
-                <div className="font-bold text-zinc-900 text-[15px]">{m.nickname}</div>
-                <div className="text-xs text-zinc-500 mt-0.5">
-                  {m.favorite_work ? `${m.favorite_work} · ` : ""}
-                  {new Date(m.created_at).toLocaleString("ko-KR")}
-                </div>
-              </div>
-            </div>
-            <span
-              className={`text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full ${
-                m.is_read ? "bg-zinc-100 text-zinc-500" : "bg-zinc-900 text-white"
-              }`}
-            >
-              {m.is_read ? "확인함" : "NEW"}
-            </span>
-          </div>
-          <p className="text-sm text-zinc-700 whitespace-pre-wrap border-l-2 border-zinc-200 pl-3">
-            {m.message}
-          </p>
-          {m.email && <div className="mt-2 text-xs text-zinc-500">📧 {m.email}</div>}
-          <div className="mt-3 pt-3 border-t border-zinc-100">
-            <AdminActions
-              type="fan"
-              id={m.id}
-              currentIsRead={Boolean(m.is_read)}
-            />
-          </div>
+    <div className="rounded-lg border border-zinc-200 bg-white overflow-hidden">
+      {/* Sticky column header — mirrors the per-row template below. */}
+      <div className="hidden sm:grid sticky top-14 z-10 grid-cols-[16px_140px_1fr_88px_110px_24px] gap-3 items-center px-4 py-2.5 bg-zinc-50/95 backdrop-blur border-b border-zinc-200 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+        <span />
+        <span>닉네임</span>
+        <span>메시지</span>
+        <span>상태</span>
+        <span>제출일</span>
+        <span />
+      </div>
+      <div className="divide-y divide-zinc-100">
+        {items.map((m) => (
+          <details
+            key={m.id}
+            className="group"
+            data-fan-row
+            data-fan-search={`${m.nickname} ${m.email ?? ""} ${m.message} ${m.favorite_work ?? ""}`}
+          >
+            <summary className="cursor-pointer list-none grid grid-cols-[16px_1fr_24px] sm:grid-cols-[16px_140px_1fr_88px_110px_24px] gap-3 items-center px-4 py-3 hover:bg-zinc-50 transition-colors text-[13px]">
+              <span
+                className={`w-1.5 h-1.5 rounded-full justify-self-center ${
+                  m.is_read ? "bg-transparent" : "bg-purple-600"
+                }`}
+                aria-label={m.is_read ? "" : "안 읽음"}
+              />
+              <span className="font-semibold text-zinc-900 truncate">{m.nickname}</span>
+              <span className="text-[12px] text-zinc-600 truncate">
+                {m.favorite_work && (
+                  <span className="text-zinc-400 mr-1.5">{m.favorite_work} ·</span>
+                )}
+                {m.message.replace(/\s+/g, " ").slice(0, 80)}
+              </span>
+              <span
+                className={`hidden sm:inline-flex items-center justify-center text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-md tabular-nums ${
+                  m.is_read ? "bg-zinc-100 text-zinc-500" : "bg-purple-100 text-purple-700"
+                }`}
+              >
+                {m.is_read ? "확인함" : "NEW"}
+              </span>
+              <span className="hidden sm:inline text-[11px] text-zinc-500 tabular-nums">
+                {new Date(m.created_at).toLocaleDateString("ko-KR")}
+              </span>
+              <span className="text-zinc-400 text-xs group-open:rotate-180 transition-transform justify-self-end">
+                <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="currentColor"><path d="M3 6l5 5 5-5z" /></svg>
+              </span>
+            </summary>
+            <FanMessageDetail message={m} />
+          </details>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FanMessageDetail({ message: m }: { message: FanMessage }) {
+  return (
+    <div className="bg-zinc-50/60 border-t border-zinc-200 px-6 py-5">
+      <div className="max-w-2xl space-y-4">
+        <div className="text-[12px] text-zinc-500 tabular-nums">
+          {new Date(m.created_at).toLocaleString("ko-KR")}
+          {m.email && (
+            <>
+              <span className="mx-2 text-zinc-300">·</span>
+              <a href={`mailto:${m.email}`} className="text-purple-700 hover:underline">
+                {m.email}
+              </a>
+            </>
+          )}
         </div>
-      ))}
+        <blockquote className="rounded-xl bg-white border border-zinc-200 px-4 py-3 text-[14px] text-zinc-800 whitespace-pre-wrap leading-relaxed">
+          {m.message}
+        </blockquote>
+        <div className="pt-2">
+          <AdminActions
+            type="fan"
+            id={m.id}
+            currentIsRead={Boolean(m.is_read)}
+          />
+        </div>
+      </div>
     </div>
   );
 }

@@ -14,11 +14,16 @@ export default function ContentEditor({ items }: { items: Item[] }) {
 
   return (
     <div className="space-y-8">
-      <div className="rounded border border-zinc-200 bg-white p-4 text-sm text-zinc-600 leading-relaxed">
-        <strong className="text-zinc-900">사이트의 모든 텍스트</strong>를 여기서
-        바꿀 수 있어요. 한국어와 영어 각각 따로 저장됩니다 —
-        영어를 비워두면 사이트가 영어 모드여도 한국어로 폴백돼요. 저장 즉시
-        메인 사이트에 반영됩니다.
+      <div className="rounded-lg border border-purple-100 bg-purple-50/40 p-4 text-sm text-zinc-700 leading-relaxed flex items-start gap-3">
+        <span className="inline-flex w-6 h-6 rounded-full bg-purple-600 text-white text-[11px] font-bold grid place-items-center shrink-0 mt-0.5" aria-hidden>
+          i
+        </span>
+        <span>
+          <strong className="text-zinc-900">사이트의 모든 텍스트</strong>를 여기서
+          바꿀 수 있어요. 한국어와 영어 각각 따로 저장됩니다 —
+          영어를 비워두면 사이트가 영어 모드여도 한국어로 폴백돼요. 저장 즉시
+          메인 사이트에 반영됩니다.
+        </span>
       </div>
       {Object.entries(grouped).map(([section, entries]) => (
         <section key={section}>
@@ -149,14 +154,14 @@ function ContentField({
             onChange={(e) => setValue(e.target.value)}
             rows={Math.min(8, Math.max(2, (value || "").split("\n").length + 1))}
             placeholder={label === "EN" ? "(영어 미입력 시 한국어로 표시)" : ""}
-            className="w-full rounded border border-zinc-300 px-3 py-2 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent placeholder:text-zinc-400"
+            className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-sans transition-colors focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 placeholder:text-zinc-400"
           />
         ) : (
           <input
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={label === "EN" ? "(영어 미입력 시 한국어로 표시)" : ""}
-            className="w-full rounded border border-zinc-300 px-3 py-2 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent placeholder:text-zinc-400"
+            className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-sans transition-colors focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 placeholder:text-zinc-400"
           />
         )}
         {error && <div className="mt-1 text-xs text-red-600">⚠ {error}</div>}
@@ -171,7 +176,7 @@ function ContentField({
           type="button"
           onClick={save}
           disabled={!dirty || pending}
-          className="px-3 py-1.5 text-xs font-semibold rounded bg-purple-600 text-white hover:bg-purple-700 disabled:bg-zinc-200 disabled:text-zinc-400 disabled:cursor-not-allowed"
+          className="px-3 py-1.5 text-xs font-bold rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 active:scale-[0.98] transition-all disabled:bg-zinc-200 disabled:text-zinc-400 disabled:cursor-not-allowed disabled:active:scale-100"
         >
           {pending ? "..." : "저장"}
         </button>
@@ -179,7 +184,7 @@ function ContentField({
           <button
             type="button"
             onClick={reset}
-            className="px-3 py-1.5 text-xs font-semibold rounded border border-zinc-300 text-zinc-700 hover:bg-zinc-50"
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-zinc-200 text-zinc-700 hover:bg-zinc-50"
             title={label === "EN" ? "영어 입력값 지우기" : "초기값으로 되돌리기"}
           >
             ↺
