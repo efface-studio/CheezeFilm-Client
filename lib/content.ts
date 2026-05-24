@@ -29,10 +29,17 @@ const CONTENT_TTL = 300; // 5 min
 
 export type ContentType = "text" | "longtext";
 
+/**
+ * `fallbackEn` is the default English text shown when the user is in EN
+ * mode and the admin hasn't entered an English override for this key.
+ * Always-Korean keys (email addresses, business registration numbers,
+ * raw numeric stats) can omit it.
+ */
 export type ContentEntry = {
   key: string;
   label: string;
   fallback: string;
+  fallbackEn?: string;
   type: ContentType;
   section: string;
 };
@@ -43,6 +50,7 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     key: "hero.tape",
     label: "히어로 상단 태그",
     fallback: "NOW SHOWING · 상영중",
+    fallbackEn: "NOW SHOWING · On Air",
     type: "text",
     section: "히어로",
   },
@@ -50,6 +58,7 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     key: "hero.title.line1",
     label: "히어로 타이틀 1줄",
     fallback: "스토리를 굽는",
+    fallbackEn: "The people who",
     type: "text",
     section: "히어로",
   },
@@ -57,6 +66,7 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     key: "hero.title.line2",
     label: "히어로 타이틀 2줄 (보라색 강조)",
     fallback: "사람들.",
+    fallbackEn: "bake stories.",
     type: "text",
     section: "히어로",
   },
@@ -65,6 +75,8 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     label: "히어로 설명문",
     fallback:
       "치즈필름은 2017년 1월 23일 첫 영상을 올린 뒤, 332만 명의 구독자와 함께 청춘의 한 컷 한 컷을 만들어온 웹드라마 스튜디오입니다. 우리는 매주, 누군가의 인생 한 장면이 될 이야기를 굽고 있습니다.",
+    fallbackEn:
+      "CheezeFilm is a web-drama studio that has been crafting frame-by-frame portraits of youth since our first upload on January 23, 2017 — joined by 3.32M subscribers along the way. Every week, we bake a new story that could become a scene in someone's life.",
     type: "longtext",
     section: "히어로",
   },
@@ -72,28 +84,34 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     key: "hero.byline",
     label: "히어로 한줄 (대표 / 스튜디오)",
     fallback: "대표 김은하 · 스튜디오 치즈",
+    fallbackEn: "CEO Eunha Kim · Studio Cheeze",
     type: "text",
     section: "히어로",
   },
 
   // ─── STATS ───────────────────────────────────────────────
+  // Numeric values stay the same in both languages; only labels and the
+  // 億 / Hundred-million suffix get translated.
   { key: "stats.subscribers", label: "구독자 (예: 3.32)", fallback: "3.32", type: "text", section: "통계" },
   { key: "stats.subscribers.suffix", label: "구독자 접미사", fallback: "M+", type: "text", section: "통계" },
-  { key: "stats.subscribers.label", label: "구독자 레이블", fallback: "유튜브 구독자", type: "text", section: "통계" },
+  { key: "stats.subscribers.label", label: "구독자 레이블", fallback: "유튜브 구독자", fallbackEn: "YouTube subscribers", type: "text", section: "통계" },
   { key: "stats.videos", label: "공개 영상 수", fallback: "503", type: "text", section: "통계" },
   { key: "stats.videos.suffix", label: "영상 수 접미사", fallback: "+", type: "text", section: "통계" },
-  { key: "stats.videos.label", label: "영상 수 레이블", fallback: "공개된 작품", type: "text", section: "통계" },
+  { key: "stats.videos.label", label: "영상 수 레이블", fallback: "공개된 작품", fallbackEn: "Published works", type: "text", section: "통계" },
   { key: "stats.views", label: "누적 조회수", fallback: "13.8", type: "text", section: "통계" },
-  { key: "stats.views.suffix", label: "조회수 접미사", fallback: "억", type: "text", section: "통계" },
-  { key: "stats.views.label", label: "조회수 레이블", fallback: "누적 조회수", type: "text", section: "통계" },
+  // "억" = 100 million in Korean. EN displays "× 100M" so the number reads
+  // naturally without restating the value (13.8 × 100M = 1.38 billion).
+  { key: "stats.views.suffix", label: "조회수 접미사", fallback: "억", fallbackEn: "×100M", type: "text", section: "통계" },
+  { key: "stats.views.label", label: "조회수 레이블", fallback: "누적 조회수", fallbackEn: "Total views", type: "text", section: "통계" },
   { key: "stats.year", label: "개설 연도", fallback: "2017", type: "text", section: "통계" },
-  { key: "stats.year.label", label: "개설 레이블", fallback: "스튜디오 개설", type: "text", section: "통계" },
+  { key: "stats.year.label", label: "개설 레이블", fallback: "스튜디오 개설", fallbackEn: "Founded", type: "text", section: "통계" },
 
   // ─── STORY ───────────────────────────────────────────────
   {
     key: "story.chapter",
     label: "스토리 챕터 라벨",
     fallback: "CHAPTER 01",
+    fallbackEn: "CHAPTER 01",
     type: "text",
     section: "스토리",
   },
@@ -101,6 +119,7 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     key: "story.heading.before",
     label: "스토리 헤딩 앞부분",
     fallback: "우리 채널,",
+    fallbackEn: "Our channel,",
     type: "text",
     section: "스토리",
   },
@@ -108,6 +127,7 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     key: "story.heading.brand",
     label: "스토리 헤딩 강조어",
     fallback: "치즈필름",
+    fallbackEn: "CheezeFilm",
     type: "text",
     section: "스토리",
   },
@@ -115,6 +135,7 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     key: "story.heading.after",
     label: "스토리 헤딩 뒷부분",
     fallback: "이야기.",
+    fallbackEn: "in one story.",
     type: "text",
     section: "스토리",
   },
@@ -123,6 +144,8 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     label: "스토리 문단 1",
     fallback:
       "한 권의 만화책처럼, 한 컷씩 모인 우리의 영상은 어느새 503편이 넘었습니다. 2017년 1월 23일, 작은 카메라 한 대로 시작한 이 채널은 지금 332만 명의 구독자가 매주 찾는 작은 영화관이 되었습니다.",
+    fallbackEn:
+      "Like a comic book put together frame by frame, our films have grown past 503 episodes. What began on January 23, 2017 with a single small camera has become a little cinema that 3.32 million subscribers visit every week.",
     type: "longtext",
     section: "스토리",
   },
@@ -131,6 +154,8 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     label: "스토리 문단 2",
     fallback:
       "치즈필름은 (주)스튜디오 치즈에서 운영하는 웹드라마·광고 제작팀이며, 2021년부터 샌드박스 네트워크의 파트너로 합류해 더 많은 청춘의 이야기를 굽고 있습니다.",
+    fallbackEn:
+      "CheezeFilm is the web-drama and commercial production team at Studio Cheeze Co., Ltd. Since 2021 we've partnered with Sandbox Network to bake even more stories about youth.",
     type: "longtext",
     section: "스토리",
   },
@@ -143,6 +168,8 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
   // Slots 1-10 are exposed in the admin "표지 영상 (폴백)" picker; slots
   // beyond the first three are extras for richer fallback rotations when
   // there are no cover photos uploaded yet.
+  //
+  // No fallbackEn — video IDs are language-agnostic.
   ...Array.from({ length: 10 }, (_, i) => ({
     key: `works.${i + 1}.videoId`,
     label: `${i + 1}번 대표작 YouTube videoId`,
@@ -156,6 +183,7 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     key: "cta.heading.line1",
     label: "CTA 헤드라인 1",
     fallback: "다음 한 컷,",
+    fallbackEn: "The next frame,",
     type: "text",
     section: "CTA",
   },
@@ -163,6 +191,7 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     key: "cta.heading.line2",
     label: "CTA 헤드라인 2",
     fallback: "당신과 함께.",
+    fallbackEn: "with you.",
     type: "text",
     section: "CTA",
   },
@@ -171,6 +200,8 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     label: "CTA 본문",
     fallback:
       "오디션에 도전하거나, 응원의 한마디를 남겨주세요. 모든 메시지는 스튜디오 치즈필름의 작은 카페에서 한 번씩 꺼내 읽고 있습니다.",
+    fallbackEn:
+      "Audition for a role, or leave a note of support. Every message gets read — often together over coffee at the studio.",
     type: "longtext",
     section: "CTA",
   },
@@ -180,6 +211,7 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     key: "support.tape",
     label: "지원 페이지 태그",
     fallback: "AUDITION · 응원함",
+    fallbackEn: "AUDITION · Fan letters",
     type: "text",
     section: "지원 페이지",
   },
@@ -187,6 +219,7 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     key: "support.title",
     label: "지원 페이지 타이틀",
     fallback: "한 장면, 함께 굽기.",
+    fallbackEn: "Bake a scene with us.",
     type: "text",
     section: "지원 페이지",
   },
@@ -195,6 +228,8 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     label: "지원 페이지 소개문",
     fallback:
       "치즈필름의 다음 작품에 도전하거나, 좋아하는 작품에 응원의 한마디를 남겨주세요. 보내주신 내용은 모두 제작팀이 직접 읽습니다.",
+    fallbackEn:
+      "Audition for CheezeFilm's next project, or leave a note for a film you love. Every submission is read directly by our production team.",
     type: "longtext",
     section: "지원 페이지",
   },
@@ -205,9 +240,12 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     label: "푸터 한줄",
     fallback:
       "스토리를 굽는 사람들. \n2017년부터 이어진 우리의 작은 영화관에 오신 걸 환영합니다.",
+    fallbackEn:
+      "The people who bake stories.\nWelcome to the small cinema we've been running since 2017.",
     type: "longtext",
     section: "푸터",
   },
+  // Email addresses + phone — no fallbackEn needed.
   {
     key: "contact.business",
     label: "비즈니스 이메일",
@@ -233,6 +271,7 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     key: "footer.copyright",
     label: "푸터 저작권 표기",
     fallback: "© {year} (주)스튜디오 치즈. All rights reserved.",
+    fallbackEn: "© {year} Studio Cheeze Co., Ltd. All rights reserved.",
     type: "text",
     section: "푸터",
   },
@@ -242,6 +281,7 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     key: "company.name",
     label: "상호",
     fallback: "(주)스튜디오 치즈",
+    fallbackEn: "Studio Cheeze Co., Ltd.",
     type: "text",
     section: "회사 정보",
   },
@@ -256,6 +296,7 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     key: "company.ceo",
     label: "대표이사",
     fallback: "김은하",
+    fallbackEn: "Eunha Kim",
     type: "text",
     section: "회사 정보",
   },
@@ -263,9 +304,11 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     key: "company.founded",
     label: "법인 설립",
     fallback: "2020년 7월",
+    fallbackEn: "July 2020",
     type: "text",
     section: "회사 정보",
   },
+  // Registration codes stay as-is across languages.
   {
     key: "company.business_no",
     label: "사업자등록번호",
@@ -291,6 +334,8 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     key: "company.address",
     label: "주소",
     fallback: "서울특별시 마포구 동교동 155-27, 효성홍익인간오피스텔 2층 270호",
+    fallbackEn:
+      "270, 2F, Hyoseong Hongikingan Officetel, 155-27 Donggyo-dong, Mapo-gu, Seoul, Republic of Korea",
     type: "longtext",
     section: "회사 정보",
   },
@@ -305,6 +350,7 @@ export const CONTENT_REGISTRY: ContentEntry[] = [
     key: "company.network",
     label: "MCN/소속",
     fallback: "샌드박스 네트워크 (2021.06~)",
+    fallbackEn: "Sandbox Network (since June 2021)",
     type: "text",
     section: "회사 정보",
   },
@@ -348,17 +394,36 @@ export const loadContentMap = cache(async (): Promise<Map<string, string>> => {
  * Sync lookup against a previously loaded Map. Pages/components:
  *
  *   const content = await loadContentMap();
- *   const c = (key: string) => getContent(content, key);
+ *   const c = (key: string) => getContent(content, key, lang);
  *
  * That pattern keeps the rest of the page synchronous — no `await` in
- * every JSX expression. Returns the registry fallback when the key is
- * unknown or the DB has no override.
+ * every JSX expression.
+ *
+ * Resolution order:
+ *   EN mode:
+ *     1. admin override `${key}.en` from the map
+ *     2. registry `fallbackEn`
+ *     3. admin override `${key}` from the map (KO)
+ *     4. registry `fallback` (KO)
+ *   KO mode (default):
+ *     1. admin override `${key}` from the map
+ *     2. registry `fallback`
+ *
+ * Returns "" when the key is unknown and has no map entry.
  */
+import type { Lang } from "./i18n";
+
 export function getContent(
   map: Map<string, string>,
   key: string,
+  lang: Lang = "ko",
 ): string {
   const entry = CONTENT_REGISTRY.find((e) => e.key === key);
+  if (lang === "en") {
+    const enOverride = map.get(`${key}.en`);
+    if (enOverride && enOverride.trim()) return enOverride;
+    if (entry?.fallbackEn) return entry.fallbackEn;
+  }
   if (!entry) {
     if (process.env.NODE_ENV !== "production") {
       console.warn(`[content] Unknown key: ${key}`);
