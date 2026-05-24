@@ -67,20 +67,27 @@ const nextConfig: NextConfig = {
           // Pretendard CDN + Google Fonts. Tightened beyond Next's defaults.
           //
           // Notable choices:
-          //   - `script-src` is `'self' 'unsafe-inline'` only in production;
-          //     dev needs `'unsafe-eval'` because Next's dev runtime (Fast
-          //     Refresh / HMR) uses eval'd modules. Production builds don't,
-          //     so removing it shrinks the XSS blast radius.
-          //   - `'unsafe-inline'` for scripts stays because Next inlines a
-          //     small bootstrap script on every page; replacing it with
-          //     nonces would require per-request CSP injection (middleware).
+          //   - `script-src` requires BOTH `'unsafe-inline'` AND
+          //     `'unsafe-eval'`, even in production. React 19's streaming
+          //     SSR injects an inline bootstrap script that defines
+          //     `$RC` / `$RS` (the runtime helpers that swap each
+          //     Suspense boundary's fallback for its resolved content)
+          //     via `new Function(...)`. Without `'unsafe-eval'` those
+          //     helpers can't be created → every Suspense boundary on
+          //     the page stays stuck on its fallback forever, which is
+          //     what we observed on `/` (FilmsGrid, ShortsStripSection,
+          //     LiveStatsBar all showed their skeletons indefinitely
+          //     after PR #71 dropped 'unsafe-eval' from prod).
+          //   - `'unsafe-inline'` is needed because Next + React inline
+          //     the bootstrap as a literal `<script>` tag; replacing it
+          //     with nonces would require per-request CSP injection via
+          //     middleware. Not worth the complexity for the marginal
+          //     XSS reduction over 'unsafe-inline'.
           {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              process.env.NODE_ENV === "production"
-                ? "script-src 'self' 'unsafe-inline'"
-                : "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
               "font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com",
               // Instagram CDN added so member portraits can render even when
