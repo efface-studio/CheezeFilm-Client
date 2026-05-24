@@ -4,6 +4,8 @@ import Link, { useLinkStatus } from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import LangToggle from "@/components/LangToggle";
+import type { Lang } from "@/lib/i18n";
 
 /**
  * Pending indicator — sits inside a Link and lights up the moment Next
@@ -88,7 +90,7 @@ function deriveOpenLabel(roleTypes: Set<OpenRoleType>): string {
   return "";
 }
 
-export default function SiteNav() {
+export default function SiteNav({ lang = "ko" }: { lang?: Lang }) {
   const pathname = usePathname();
   const isHome = pathname === "/";
   const [activeId, setActiveId] = useState<NavItem["sectionId"] | null>(null);
@@ -348,14 +350,16 @@ export default function SiteNav() {
                     >
                       {item.num}
                     </span>
-                    <span className="flex-1">{item.label}</span>
+                    <span className="flex-1">
+                      {lang === "en" ? item.labelEn : item.label}
+                    </span>
                     <span
                       aria-hidden
                       className={`text-[10px] tracking-wider uppercase transition-opacity ${
                         active ? "opacity-60" : "opacity-0"
                       }`}
                     >
-                      {item.labelEn}
+                      {lang === "en" ? item.label : item.labelEn}
                     </span>
                   </Link>
                 </li>
@@ -408,24 +412,30 @@ export default function SiteNav() {
             </div>
           </Link>
 
-          <div className="flex items-center gap-3 text-[10px] tracking-[0.3em] uppercase">
-            <a
-              href="https://www.youtube.com/@CheezeFilmz"
-              target="_blank"
-              rel="noreferrer"
-              className="text-cheeze-olive hover:text-cheeze-purple transition-colors"
-            >
-              YouTube
-            </a>
-            <span className="text-cheeze-olive/30">·</span>
-            <a
-              href="https://www.instagram.com/cheezefilm.official/"
-              target="_blank"
-              rel="noreferrer"
-              className="text-cheeze-olive hover:text-cheeze-purple transition-colors"
-            >
-              IG
-            </a>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 text-[10px] tracking-[0.3em] uppercase">
+              <a
+                href="https://www.youtube.com/@CheezeFilmz"
+                target="_blank"
+                rel="noreferrer"
+                className="text-cheeze-olive hover:text-cheeze-purple transition-colors"
+              >
+                YouTube
+              </a>
+              <span className="text-cheeze-olive/30">·</span>
+              <a
+                href="https://www.instagram.com/cheezefilm.official/"
+                target="_blank"
+                rel="noreferrer"
+                className="text-cheeze-olive hover:text-cheeze-purple transition-colors"
+              >
+                IG
+              </a>
+            </div>
+            {/* Language toggle — sits at the bottom of the rail next
+                to the social links. Tiny KO/EN pill, writes the
+                cf_lang cookie + refreshes the route via RSC. */}
+            <LangToggle lang={lang} />
           </div>
         </div>
       </aside>
@@ -538,11 +548,11 @@ export default function SiteNav() {
                         className="text-xl"
                         style={{ fontFamily: "var(--font-display)" }}
                       >
-                        {item.label}
+                        {lang === "en" ? item.labelEn : item.label}
                       </span>
                     </span>
                     <span className="text-[9px] tracking-[0.3em] uppercase text-cheeze-olive/60">
-                      {item.labelEn}
+                      {lang === "en" ? item.label : item.labelEn}
                     </span>
                   </Link>
                 </li>

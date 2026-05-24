@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { ContentEntry } from "@/lib/content";
 
-type Item = ContentEntry & { value: string };
+type Item = ContentEntry & { value: string; valueEn: string };
 
 export default function ContentEditor({ items }: { items: Item[] }) {
   const grouped = items.reduce<Record<string, Item[]>>((acc, it) => {
@@ -16,8 +16,9 @@ export default function ContentEditor({ items }: { items: Item[] }) {
     <div className="space-y-8">
       <div className="rounded border border-zinc-200 bg-white p-4 text-sm text-zinc-600 leading-relaxed">
         <strong className="text-zinc-900">사이트의 모든 텍스트</strong>를 여기서
-        바꿀 수 있어요. 저장 즉시 메인 사이트에 반영됩니다. 초기값으로 되돌리려면
-        ↺ 버튼을 누르세요.
+        바꿀 수 있어요. 한국어와 영어 각각 따로 저장됩니다 —
+        영어를 비워두면 사이트가 영어 모드여도 한국어로 폴백돼요. 저장 즉시
+        메인 사이트에 반영됩니다.
       </div>
       {Object.entries(grouped).map(([section, entries]) => (
         <section key={section}>
@@ -36,13 +37,68 @@ export default function ContentEditor({ items }: { items: Item[] }) {
 }
 
 function ContentRow({ item }: { item: Item }) {
+  return (
+    <div className="p-4 grid sm:grid-cols-[200px_1fr] gap-3 sm:gap-5 items-start">
+      <div className="text-sm">
+        <div className="font-semibold text-zinc-900">{item.label}</div>
+        <div className="mt-1 text-[11px] font-mono text-zinc-400 break-all">
+          {item.key}
+        </div>
+      </div>
+      <div className="space-y-3">
+        <ContentField
+          label="KO"
+          flagClass="bg-cheeze-purple/10 text-cheeze-purple"
+          item={item}
+          variantKey={item.key}
+          initialValue={item.value}
+          isDefault={item.value === item.fallback}
+          fallbackOnReset={item.fallback}
+        />
+        <ContentField
+          label="EN"
+          flagClass="bg-zinc-100 text-zinc-700"
+          item={item}
+          variantKey={`${item.key}.en`}
+          initialValue={item.valueEn}
+          // English is opt-in — there's no registry fallback. "Default"
+          // means "no English override set yet".
+          isDefault={item.valueEn === ""}
+          fallbackOnReset=""
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One value field inside a ContentRow — either the KO or EN variant.
+ * Both use the same /api/admin/content endpoint; the URL is keyed by
+ * `variantKey` (bare for KO, `.en` suffix for EN).
+ */
+function ContentField({
+  label,
+  flagClass,
+  item,
+  variantKey,
+  initialValue,
+  isDefault,
+  fallbackOnReset,
+}: {
+  label: string;
+  flagClass: string;
+  item: Item;
+  variantKey: string;
+  initialValue: string;
+  isDefault: boolean;
+  fallbackOnReset: string;
+}) {
   const router = useRouter();
-  const [value, setValue] = useState(item.value);
+  const [value, setValue] = useState(initialValue);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
-  const dirty = value !== item.value;
-  const isDefault = item.value === item.fallback;
+  const dirty = value !== initialValue;
 
   async function save() {
     setError("");
@@ -50,7 +106,7 @@ function ContentRow({ item }: { item: Item }) {
       const res = await fetch("/api/admin/content", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: item.key, value }),
+        body: JSON.stringify({ key: variantKey, value }),
       });
       if (!res.ok) {
         const d = (await res.json().catch(() => ({}))) as { error?: string };
@@ -64,16 +120,16 @@ function ContentRow({ item }: { item: Item }) {
   }
 
   async function reset() {
-    if (!confirm(`"${item.label}" 값을 초기값으로 되돌릴까요?`)) return;
+    if (!confirm(`"${item.label}" (${label}) 값을 ${label === "EN" ? "지울까요" : "초기값으로 되돌릴까요"}?`)) return;
     setError("");
     try {
       const res = await fetch("/api/admin/content", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: item.key, reset: true }),
+        body: JSON.stringify({ key: variantKey, reset: true }),
       });
       if (!res.ok) throw new Error("초기화 실패");
-      setValue(item.fallback);
+      setValue(fallbackOnReset);
       setSavedAt(new Date().toLocaleTimeString("ko-KR"));
       startTransition(() => router.refresh());
     } catch (e) {
@@ -82,31 +138,25 @@ function ContentRow({ item }: { item: Item }) {
   }
 
   return (
-    <div className="p-4 grid sm:grid-cols-[200px_1fr_auto] gap-3 sm:gap-5 items-start">
-      <div className="text-sm">
-        <div className="font-semibold text-zinc-900">{item.label}</div>
-        <div className="mt-1 text-[11px] font-mono text-zinc-400 break-all">
-          {item.key}
-        </div>
-        {!isDefault && (
-          <span className="mt-2 inline-block text-[10px] uppercase tracking-wider bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
-            수정됨
-          </span>
-        )}
-      </div>
-      <div>
+    <div className="flex items-start gap-3">
+      <span className={`shrink-0 inline-flex items-center justify-center w-9 h-7 rounded-md text-[10px] font-bold tracking-widest uppercase ${flagClass}`}>
+        {label}
+      </span>
+      <div className="flex-1 min-w-0">
         {item.type === "longtext" ? (
           <textarea
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            rows={Math.min(8, Math.max(2, value.split("\n").length + 1))}
-            className="w-full rounded border border-zinc-300 px-3 py-2 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            rows={Math.min(8, Math.max(2, (value || "").split("\n").length + 1))}
+            placeholder={label === "EN" ? "(영어 미입력 시 한국어로 표시)" : ""}
+            className="w-full rounded border border-zinc-300 px-3 py-2 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent placeholder:text-zinc-400"
           />
         ) : (
           <input
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            className="w-full rounded border border-zinc-300 px-3 py-2 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            placeholder={label === "EN" ? "(영어 미입력 시 한국어로 표시)" : ""}
+            className="w-full rounded border border-zinc-300 px-3 py-2 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent placeholder:text-zinc-400"
           />
         )}
         {error && <div className="mt-1 text-xs text-red-600">⚠ {error}</div>}
@@ -116,21 +166,21 @@ function ContentRow({ item }: { item: Item }) {
           </div>
         )}
       </div>
-      <div className="flex flex-row sm:flex-col gap-2">
+      <div className="flex flex-col gap-1.5 shrink-0">
         <button
           type="button"
           onClick={save}
           disabled={!dirty || pending}
           className="px-3 py-1.5 text-xs font-semibold rounded bg-purple-600 text-white hover:bg-purple-700 disabled:bg-zinc-200 disabled:text-zinc-400 disabled:cursor-not-allowed"
         >
-          {pending ? "저장중..." : "저장"}
+          {pending ? "..." : "저장"}
         </button>
         {!isDefault && (
           <button
             type="button"
             onClick={reset}
             className="px-3 py-1.5 text-xs font-semibold rounded border border-zinc-300 text-zinc-700 hover:bg-zinc-50"
-            title="초기값으로 되돌리기"
+            title={label === "EN" ? "영어 입력값 지우기" : "초기값으로 되돌리기"}
           >
             ↺
           </button>

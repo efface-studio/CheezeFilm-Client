@@ -5,6 +5,8 @@ import { getAllVideos } from "@/lib/youtube";
 import { getContent, loadContentMap } from "@/lib/content";
 import { getMembers } from "@/lib/members";
 import { storageUrl } from "@/lib/db";
+import { getServerLang } from "@/lib/i18n.server";
+import { tc } from "@/lib/i18n";
 import { InView, StaggerText } from "@/components/Stagger";
 import HeroCover from "@/components/HeroCover";
 import CountUp from "@/components/CountUp";
@@ -46,12 +48,16 @@ export default async function HomePage() {
   // streaming sub-components (LiveStatsBar, FilmsSection, ShortsStrip).
   // The module-level memo in getAllVideos coalesces those concurrent
   // calls into a single fetch — so it only runs once per render.
-  const [contentMap, members, coverPhotos] = await Promise.all([
+  const [lang, contentMap, members, coverPhotos] = await Promise.all([
+    getServerLang(),
     loadContentMap(),
     getMembers(),
     getCoverPhotos(),
   ]);
-  const c = (key: string) => getContent(contentMap, key);
+  // `c(key)` now picks the English variant (`${key}.en`) when the
+  // user is in EN mode and that variant has been set in admin →
+  // 콘텐츠. Falls back to Korean otherwise so the page never blanks.
+  const c = (key: string) => tc(contentMap, key, lang);
 
   // Admin-set hero video slots (10 max). When the admin hasn't picked
   // one for a slot we used to fall back to `longform[i]?.id`, but that
@@ -184,8 +190,8 @@ export default async function HomePage() {
             so the first paint never shows blanks. When the live data
             resolves the streamed HTML swaps in instantly. */}
         <div className="border-t border-cheeze-purple-deep/15">
-          <Suspense fallback={<StatsBar contentMap={contentMap} />}>
-            <LiveStatsBar contentMap={contentMap} />
+          <Suspense fallback={<StatsBar contentMap={contentMap} lang={lang} />}>
+            <LiveStatsBar contentMap={contentMap} lang={lang} />
           </Suspense>
         </div>
       </section>
@@ -600,14 +606,18 @@ export default async function HomePage() {
 // sites across routes keep working. The actual UI now lives in the
 // SiteNav client component — a left side rail on lg+ with IntersectionObserver
 // scroll-spy, falling back to a sticky compact top bar on mobile.
-export function SiteHeader() {
-  return <SiteNav />;
+export async function SiteHeader() {
+  const lang = await getServerLang();
+  return <SiteNav lang={lang} />;
 }
 
 export async function SiteFooter({ isHome = false }: { isHome?: boolean } = {}) {
   const year = new Date().getFullYear();
-  const contentMap = await loadContentMap();
-  const c = (key: string) => getContent(contentMap, key);
+  const [lang, contentMap] = await Promise.all([
+    getServerLang(),
+    loadContentMap(),
+  ]);
+  const c = (key: string) => tc(contentMap, key, lang);
   return (
     // On home we have the side rail on lg+, so main carries `lg:pl-56`. We
     // need the purple footer to reach the page edge while keeping its inner
@@ -785,7 +795,7 @@ export async function SiteFooter({ isHome = false }: { isHome?: boolean } = {}) 
           <h4 className="text-[10px] tracking-[0.4em] uppercase text-cheeze-yellow font-bold">
             Studio Info
           </h4>
-          <CompanyStrip contentMap={contentMap} />
+          <CompanyStrip contentMap={contentMap} lang={lang} />
         </div>
       </div>
 
@@ -818,8 +828,8 @@ export async function SiteFooter({ isHome = false }: { isHome?: boolean } = {}) 
 
 /** 한국 푸터 컨벤션 — 상호·대표·사업자등록번호 등을 footer 4-col 안에
  *  맞춰 세로 리스트로. 좁은 영역에 가로 wrap 으로 흩뿌리면 가독성 떨어짐. */
-function CompanyStrip({ contentMap }: { contentMap: Map<string, string> }) {
-  const c = (key: string) => getContent(contentMap, key);
+function CompanyStrip({ contentMap, lang }: { contentMap: Map<string, string>; lang: import("@/lib/i18n").Lang }) {
+  const c = (key: string) => tc(contentMap, key, lang);
   const items = [
     { label: "상호", value: c("company.name") },
     { label: "대표", value: c("company.ceo") },
@@ -854,8 +864,8 @@ function CompanyStrip({ contentMap }: { contentMap: Map<string, string> }) {
 
 /** Sync stats — uses only contentMap. Shown as the Suspense fallback
     for LiveStatsBar so the strip is never blank during stream. */
-function StatsBar({ contentMap }: { contentMap: Map<string, string> }) {
-  const c = (key: string) => getContent(contentMap, key);
+function StatsBar({ contentMap, lang }: { contentMap: Map<string, string>; lang: import("@/lib/i18n").Lang }) {
+  const c = (key: string) => tc(contentMap, key, lang);
   return (
     <div className="mx-auto max-w-[100rem] px-6 py-7 grid grid-cols-2 md:grid-cols-4 divide-x divide-cheeze-purple-deep/10">
       <Stat
@@ -886,8 +896,8 @@ function StatsBar({ contentMap }: { contentMap: Map<string, string> }) {
 /** Live stats — awaits getAllVideos for subscribers / views / video
     count from the YouTube Data API. Falls back to contentMap values
     when the API is missing or returns nothing. */
-async function LiveStatsBar({ contentMap }: { contentMap: Map<string, string> }) {
-  const c = (key: string) => getContent(contentMap, key);
+async function LiveStatsBar({ contentMap, lang }: { contentMap: Map<string, string>; lang: import("@/lib/i18n").Lang }) {
+  const c = (key: string) => tc(contentMap, key, lang);
   const { longform, shorts, subscriberCount, viewCount, totalCount } = await getAllVideos();
   const liveSubscribersM =
     typeof subscriberCount === "number" ? subscriberCount / 1_000_000 : null;
