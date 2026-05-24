@@ -175,13 +175,18 @@ export default function VideosGrid({
 
   function ShortsGrid({ videos, onOpen }: { videos: Video[]; onOpen: (v: Video) => void }) {
     return (
-      // 2 / 3 / 4 columns. User asked for "한줄에 4개씩" with cards
-      // 1.3–1.5× the original (smaller) size — not the recent
-      // oversized 2-col layout. At 4 cols on lg the 9:16 cards land
-      // around 270px wide on a 1100px content area, which is
-      // ~1.4× the very first iteration's width and matches what
-      // YouTube/Instagram show for shorts thumbnails.
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+      // "Full bleed" pattern: break the grid out of the page's
+      // max-w-[100rem] (1600px) container on wide screens so each
+      // 9:16 card lands much bigger. The classic recipe:
+      //   width: 100vw
+      //   margin-left/right: calc(50% - 50vw)
+      // The negative margin equals (parent's left edge - viewport left)
+      // so the element snaps to viewport edges. On a 1920px screen the
+      // card width grows from ~370px → ~440px (much closer to the
+      // user's "3배" request). On screens narrower than 1600px the
+      // calc resolves to 0 so layout is unchanged.
+      // `px-10` keeps the cards from kissing the viewport edges.
+      <div className="w-screen mx-[calc(50%-50vw)] px-10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
         {videos.map((v) => (
           <button
             key={v.id}
@@ -189,25 +194,25 @@ export default function VideosGrid({
             onClick={() => onOpen(v)}
             className="group text-left film"
           >
-            <div className="aspect-[9/16] relative overflow-hidden rounded-2xl bg-cheeze-charcoal">
+            <div className="aspect-[9/16] relative overflow-hidden rounded-3xl bg-cheeze-charcoal">
               <Image
                 src={v.thumbnail}
                 alt={v.title}
                 fill
-                sizes="(min-width: 1024px) 22vw, (min-width: 640px) 30vw, 45vw"
+                sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
                 className="object-cover"
                 loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-cheeze-charcoal/85 to-transparent" />
-              <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-white/90 text-cheeze-ink text-[10px] font-bold px-2.5 py-1">
+              <span className="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-white/95 text-cheeze-ink text-[11px] font-bold px-3 py-1.5">
                 <span aria-hidden className="block w-1.5 h-1.5 rounded-full bg-red-500" />
                 SHORTS
               </span>
-              <div className="absolute inset-x-3 bottom-3 text-[13px] font-semibold leading-snug text-cheeze-cream line-clamp-2">
+              <div className="absolute inset-x-4 bottom-4 text-[16px] font-bold leading-snug text-cheeze-cream line-clamp-2 drop-shadow-md">
                 {v.title}
               </div>
             </div>
-            <div className="mt-2 px-1 text-[12px] text-cheeze-ink-soft">
+            <div className="mt-3 px-1 text-[13px] text-cheeze-ink-soft">
               {formatDate(v.publishedAt)}
             </div>
           </button>
