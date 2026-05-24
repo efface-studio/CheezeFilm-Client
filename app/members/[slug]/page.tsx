@@ -7,6 +7,9 @@ import { InView } from "@/components/Stagger";
 import { findMember, getMembers } from "@/lib/members";
 import { storageUrl } from "@/lib/db";
 import { getAllVideos } from "@/lib/youtube";
+import { getServerLang } from "@/lib/i18n.server";
+import { translateRoleLabel } from "@/lib/i18n";
+import { resolveMemberNameEn } from "@/lib/koreanRomanizer";
 
 // `[slug]` is a dynamic segment but the page data (`findMember`,
 // `getAllVideos`, `getMembers`) is all cross-request cached. With
@@ -93,10 +96,20 @@ export default async function MemberDetailPage({
 }) {
   const { slug: rawSlug } = await params;
   const slug = decodeURIComponent(rawSlug);
-  const member = await findMember(slug);
+  const [lang, member] = await Promise.all([
+    getServerLang(),
+    findMember(slug),
+  ]);
   if (!member) notFound();
 
   const photo = photoUrlFor(member.photoPath);
+  const displayName = lang === "en"
+    ? resolveMemberNameEn(member.name, member.nameEn)
+    : member.name;
+  const secondaryName = lang === "en"
+    ? member.name
+    : (member.nameEn || resolveMemberNameEn(member.name, member.nameEn));
+  const localeStr = lang === "en" ? "en-US" : "ko-KR";
 
   // Cross-reference recent videos where this member is in the cast.
   // `cast` info we extracted earlier lives in `member.works[]` (video
@@ -107,12 +120,26 @@ export default async function MemberDetailPage({
   ]);
   const { videos } = videosResult;
   const workSet = new Set(member.works);
-  const appearances = videos
-    .filter((v) => workSet.has(v.title))
-    .slice(0, 6);
+  const matchedAppearances = videos.filter((v) => workSet.has(v.title));
+  const appearances = matchedAppearances.slice(0, 12);
   const idx = all.findIndex((m) => m.slug === member.slug);
   const prev = idx > 0 ? all[idx - 1] : null;
   const next = idx < all.length - 1 ? all[idx + 1] : null;
+
+  // Quick stats for the side panel
+  const totalAppearances = member.works.length;
+  const latestAppearance = matchedAppearances.length > 0
+    ? matchedAppearances.reduce((a, b) =>
+        new Date(a.publishedAt) > new Date(b.publishedAt) ? a : b,
+      )
+    : null;
+  const yearsActive = (() => {
+    if (matchedAppearances.length === 0) return null;
+    const years = matchedAppearances.map((v) => new Date(v.publishedAt).getFullYear());
+    const min = Math.min(...years);
+    const max = Math.max(...years);
+    return min === max ? `${min}` : `${min}–${max}`;
+  })();
 
   return (
     <main className="min-h-screen bg-cheeze-cream text-cheeze-ink editorial flex flex-col">
@@ -161,10 +188,10 @@ export default async function MemberDetailPage({
           <div className="lg:col-span-7 flex flex-col">
             <InView className="fade-up">
               <div className="text-[11px] tracking-[0.45em] uppercase text-cheeze-purple mb-3">
-                {member.roleLabel}
+                {translateRoleLabel(member.roleLabel, lang)}
                 {member.uncertain && (
                   <span className="ml-2 text-[10px] uppercase tracking-wider bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
-                    추정
+                    {lang === "en" ? "Estimated" : "추정"}
                   </span>
                 )}
               </div>
@@ -175,16 +202,18 @@ export default async function MemberDetailPage({
                   fontSize: "clamp(2.6rem, 6vw, 5rem)",
                 }}
               >
-                {member.name}
+                {displayName}
               </h1>
-              {member.nameEn && (
+              {secondaryName && secondaryName !== displayName && (
                 <div className="mt-2 text-cheeze-olive tracking-widest uppercase text-sm">
-                  {member.nameEn}
+                  {secondaryName}
                 </div>
               )}
               {member.highlight && (
                 <p className="mt-6 italic text-cheeze-purple-deep text-xl leading-snug max-w-prose">
-                  “{member.highlight}”
+                  “{lang === "en" && /^\d+편\s*출연$/.test(member.highlight.trim())
+                    ? `${totalAppearances} appearance${totalAppearances === 1 ? "" : "s"}`
+                    : member.highlight}”
                 </p>
               )}
               {member.bio && (
@@ -193,15 +222,65 @@ export default async function MemberDetailPage({
                 </p>
               )}
 
+              {/* Quick-stat tiles — fill the otherwise-empty right
+                  column with at-a-glance info: total appearances,
+                  years active, latest film. Hidden when there's
+                  literally nothing to show. */}
+              {(totalAppearances > 0 || yearsActive || latestAppearance) && (
+                <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-xl">
+                  {totalAppearances > 0 && (
+                    <div className="rounded-2xl bg-toss-50 px-4 py-3">
+                      <div className="text-[10px] tracking-[0.25em] uppercase text-cheeze-olive">
+                        {lang === "en" ? "Appearances" : "출연"}
+                      </div>
+                      <div className="mt-1 text-2xl font-bold text-cheeze-ink tabular-nums">
+                        {totalAppearances}
+                        {lang !== "en" && <span className="text-base font-normal text-cheeze-ink-soft ml-1">편</span>}
+                      </div>
+                    </div>
+                  )}
+                  {yearsActive && (
+                    <div className="rounded-2xl bg-toss-50 px-4 py-3">
+                      <div className="text-[10px] tracking-[0.25em] uppercase text-cheeze-olive">
+                        {lang === "en" ? "Years active" : "활동 기간"}
+                      </div>
+                      <div className="mt-1 text-2xl font-bold text-cheeze-ink tabular-nums">
+                        {yearsActive}
+                      </div>
+                    </div>
+                  )}
+                  {latestAppearance && (
+                    <div className="rounded-2xl bg-toss-50 px-4 py-3 sm:col-span-1 col-span-2">
+                      <div className="text-[10px] tracking-[0.25em] uppercase text-cheeze-olive">
+                        {lang === "en" ? "Latest" : "최근작"}
+                      </div>
+                      <div className="mt-1 text-sm font-bold text-cheeze-ink line-clamp-2 leading-snug">
+                        {latestAppearance.title}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Quick facts */}
               <dl className="mt-8 grid sm:grid-cols-[7rem_1fr] gap-x-6 gap-y-3 text-sm">
                 {member.joinedNote && (
                   <>
                     <dt className="text-[10px] tracking-widest uppercase text-cheeze-olive pt-1">
-                      합류
+                      {/* Admins use `joinedNote` for two different
+                          things: actual join date (e.g. "2024.03") and
+                          birth year (e.g. "1999년생"). Detect the
+                          "년생" suffix and switch the label so it
+                          reads correctly instead of mislabelling a
+                          birth year as "합류". */}
+                      {/년생$/.test(member.joinedNote)
+                        ? (lang === "en" ? "Born" : "년생")
+                        : (lang === "en" ? "Joined" : "합류")}
                     </dt>
                     <dd className="text-cheeze-ink-soft">
-                      {member.joinedNote}
+                      {/년생$/.test(member.joinedNote) && lang === "en"
+                        ? member.joinedNote.replace(/년생$/, "")
+                        : member.joinedNote}
                     </dd>
                   </>
                 )}
@@ -240,6 +319,25 @@ export default async function MemberDetailPage({
                   </>
                 )}
               </dl>
+
+              {/* CTA row — gives users somewhere to go and fills more
+                  of the column for low-credit members. */}
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link
+                  href="/support?tab=fan"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-cheeze-purple-deep text-white text-[13px] font-semibold hover:bg-cheeze-purple transition-colors"
+                >
+                  {lang === "en" ? "Send a fan letter" : "응원 메시지 보내기"}
+                  <span aria-hidden>→</span>
+                </Link>
+                <Link
+                  href="/members"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-toss-50 text-cheeze-ink text-[13px] font-semibold hover:bg-toss-100 transition-colors"
+                >
+                  {lang === "en" ? "All members" : "전체 멤버 보기"}
+                  <span aria-hidden>→</span>
+                </Link>
+              </div>
             </InView>
           </div>
         </div>
@@ -257,9 +355,13 @@ export default async function MemberDetailPage({
                 className="mt-2 text-3xl md:text-4xl tracking-tight"
                 style={{ fontFamily: "var(--font-display)" }}
               >
-                {member.name}이 출연한 작품
+                {lang === "en"
+                  ? `${displayName}'s appearances`
+                  : `${member.name}이 출연한 작품`}
                 <span className="text-cheeze-olive font-normal text-base ml-3 tracking-normal">
-                  ({appearances.length}편)
+                  {lang === "en"
+                    ? `(${appearances.length})`
+                    : `(${appearances.length}편)`}
                 </span>
               </h2>
             </InView>
@@ -288,7 +390,7 @@ export default async function MemberDetailPage({
                     {v.title}
                   </h3>
                   <div className="mt-1 text-[11px] tracking-widest uppercase text-cheeze-olive">
-                    {new Date(v.publishedAt).toLocaleDateString("ko-KR")}
+                    {new Date(v.publishedAt).toLocaleDateString(localeStr)}
                   </div>
                 </a>
               ))}
@@ -313,10 +415,10 @@ export default async function MemberDetailPage({
                   className="text-2xl md:text-3xl text-cheeze-ink group-hover:text-cheeze-purple transition-colors tracking-tight"
                   style={{ fontFamily: "var(--font-display)" }}
                 >
-                  {prev.name}
+                  {lang === "en" ? resolveMemberNameEn(prev.name, prev.nameEn) : prev.name}
                 </div>
                 <div className="text-xs text-cheeze-olive mt-1">
-                  {prev.roleLabel}
+                  {translateRoleLabel(prev.roleLabel, lang)}
                 </div>
               </Link>
             ) : (
@@ -336,10 +438,10 @@ export default async function MemberDetailPage({
                   className="text-2xl md:text-3xl text-cheeze-ink group-hover:text-cheeze-purple transition-colors tracking-tight"
                   style={{ fontFamily: "var(--font-display)" }}
                 >
-                  {next.name}
+                  {lang === "en" ? resolveMemberNameEn(next.name, next.nameEn) : next.name}
                 </div>
                 <div className="text-xs text-cheeze-olive mt-1">
-                  {next.roleLabel}
+                  {translateRoleLabel(next.roleLabel, lang)}
                 </div>
               </Link>
             ) : (

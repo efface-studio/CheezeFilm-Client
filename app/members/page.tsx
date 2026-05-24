@@ -6,6 +6,7 @@ import { getMembers } from "@/lib/members";
 import { storageUrl } from "@/lib/db";
 import { getServerLang } from "@/lib/i18n.server";
 import { t, translateRoleLabel } from "@/lib/i18n";
+import { resolveMemberNameEn } from "@/lib/koreanRomanizer";
 
 // Members rarely change; the cached list comes from `getMembers()`
 // (unstable_cache, tag: "members"). Admin writes flush via revalidateTag.
@@ -141,9 +142,9 @@ export default async function MembersPage() {
                   </div>
                   <div className="mt-4">
                     <h3 className="text-2xl tracking-tight group-hover:text-cheeze-purple transition-colors" style={{ fontFamily: "var(--font-display)" }}>
-                      {lang === "en" && m.nameEn ? m.nameEn : m.name}{" "}
+                      {lang === "en" ? resolveMemberNameEn(m.name, m.nameEn) : m.name}{" "}
                       <span className="text-cheeze-olive text-xs uppercase tracking-widest font-normal">
-                        {lang === "en" ? m.name : m.nameEn}
+                        {lang === "en" ? m.name : (m.nameEn || resolveMemberNameEn(m.name, m.nameEn))}
                       </span>
                     </h3>
                     <p className="mt-2 italic text-cheeze-purple-deep text-sm">“{m.highlight}”</p>
