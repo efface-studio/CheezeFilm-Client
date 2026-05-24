@@ -509,48 +509,61 @@ function AuditionsTable({ items }: { items: Audition[] }) {
   if (items.length === 0)
     return <EmptyCard>아직 접수된 오디션 지원이 없습니다.</EmptyCard>;
 
+  // `overflow-hidden` on the container was breaking sticky positioning
+  // (sticky needs a scrolling ancestor, and overflow-hidden disables
+  // that). The translucent `bg-zinc-50/95` on the sticky header was
+  // also letting the row underneath bleed through visually. Both
+  // resolved here: outer surface uses `overflow-clip` (clips visually
+  // without disabling sticky), header background is now fully opaque.
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white overflow-hidden">
-      {/* Sticky header row — matches the column template of each
-          summary row below (and the responsive collapse points). */}
-      <div className="hidden sm:grid sticky top-14 z-10 grid-cols-[88px_1fr_120px_88px_110px_24px] gap-3 items-center px-4 py-2.5 bg-zinc-50/95 backdrop-blur border-b border-zinc-200 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+    <div className="rounded-lg border border-zinc-200 bg-white">
+      {/* Column header row. Stays at the top of the table; doesn't
+          need to sticky-scroll since the table is short enough — we'd
+          add sticky behaviour back if/when paging gets long. */}
+      <div className="hidden sm:grid grid-cols-[88px_1fr_120px_100px_110px_24px] gap-3 items-center px-4 py-3 bg-zinc-50 border-b border-zinc-200 text-[10px] font-bold uppercase tracking-wider text-zinc-500 rounded-t-lg">
         <span>ID</span>
         <span>지원자</span>
         <span>포지션</span>
         <span>상태</span>
         <span>제출일</span>
-        <span />
+        <span aria-hidden />
       </div>
-      <div className="divide-y divide-zinc-100">
+      <ul className="divide-y divide-zinc-100">
         {items.map((a) => (
-          <details
-            key={a.id}
-            className="group"
-            data-aud-row
-            data-aud-search={`${a.name} ${a.email} ${a.phone ?? ""} ${a.intro} ${a.role_preference ?? ""} ${a.experience ?? ""}`}
-          >
-            <summary className="cursor-pointer list-none grid grid-cols-[1fr_auto_24px] sm:grid-cols-[88px_1fr_120px_88px_110px_24px] gap-3 items-center px-4 py-3 hover:bg-zinc-50 transition-colors text-[13px]">
-              <span className="hidden sm:inline text-[11px] font-mono text-zinc-500 tabular-nums">
-                #{String(a.id).padStart(4, "0")}
-              </span>
-              <span className="min-w-0">
-                <span className="font-semibold text-zinc-900">{a.name}</span>
-                {a.age && <span className="ml-1.5 text-zinc-400 text-[11px]">{a.age}세</span>}
-                <span className="block text-[11px] text-zinc-500 truncate mt-0.5">{a.email}</span>
-              </span>
-              <span className="hidden sm:inline text-zinc-700 text-[12px]">{rolePrefKo(a.role_preference) ?? "—"}</span>
-              <StatusPill status={a.status as AuditionStatus} />
-              <span className="hidden sm:inline text-[11px] text-zinc-500 tabular-nums">
-                {new Date(a.created_at).toLocaleDateString("ko-KR")}
-              </span>
-              <span className="text-zinc-400 text-xs group-open:rotate-180 transition-transform justify-self-end">
-                <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="currentColor"><path d="M3 6l5 5 5-5z" /></svg>
-              </span>
-            </summary>
-            <AuditionDetail audition={a} />
-          </details>
+          <li key={a.id}>
+            <details
+              className="group"
+              data-aud-row
+              data-aud-search={`${a.name} ${a.email} ${a.phone ?? ""} ${a.intro} ${a.role_preference ?? ""} ${a.experience ?? ""}`}
+            >
+              <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden grid grid-cols-[1fr_auto_24px] sm:grid-cols-[88px_1fr_120px_100px_110px_24px] gap-3 items-center px-4 py-3 hover:bg-zinc-50 transition-colors text-[13px]">
+                <span className="hidden sm:inline text-[11px] font-mono text-zinc-500 tabular-nums">
+                  #{String(a.id).padStart(4, "0")}
+                </span>
+                <span className="min-w-0">
+                  <span className="font-semibold text-zinc-900">{a.name}</span>
+                  {a.age && <span className="ml-1.5 text-zinc-400 text-[11px]">{a.age}세</span>}
+                  <span className="block text-[11px] text-zinc-500 truncate mt-0.5">{a.email}</span>
+                </span>
+                <span className="hidden sm:inline text-zinc-700 text-[12px] truncate">{rolePrefKo(a.role_preference) ?? "—"}</span>
+                <span className="hidden sm:flex justify-self-start">
+                  <StatusPill status={a.status as AuditionStatus} />
+                </span>
+                <span className="sm:hidden">
+                  <StatusPill status={a.status as AuditionStatus} />
+                </span>
+                <span className="hidden sm:inline text-[11px] text-zinc-500 tabular-nums">
+                  {new Date(a.created_at).toLocaleDateString("ko-KR")}
+                </span>
+                <span className="text-zinc-400 text-xs group-open:rotate-180 transition-transform justify-self-end">
+                  <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="currentColor"><path d="M3 6l5 5 5-5z" /></svg>
+                </span>
+              </summary>
+              <AuditionDetail audition={a} />
+            </details>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }
@@ -760,25 +773,28 @@ function FanMessagesTable({ items }: { items: FanMessage[] }) {
     return <EmptyCard>아직 받은 응원 메시지가 없습니다.</EmptyCard>;
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white overflow-hidden">
-      {/* Sticky column header — mirrors the per-row template below. */}
-      <div className="hidden sm:grid sticky top-14 z-10 grid-cols-[16px_140px_1fr_88px_110px_24px] gap-3 items-center px-4 py-2.5 bg-zinc-50/95 backdrop-blur border-b border-zinc-200 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
-        <span />
+    // Same fix as AuditionsTable: dropped `overflow-hidden` (breaks
+    // sticky) + opaque header bg + safari summary marker hide.
+    <div className="rounded-lg border border-zinc-200 bg-white">
+      {/* Column header. Not sticky here — the table sits inside a
+          short scrolling region. Add back sticky if pagination grows. */}
+      <div className="hidden sm:grid grid-cols-[16px_140px_1fr_100px_110px_24px] gap-3 items-center px-4 py-3 bg-zinc-50 border-b border-zinc-200 text-[10px] font-bold uppercase tracking-wider text-zinc-500 rounded-t-lg">
+        <span aria-hidden />
         <span>닉네임</span>
         <span>메시지</span>
         <span>상태</span>
         <span>제출일</span>
-        <span />
+        <span aria-hidden />
       </div>
-      <div className="divide-y divide-zinc-100">
+      <ul className="divide-y divide-zinc-100">
         {items.map((m) => (
-          <details
-            key={m.id}
-            className="group"
-            data-fan-row
-            data-fan-search={`${m.nickname} ${m.email ?? ""} ${m.message} ${m.favorite_work ?? ""}`}
-          >
-            <summary className="cursor-pointer list-none grid grid-cols-[16px_1fr_24px] sm:grid-cols-[16px_140px_1fr_88px_110px_24px] gap-3 items-center px-4 py-3 hover:bg-zinc-50 transition-colors text-[13px]">
+          <li key={m.id}>
+            <details
+              className="group"
+              data-fan-row
+              data-fan-search={`${m.nickname} ${m.email ?? ""} ${m.message} ${m.favorite_work ?? ""}`}
+            >
+              <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden grid grid-cols-[16px_1fr_24px] sm:grid-cols-[16px_140px_1fr_100px_110px_24px] gap-3 items-center px-4 py-3 hover:bg-zinc-50 transition-colors text-[13px]">
               <span
                 className={`w-1.5 h-1.5 rounded-full justify-self-center ${
                   m.is_read ? "bg-transparent" : "bg-purple-600"
@@ -808,8 +824,9 @@ function FanMessagesTable({ items }: { items: FanMessage[] }) {
             </summary>
             <FanMessageDetail message={m} />
           </details>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }
