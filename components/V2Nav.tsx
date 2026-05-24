@@ -60,7 +60,11 @@ type NavItem = {
 // right item when a visitor lands on a detail page directly (e.g. from
 // search or a deep link).
 const NAV: NavItem[] = [
-  { num: "01", label: "소개",   labelEn: "About",   href: "/#issue",    sectionId: "issue" },
+  // 소개 → page top (#top sentinel). The scroll-spy still lights up
+  // "01 소개" while the user is anywhere in the hero/stats/issue
+  // range because those sections carry `data-nav-section="issue"`;
+  // clicking the rail item just sends them back up to y=0.
+  { num: "01", label: "소개",   labelEn: "About",   href: "/#top",      sectionId: "issue" },
   { num: "02", label: "멤버",   labelEn: "Cast",    href: "/#cast",     sectionId: "cast",    routeMatch: "/members" },
   { num: "03", label: "영상",   labelEn: "Films",   href: "/#films",    sectionId: "films",   routeMatch: "/videos" },
   { num: "04", label: "채용",   labelEn: "Careers", href: "/#careers",  sectionId: "careers", routeMatch: "/careers" },
@@ -311,13 +315,21 @@ export default function V2Nav() {
                       isHash && isHome
                         ? (e) => {
                             const id = item.href.split("#")[1];
-                            const el = document.getElementById(id);
-                            if (!el) return;
                             e.preventDefault();
-                            el.scrollIntoView({
-                              behavior: "smooth",
-                              block: "start",
-                            });
+                            // `#top` is a sentinel for the 01 소개 item —
+                            // scroll to the very top of the page rather
+                            // than to an anchor element. Anything else
+                            // tries to find a matching id.
+                            if (id === "top") {
+                              window.scrollTo({ top: 0, behavior: "smooth" });
+                            } else {
+                              const el = document.getElementById(id);
+                              if (!el) return;
+                              el.scrollIntoView({
+                                behavior: "smooth",
+                                block: "start",
+                              });
+                            }
                             history.replaceState(null, "", item.href);
                           }
                         : undefined
