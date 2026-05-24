@@ -7,6 +7,7 @@ import { getMembers } from "@/lib/members";
 import { storageUrl } from "@/lib/db";
 import { getServerLang } from "@/lib/i18n.server";
 import { t, translateRoleLabel } from "@/lib/i18n";
+import { resolveMemberNameEn } from "@/lib/koreanRomanizer";
 import { InView, StaggerText } from "@/components/Stagger";
 import HeroCover from "@/components/HeroCover";
 import CountUp from "@/components/CountUp";
@@ -370,7 +371,7 @@ export default async function HomePage() {
                       </div>
                       <div className="mt-3 px-1">
                         <div className="text-[15px] font-bold text-cheeze-ink tracking-tight truncate">
-                          {lang === "en" && m.nameEn ? m.nameEn : m.name}
+                          {lang === "en" ? resolveMemberNameEn(m.name, m.nameEn) : m.name}
                         </div>
                         <div className="mt-0.5 text-[12px] text-cheeze-ink-soft truncate">
                           {translateRoleLabel(m.roleLabel, lang)}
