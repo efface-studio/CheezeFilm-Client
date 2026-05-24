@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
 import { getAllVideos } from "@/lib/youtube";
 import { getContent, loadContentMap } from "@/lib/content";
 import { getMembers } from "@/lib/members";
@@ -38,41 +39,27 @@ export const metadata = {
 };
 
 export default async function HomePage() {
-  const [
-    { longform, shorts, subscriberCount, viewCount, totalCount },
-    contentMap,
-    members,
-    coverPhotos,
-  ] = await Promise.all([
-    getAllVideos(),
+  // Page top awaits only the FAST data — contentMap (Supabase, cached),
+  // members (Supabase, cached), and coverPhotos (Supabase Storage list).
+  // The slow `getAllVideos()` (which HEAD-probes ~500 videos for shorts
+  // classification on cold serverless) is awaited LATER inside the
+  // streaming sub-components (LiveStatsBar, FilmsSection, ShortsStrip).
+  // The module-level memo in getAllVideos coalesces those concurrent
+  // calls into a single fetch — so it only runs once per render.
+  const [contentMap, members, coverPhotos] = await Promise.all([
     loadContentMap(),
     getMembers(),
-    // Hero cover: prefer landscape group/cast photos from the Supabase
-    // `covers` Storage bucket. Falls back to the 3 featured video
-    // thumbnails configured in admin → "이번 호 표지" when empty.
     getCoverPhotos(),
   ]);
   const c = (key: string) => getContent(contentMap, key);
 
-  // Live stats from the YouTube Data API (when the key is configured).
-  // We normalize subscribers → M (millions, 2 decimals) and views → 억
-  // (hundred-millions, 1 decimal) since those are the Korean
-  // channel-card conventions. Fallbacks to the content-registry values
-  // mean the page never shows a blank — admin edits still win when
-  // they're set; otherwise we use the live API number.
-  const liveSubscribersM =
-    typeof subscriberCount === "number" ? subscriberCount / 1_000_000 : null;
-  const liveViews억 =
-    typeof viewCount === "number" ? viewCount / 100_000_000 : null;
-  const liveVideoCount =
-    typeof totalCount === "number"
-      ? totalCount
-      : longform.length + shorts.length;
-  // Up to 10 pinned hero video slots; each falls back to the matching
-  // longform position if the admin hasn't picked one. Empty strings are
-  // stripped at the end so we never render a hole.
+  // Admin-set hero video slots (10 max). When the admin hasn't picked
+  // one for a slot we used to fall back to `longform[i]?.id`, but that
+  // requires awaiting getAllVideos — which we now defer. The fallback
+  // is gone; HeroCover degrades gracefully to "photos only" when no
+  // videoIds are set, and the admin's picks remain authoritative.
   const heroVideos = Array.from({ length: 10 }, (_, i) =>
-    c(`works.${i + 1}.videoId`).trim() || longform[i]?.id || "",
+    c(`works.${i + 1}.videoId`).trim(),
   ).filter(Boolean);
 
   return (
@@ -190,35 +177,16 @@ export default async function HomePage() {
           </aside>
         </div>
 
-        {/* Stats strip — pulls live numbers from the YouTube Data API
-            (`getAllVideos` now surfaces `subscriberCount`, `viewCount`,
-            `totalCount`). When the API key is missing or the call
-            fails, each Stat falls back to the matching content-key
-            value the admin set in /admin → 콘텐츠. */}
+        {/* Stats strip — extracted into an async <LiveStatsBar> that
+            awaits getAllVideos to surface live subscriber/view/video
+            counts. Wrapped in Suspense with a synchronous fallback
+            that renders the admin-set contentMap values immediately,
+            so the first paint never shows blanks. When the live data
+            resolves the streamed HTML swaps in instantly. */}
         <div className="border-t border-cheeze-purple-deep/15">
-          <div className="mx-auto max-w-[100rem] px-6 py-7 grid grid-cols-2 md:grid-cols-4 divide-x divide-cheeze-purple-deep/10">
-            <Stat
-              label={c("stats.subscribers.label")}
-              value={liveSubscribersM ?? Number(c("stats.subscribers")) ?? 0}
-              suffix={c("stats.subscribers.suffix")}
-              fallback={`${c("stats.subscribers")}${c("stats.subscribers.suffix")}`}
-              decimals={2}
-            />
-            <Stat
-              label={c("stats.videos.label")}
-              value={liveVideoCount}
-              suffix={c("stats.videos.suffix")}
-              fallback={`${c("stats.videos")}${c("stats.videos.suffix")}`}
-            />
-            <Stat
-              label={c("stats.views.label")}
-              value={liveViews억 ?? Number(c("stats.views")) ?? 0}
-              suffix={c("stats.views.suffix")}
-              fallback={`${c("stats.views")}${c("stats.views.suffix")}`}
-              decimals={1}
-            />
-            <Stat label={c("stats.year.label")} value={2017} fallback={c("stats.year")} />
-          </div>
+          <Suspense fallback={<StatsBar contentMap={contentMap} />}>
+            <LiveStatsBar contentMap={contentMap} />
+          </Suspense>
         </div>
       </section>
 
@@ -425,178 +393,25 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {/* Featured (this issue's covers) — big cards, 3-up */}
-          <div className="grid md:grid-cols-3 gap-x-6 gap-y-12">
-            {heroVideos.slice(0, 3).map((vid, i) => (
-              <FilmCard
-                key={vid}
-                videoId={vid}
-                number={String(i + 1).padStart(2, "0")}
-                title={["다중인격 소녀", "남자무리 여사친", "달고나"][i] ?? ""}
-                year={["Series", "2020 · Anthology", "2020 · 4-part"][i] ?? ""}
-                tagline={
-                  [
-                    "사투리, 그리고 네 개의 인격.",
-                    "남자들 사이의 단 한 명, 여사친.",
-                    "달콤하고, 한 번에 깨지는 청춘.",
-                  ][i] ?? ""
-                }
-                delay={i * 120}
-              />
-            ))}
-          </div>
-
-          {/* Recent uploads — used to be its own "방금 업로드된" section.
-              Now lives here as a secondary row under the featured films.
-              Skips any video already shown as a featured cover to avoid
-              repeating the same thumbnail twice. */}
-          {(() => {
-            const featuredIds = new Set(heroVideos);
-            const recent = longform
-              .filter((v) => !featuredIds.has(v.id))
-              .slice(0, 6);
-            if (recent.length === 0) return null;
-            return (
-              <div className="mt-20 pt-12 border-t border-cheeze-purple-deep/15">
-                <InView className="fade-up flex items-baseline justify-between gap-6 mb-8">
-                  <div>
-                    <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">
-                      — Just dropped
-                    </div>
-                    <h3
-                      className="mt-2 text-2xl md:text-3xl tracking-tight"
-                      style={{ fontFamily: "var(--font-display)" }}
-                    >
-                      방금 업로드된.
-                    </h3>
-                  </div>
-                  <Link
-                    href="/videos"
-                    className="text-[11px] tracking-widest uppercase font-bold text-cheeze-purple-deep hover:text-cheeze-purple border-b border-cheeze-purple-deep/30 hover:border-cheeze-purple pb-1 transition-colors whitespace-nowrap"
-                  >
-                    전체 필모 →
-                  </Link>
-                </InView>
-
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10">
-                  {recent.map((v, i) => (
-                    <InView
-                      key={v.id}
-                      className="fade-up"
-                      style={
-                        {
-                          transitionDelay: `${(i % 3) * 60}ms`,
-                        } as React.CSSProperties
-                      }
-                    >
-                      <a
-                        href={v.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="group block film"
-                      >
-                        <div className="aspect-[16/10] relative overflow-hidden bg-cheeze-charcoal">
-                          <Image
-                            src={v.thumbnail}
-                            alt={v.title}
-                            fill
-                            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                            className="object-cover transition-transform duration-500 group-hover:scale-105"
-                            loading="lazy"
-                            quality={85}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-cheeze-charcoal/60 via-transparent to-transparent" />
-                          {i === 0 && (
-                            <span className="absolute top-3 left-3 bg-cheeze-yellow text-cheeze-purple-deep text-[9px] font-bold tracking-widest uppercase px-2 py-1">
-                              New
-                            </span>
-                          )}
-                          <span className="absolute bottom-3 right-3 bg-cheeze-charcoal/85 text-cheeze-cream text-[10px] font-mono tracking-wider px-2 py-1">
-                            {new Date(v.publishedAt).toLocaleDateString(
-                              "ko-KR",
-                              { month: "2-digit", day: "2-digit" },
-                            )}
-                          </span>
-                        </div>
-                        <h4 className="mt-3 text-[15px] font-bold leading-snug text-cheeze-ink line-clamp-2 group-hover:text-cheeze-purple transition-colors">
-                          {v.title}
-                        </h4>
-                        <div className="mt-1 text-[10px] tracking-widest uppercase text-cheeze-olive">
-                          {new Date(v.publishedAt).toLocaleDateString("ko-KR", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
-                        </div>
-                      </a>
-                    </InView>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
+          {/* Films grid — featured 3 + recent 6 — extracted into a
+              streaming async component so the heading above renders
+              immediately while the cards stream in. Suspense fallback
+              shows a layout-matched skeleton. */}
+          <Suspense fallback={<FilmsGridSkeleton />}>
+            <FilmsGrid heroVideos={heroVideos} />
+          </Suspense>
         </div>
       </section>
 
       {/* ── SHORTS strip ─────────────────────────────── */}
-      {/* `data-nav-section="films"` makes SiteNav treat this section as a
-          continuation of #films for scroll-spy purposes — so "02 영상" stays
-          lit while the user is reading shorts. */}
-      {shorts.length > 0 && (
-        <section
-          data-nav-section="films"
-          className="border-b border-cheeze-purple-deep/15"
-        >
-          <div className="mx-auto max-w-[100rem] px-6 py-20">
-            <div className="flex items-baseline justify-between mb-8">
-              <InView className="fade-up">
-                <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">— Section 03</div>
-                <h2
-                  className="mt-2 text-3xl md:text-4xl tracking-tight"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  Shorts <span className="text-cheeze-purple">/</span> 한 입.
-                </h2>
-              </InView>
-              <Link
-                href="/videos?kind=shorts"
-                className="text-sm font-bold tracking-widest uppercase text-cheeze-purple hover:text-cheeze-purple-deep"
-              >
-                전체 쇼츠 →
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              {shorts.slice(0, 12).map((v, i) => (
-                <InView
-                  key={v.id}
-                  className="fade-up"
-                  style={{ transitionDelay: `${i * 50}ms` } as React.CSSProperties}
-                >
-                  <a
-                    href={v.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="group block aspect-[9/16] overflow-hidden bg-cheeze-charcoal relative film"
-                  >
-                    <Image
-                      src={v.thumbnail}
-                      alt={v.title}
-                      fill
-                      sizes="(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw"
-                      className="object-cover"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-cheeze-charcoal/85 to-transparent" />
-                    <div className="absolute inset-x-2 bottom-2 text-[11px] leading-snug text-cheeze-cream line-clamp-2">
-                      {v.title}
-                    </div>
-                  </a>
-                </InView>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      {/* Extracted into a streaming async component so the whole strip
+          arrives once `getAllVideos()` resolves. No skeleton — if the
+          channel has no shorts (or we're still waiting) the entire
+          section is omitted; users seeing it gradually appear is fine
+          and avoids a layout shift for empty channels. */}
+      <Suspense fallback={null}>
+        <ShortsStripSection />
+      </Suspense>
 
       {/* ── CAREERS teaser ──────────────────────────── */}
       {/* Compact preview of the full careers page so users don't have to
@@ -1026,6 +841,256 @@ function CompanyStrip({ contentMap }: { contentMap: Map<string, string> }) {
         </div>
       ))}
     </dl>
+  );
+}
+
+// ─── Streaming sub-components ─────────────────────────────
+//
+// Each of these awaits `getAllVideos()` inside its body so the page
+// shell can render without blocking on YouTube. `getAllVideos` has a
+// module-level memo + in-flight coalescing, so the three concurrent
+// calls (LiveStatsBar, FilmsGrid, ShortsStripSection) collapse into
+// one real network fetch.
+
+/** Sync stats — uses only contentMap. Shown as the Suspense fallback
+    for LiveStatsBar so the strip is never blank during stream. */
+function StatsBar({ contentMap }: { contentMap: Map<string, string> }) {
+  const c = (key: string) => getContent(contentMap, key);
+  return (
+    <div className="mx-auto max-w-[100rem] px-6 py-7 grid grid-cols-2 md:grid-cols-4 divide-x divide-cheeze-purple-deep/10">
+      <Stat
+        label={c("stats.subscribers.label")}
+        value={Number(c("stats.subscribers")) || 0}
+        suffix={c("stats.subscribers.suffix")}
+        fallback={`${c("stats.subscribers")}${c("stats.subscribers.suffix")}`}
+        decimals={2}
+      />
+      <Stat
+        label={c("stats.videos.label")}
+        value={Number(c("stats.videos")) || 0}
+        suffix={c("stats.videos.suffix")}
+        fallback={`${c("stats.videos")}${c("stats.videos.suffix")}`}
+      />
+      <Stat
+        label={c("stats.views.label")}
+        value={Number(c("stats.views")) || 0}
+        suffix={c("stats.views.suffix")}
+        fallback={`${c("stats.views")}${c("stats.views.suffix")}`}
+        decimals={1}
+      />
+      <Stat label={c("stats.year.label")} value={2017} fallback={c("stats.year")} />
+    </div>
+  );
+}
+
+/** Live stats — awaits getAllVideos for subscribers / views / video
+    count from the YouTube Data API. Falls back to contentMap values
+    when the API is missing or returns nothing. */
+async function LiveStatsBar({ contentMap }: { contentMap: Map<string, string> }) {
+  const c = (key: string) => getContent(contentMap, key);
+  const { longform, shorts, subscriberCount, viewCount, totalCount } = await getAllVideos();
+  const liveSubscribersM =
+    typeof subscriberCount === "number" ? subscriberCount / 1_000_000 : null;
+  const liveViews억 =
+    typeof viewCount === "number" ? viewCount / 100_000_000 : null;
+  const liveVideoCount =
+    typeof totalCount === "number" ? totalCount : longform.length + shorts.length;
+  return (
+    <div className="mx-auto max-w-[100rem] px-6 py-7 grid grid-cols-2 md:grid-cols-4 divide-x divide-cheeze-purple-deep/10">
+      <Stat
+        label={c("stats.subscribers.label")}
+        value={liveSubscribersM ?? Number(c("stats.subscribers")) ?? 0}
+        suffix={c("stats.subscribers.suffix")}
+        fallback={`${c("stats.subscribers")}${c("stats.subscribers.suffix")}`}
+        decimals={2}
+      />
+      <Stat
+        label={c("stats.videos.label")}
+        value={liveVideoCount}
+        suffix={c("stats.videos.suffix")}
+        fallback={`${c("stats.videos")}${c("stats.videos.suffix")}`}
+      />
+      <Stat
+        label={c("stats.views.label")}
+        value={liveViews억 ?? Number(c("stats.views")) ?? 0}
+        suffix={c("stats.views.suffix")}
+        fallback={`${c("stats.views")}${c("stats.views.suffix")}`}
+        decimals={1}
+      />
+      <Stat label={c("stats.year.label")} value={2017} fallback={c("stats.year")} />
+    </div>
+  );
+}
+
+/** Skeleton for FilmsGrid — 3 featured + 6 recent layout shape. */
+function FilmsGridSkeleton() {
+  return (
+    <>
+      <div className="grid md:grid-cols-3 gap-x-6 gap-y-12">
+        {Array.from({ length: 3 }, (_, i) => (
+          <div key={i} className="space-y-3">
+            <div className="aspect-[16/10] rounded-2xl bg-toss-100 home-shimmer" />
+            <div className="h-6 w-1/2 rounded-md bg-toss-100 home-shimmer" />
+            <div className="h-3 w-1/3 rounded-md bg-toss-100 home-shimmer" />
+          </div>
+        ))}
+      </div>
+      <style>{`
+        @keyframes home-shimmer { 0%,100%{opacity:0.55} 50%{opacity:0.85} }
+        .home-shimmer { animation: home-shimmer 1400ms ease-in-out infinite; }
+        @media (prefers-reduced-motion: reduce) { .home-shimmer { animation: none !important; opacity: 0.7 !important; } }
+      `}</style>
+    </>
+  );
+}
+
+/** Films grid — 3 featured (from heroVideos) + 6 recent (from
+    longform, skipping the featured). Awaits getAllVideos for the
+    recent uploads list. */
+async function FilmsGrid({ heroVideos }: { heroVideos: string[] }) {
+  const { longform } = await getAllVideos();
+  const featuredIds = new Set(heroVideos);
+  const recent = longform.filter((v) => !featuredIds.has(v.id)).slice(0, 6);
+  return (
+    <>
+      <div className="grid md:grid-cols-3 gap-x-6 gap-y-12">
+        {heroVideos.slice(0, 3).map((vid, i) => (
+          <FilmCard
+            key={vid}
+            videoId={vid}
+            number={String(i + 1).padStart(2, "0")}
+            title={["다중인격 소녀", "남자무리 여사친", "달고나"][i] ?? ""}
+            year={["Series", "2020 · Anthology", "2020 · 4-part"][i] ?? ""}
+            tagline={
+              [
+                "사투리, 그리고 네 개의 인격.",
+                "남자들 사이의 단 한 명, 여사친.",
+                "달콤하고, 한 번에 깨지는 청춘.",
+              ][i] ?? ""
+            }
+            delay={i * 120}
+          />
+        ))}
+      </div>
+      {recent.length > 0 && (
+        <div className="mt-20 pt-12 border-t border-cheeze-purple-deep/15">
+          <InView className="fade-up flex items-baseline justify-between gap-6 mb-8">
+            <div>
+              <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">
+                — Just dropped
+              </div>
+              <h3 className="mt-2 text-2xl md:text-3xl tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
+                방금 업로드된.
+              </h3>
+            </div>
+            <Link
+              href="/videos"
+              className="text-[11px] tracking-widest uppercase font-bold text-cheeze-purple-deep hover:text-cheeze-purple border-b border-cheeze-purple-deep/30 hover:border-cheeze-purple pb-1 transition-colors whitespace-nowrap"
+            >
+              전체 필모 →
+            </Link>
+          </InView>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10">
+            {recent.map((v, i) => (
+              <InView
+                key={v.id}
+                className="fade-up"
+                style={{ transitionDelay: `${(i % 3) * 60}ms` } as React.CSSProperties}
+              >
+                <a href={v.url} target="_blank" rel="noreferrer" className="group block film">
+                  <div className="aspect-[16/10] relative overflow-hidden bg-cheeze-charcoal">
+                    <Image
+                      src={v.thumbnail}
+                      alt={v.title}
+                      fill
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      loading="lazy"
+                      quality={85}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-cheeze-charcoal/60 via-transparent to-transparent" />
+                    {i === 0 && (
+                      <span className="absolute top-3 left-3 bg-cheeze-yellow text-cheeze-purple-deep text-[9px] font-bold tracking-widest uppercase px-2 py-1">
+                        New
+                      </span>
+                    )}
+                    <span className="absolute bottom-3 right-3 bg-cheeze-charcoal/85 text-cheeze-cream text-[10px] font-mono tracking-wider px-2 py-1">
+                      {new Date(v.publishedAt).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit" })}
+                    </span>
+                  </div>
+                  <h4 className="mt-3 text-[15px] font-bold leading-snug text-cheeze-ink line-clamp-2 group-hover:text-cheeze-purple transition-colors">
+                    {v.title}
+                  </h4>
+                  <div className="mt-1 text-[10px] tracking-widest uppercase text-cheeze-olive">
+                    {new Date(v.publishedAt).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+                  </div>
+                </a>
+              </InView>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/** Shorts strip — full section including header. Renders nothing
+    when the channel has no shorts (or we're still loading), so no
+    fallback is needed in the parent Suspense. */
+async function ShortsStripSection() {
+  const { shorts } = await getAllVideos();
+  if (shorts.length === 0) return null;
+  return (
+    <section
+      data-nav-section="films"
+      className="border-b border-cheeze-purple-deep/15"
+    >
+      <div className="mx-auto max-w-[100rem] px-6 py-20">
+        <div className="flex items-baseline justify-between mb-8">
+          <InView className="fade-up">
+            <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">— Section 03</div>
+            <h2 className="mt-2 text-3xl md:text-4xl tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
+              Shorts <span className="text-cheeze-purple">/</span> 한 입.
+            </h2>
+          </InView>
+          <Link
+            href="/videos?kind=shorts"
+            className="text-sm font-bold tracking-widest uppercase text-cheeze-purple hover:text-cheeze-purple-deep"
+          >
+            전체 쇼츠 →
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {shorts.slice(0, 12).map((v, i) => (
+            <InView
+              key={v.id}
+              className="fade-up"
+              style={{ transitionDelay: `${i * 50}ms` } as React.CSSProperties}
+            >
+              <a
+                href={v.url}
+                target="_blank"
+                rel="noreferrer"
+                className="group block aspect-[9/16] overflow-hidden bg-cheeze-charcoal relative film"
+              >
+                <Image
+                  src={v.thumbnail}
+                  alt={v.title}
+                  fill
+                  sizes="(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw"
+                  className="object-cover"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-cheeze-charcoal/85 to-transparent" />
+                <div className="absolute inset-x-2 bottom-2 text-[11px] leading-snug text-cheeze-cream line-clamp-2">
+                  {v.title}
+                </div>
+              </a>
+            </InView>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
