@@ -22,6 +22,7 @@ import { MEMBERS_TAG } from "./members";
 import { CONTENT_TAG } from "./content";
 import { LISTINGS_TAG } from "./auditionListings";
 import { COVERS_TAG } from "./coverPhotos";
+import { VIDEOS_TAG } from "./youtube";
 
 const PROFILE = "max" as const;
 
@@ -47,4 +48,16 @@ export function bumpListings() {
 export function bumpCovers() {
   revalidateTag(COVERS_TAG, PROFILE);
   revalidatePath("/");
+}
+
+/**
+ * Flush the YouTube videos cache. Not wired into any admin write today
+ * (we don't have an "edit a video" action) but exposed so a future
+ * "refresh from YouTube" button — or a manual cron — can force a
+ * re-pull without waiting on the 10-min revalidate window.
+ */
+export function bumpVideos() {
+  revalidateTag(VIDEOS_TAG, PROFILE);
+  revalidatePath("/");
+  revalidatePath("/videos");
 }

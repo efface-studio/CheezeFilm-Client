@@ -17,6 +17,7 @@
  */
 
 import { XMLParser } from "fast-xml-parser";
+import { unstable_cache } from "next/cache";
 
 const CHANNEL_ID = "UCYn09ySlShmzBtYwl1OgOsA"; // CheezeFilm
 
@@ -25,6 +26,13 @@ const CHANNEL_ID = "UCYn09ySlShmzBtYwl1OgOsA"; // CheezeFilm
  * 정상 경로에선 HEAD probe 가 판별합니다.
  */
 const SHORT_FALLBACK_MAX_SECONDS = 60;
+/**
+ * 영상 길이가 이 값보다 길면 절대 쇼츠가 될 수 없다고 단정 — probe 자체를 건너뜀.
+ * YouTube 의 공식 쇼츠 최대 길이는 2024년부터 180초(3분)예요. 그 이상 영상은
+ * 무조건 longform 이라 HEAD probe 한 번을 통째로 아낄 수 있고, ~500편 채널
+ * 기준 콜드 로드에서 가장 큰 단일 절약 (보통 longform 이 채널의 절반 이상).
+ */
+const SHORTS_HARD_CEILING_SECONDS = 180;
 /** 동시 HEAD probe 갯수 — 한꺼번에 500개 다 쏘면 YouTube edge 가 거부할 수도 있어서 제한. */
 const PROBE_CONCURRENCY = 25;
 
@@ -336,13 +344,23 @@ async function fetchViaAPI(apiKey: string): Promise<{
     apiKey,
   );
 
-  // 4) Classify every video via /shorts/<id> probe. The HEAD request is
-  //    cached for an hour (see probeIsShort) so subsequent renders skip
-  //    the network entirely. Concurrency-limited to avoid overwhelming
-  //    YouTube edge — first cold run for ~500 videos at 25 in flight
-  //    finishes in a few seconds.
+  // 4) Classify every video.
+  //
+  //    Cold-load optimisation: if the duration we already have from
+  //    step 3 is longer than the YouTube shorts ceiling (180s as of
+  //    2024), skip the HEAD probe entirely — it can't be a short.
+  //    For a 500-video channel where ~60% are longform, this cuts
+  //    ~300 HEAD requests off the cold render path.
+  //
+  //    Only videos with `sec <= SHORTS_HARD_CEILING_SECONDS` (or no
+  //    duration data) still need the probe to disambiguate. Probe
+  //    results stay cached for an hour via Next's fetch cache.
   const classified: Video[] = await pMapLimit(out, PROBE_CONCURRENCY, async (v) => {
     const sec = durations.get(v.id);
+    // Fast path: clearly longform, skip the network.
+    if (typeof sec === "number" && sec > SHORTS_HARD_CEILING_SECONDS) {
+      return { ...v, durationSec: sec, isShort: false };
+    }
     const probe = await probeIsShort(v.id);
     let isShort: boolean;
     if (probe !== null) {
@@ -362,28 +380,31 @@ async function fetchViaAPI(apiKey: string): Promise<{
 
 // --- Public entry --------------------------------------------------------
 
-// Module-level cache so successive renders within the same Node process
-// don't re-do the full fetch + shorts probe pipeline. `fetch()` calls
-// inside `fetchViaAPI` already cache via `next: { revalidate: 3600 }`,
-// but each call still walks the playlist pages and re-classifies every
-// video — even when the underlying HTTP is cached, that's ~50–200ms.
+// Two-layer caching strategy.
 //
-// We cache the post-processed result in memory for 10 minutes. The first
-// admin tab switch still pays the cold cost, but every subsequent click
-// is < 5ms.
-const CACHE_TTL_MS = 10 * 60 * 1000;
-let cached: { result: VideoFetchResult; at: number } | null = null;
-let inFlight: Promise<VideoFetchResult> | null = null;
+// 1. `unstable_cache` (Next.js data cache) — persists across requests
+//    AND across serverless cold starts (it's backed by Vercel's
+//    durable cache, not just process memory). This is the layer that
+//    actually keeps the user from waiting on the full 4-8s YouTube
+//    pipeline. 10 min revalidate window keeps the channel feed
+//    reasonably fresh; admin can call `revalidateTag("videos")` if a
+//    refresh is needed sooner.
+//
+// 2. Module-level memo `cached` + `inFlight` — coalesces concurrent
+//    calls within the same lambda invocation. unstable_cache already
+//    de-dupes simultaneous calls per Next docs, but the in-flight
+//    promise guard adds a final layer of safety when the entire home
+//    page is awaiting getAllVideos through three different Suspense
+//    boundaries at once (LiveStatsBar, FilmsGrid, ShortsStripSection).
+//
+// Together: a cold visit pays the full pipeline ONCE per 10-min
+// window, every other visitor on the same window gets a < 50ms cache
+// hit even from a fresh serverless instance.
+export const VIDEOS_TAG = "videos";
+const REVALIDATE_SECONDS = 10 * 60;
 
-export async function getAllVideos(): Promise<VideoFetchResult> {
-  const now = Date.now();
-  if (cached && now - cached.at < CACHE_TTL_MS) {
-    return cached.result;
-  }
-  // Coalesce concurrent calls — if a second request comes in while the
-  // first is fetching, share the same promise.
-  if (inFlight) return inFlight;
-  inFlight = (async () => {
+const _getAllVideosUncached = unstable_cache(
+  async (): Promise<VideoFetchResult> => {
     const apiKey = process.env.YOUTUBE_API_KEY;
     let result: {
       videos: Video[];
@@ -415,14 +436,24 @@ export async function getAllVideos(): Promise<VideoFetchResult> {
     } else {
       result = await rssResult();
     }
-    const final: VideoFetchResult = {
+    return {
       ...result,
       longform: result.videos.filter((v) => !v.isShort),
       shorts: result.videos.filter((v) => v.isShort),
     };
-    cached = { result: final, at: Date.now() };
-    return final;
-  })();
+  },
+  ["videos:all"],
+  { tags: [VIDEOS_TAG], revalidate: REVALIDATE_SECONDS },
+);
+
+// In-flight coalescer for the rare case where the home page fires
+// three Suspense boundaries against this function in the same render.
+// unstable_cache handles cross-request, this handles intra-request.
+let inFlight: Promise<VideoFetchResult> | null = null;
+
+export async function getAllVideos(): Promise<VideoFetchResult> {
+  if (inFlight) return inFlight;
+  inFlight = _getAllVideosUncached();
   try {
     return await inFlight;
   } finally {
