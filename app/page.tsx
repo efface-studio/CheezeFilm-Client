@@ -224,7 +224,7 @@ export default async function HomePage() {
 
       {/* ── STORY ───────────────────────────────────── */}
       <section id="issue" className="border-b border-cheeze-purple-deep/15">
-        <div className="mx-auto max-w-[100rem] px-6 py-24 grid lg:grid-cols-12 gap-10">
+        <div className="mx-auto max-w-[100rem] px-6 py-16 md:py-24 grid lg:grid-cols-12 gap-10">
           <InView as="aside" className="fade-up lg:col-span-2">
             <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">
               — Section 01
@@ -281,7 +281,7 @@ export default async function HomePage() {
           spread is the primary identity moment, so it earns the
           first slot after the about/story intro. */}
       <section id="cast" className="border-b border-cheeze-purple-deep/15">
-        <div className="mx-auto max-w-[100rem] px-6 py-24">
+        <div className="mx-auto max-w-[100rem] px-6 py-16 md:py-24">
           <div className="grid lg:grid-cols-12 mb-12 items-end">
             <InView className="fade-up lg:col-span-2">
               <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">— Section 02</div>
@@ -388,7 +388,7 @@ export default async function HomePage() {
 
       {/* ── FILMS ───────────────────────────────────── */}
       <section id="films" className="border-b border-cheeze-purple-deep/15">
-        <div className="mx-auto max-w-[100rem] px-6 py-24">
+        <div className="mx-auto max-w-[100rem] px-6 py-16 md:py-24">
           <div className="grid lg:grid-cols-12 mb-12 items-end">
             <InView className="fade-up lg:col-span-2">
               <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">— Section 03</div>
@@ -446,7 +446,7 @@ export default async function HomePage() {
           top 4 role chips (actor leads — that's the open audition focus).
           Full details + email CTA live on /careers. */}
       <section id="careers" className="border-b border-cheeze-purple-deep/15">
-        <div className="mx-auto max-w-[100rem] px-6 py-24 grid lg:grid-cols-12 gap-x-10 gap-y-12">
+        <div className="mx-auto max-w-[100rem] px-6 py-16 md:py-24 grid lg:grid-cols-12 gap-x-10 gap-y-12">
           <InView className="fade-up lg:col-span-2">
             <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">
               — Section 05
@@ -645,7 +645,7 @@ export default async function HomePage() {
         id="contact"
         className="bg-cheeze-purple-deep text-cheeze-cream lg:-ml-56 lg:pl-56"
       >
-        <div className="mx-auto max-w-[100rem] px-6 py-24 grid lg:grid-cols-12 gap-10 items-end">
+        <div className="mx-auto max-w-[100rem] px-6 py-16 md:py-24 grid lg:grid-cols-12 gap-10 items-end">
           <InView className="fade-up lg:col-span-7">
             <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-yellow flex items-center gap-2">
               <span className="pulse-dot" /> Section 05 · Take part
@@ -957,7 +957,13 @@ function CompanyStrip({ contentMap, lang }: { contentMap: Map<string, string>; l
 function StatsBar({ contentMap, lang }: { contentMap: Map<string, string>; lang: import("@/lib/i18n").Lang }) {
   const c = (key: string) => getContent(contentMap, key, lang);
   return (
-    <div className="mx-auto max-w-[100rem] px-6 py-7 grid grid-cols-2 md:grid-cols-4 divide-x divide-cheeze-purple-deep/10">
+    // On phones the 2x2 grid used `divide-x` which adds a left border
+    // to every child past the first — including the third cell, which
+    // is row 2 column 1 and shouldn't have a vertical line above its
+    // neighbour. We switch dividers off below `md` and use grid `gap`
+    // + a subtle top border on row 2 instead so the band reads as a
+    // tidy 2x2 instead of three stray lines + one missing one.
+    <div className="mx-auto max-w-[100rem] px-6 py-7 grid grid-cols-2 gap-y-5 md:gap-y-0 md:grid-cols-4 md:divide-x md:divide-cheeze-purple-deep/10">
       <Stat
         label={c("stats.subscribers.label")}
         value={Number(c("stats.subscribers")) || 0}
@@ -996,7 +1002,9 @@ async function LiveStatsBar({ contentMap, lang }: { contentMap: Map<string, stri
   const liveVideoCount =
     typeof totalCount === "number" ? totalCount : longform.length + shorts.length;
   return (
-    <div className="mx-auto max-w-[100rem] px-6 py-7 grid grid-cols-2 md:grid-cols-4 divide-x divide-cheeze-purple-deep/10">
+    // Same mobile fix as StatsBar above — dividers only render at md+
+    // so the 2x2 mobile grid doesn't carry stray verticals into row 2.
+    <div className="mx-auto max-w-[100rem] px-6 py-7 grid grid-cols-2 gap-y-5 md:gap-y-0 md:grid-cols-4 md:divide-x md:divide-cheeze-purple-deep/10">
       <Stat
         label={c("stats.subscribers.label")}
         value={liveSubscribersM ?? Number(c("stats.subscribers")) ?? 0}
@@ -1211,7 +1219,13 @@ function Stat({
   decimals?: number;
 }) {
   return (
-    <InView className="fade-up px-4 first:pl-0">
+    // Mobile (2x2 grid): the leftmost cell of each row needs pl-0 so
+    // numbers line up flush with the section padding. The first-child
+    // selector only fires for item 1 — without `odd:pl-0` here, "16.5억"
+    // (item 3, row 2 col 1) was indented compared to "3.45M+" (item 1
+    // above it). At md+ the four cells live in one row so the only
+    // flush-left cell is item 1, exactly what `first:` already covers.
+    <InView className="fade-up pr-4 pl-4 odd:pl-0 md:pl-4 md:first:pl-0">
       <div className="text-[28px] md:text-[32px] font-extrabold text-cheeze-ink tracking-tight tabular-nums leading-none">
         <CountUp value={value} suffix={suffix} fallback={fallback} decimals={decimals} duration={1400} />
       </div>
@@ -1236,9 +1250,13 @@ function AwardChip({
   dotClass: string;
 }) {
   return (
-    <div className="px-3 py-4 flex items-center justify-center gap-2">
+    // Mobile chip — vertical layout (dot above label) so the 3-up
+    // award row doesn't crush Korean labels (실버 골버튼 / 골드 / 대상)
+    // into a single wrapped line. At sm+ we go back to inline so the
+    // chips read as a tight horizontal trio next to the story column.
+    <div className="px-2 py-3 sm:px-3 sm:py-4 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-center">
       <span aria-hidden className={`block w-2 h-2 rounded-full ${dotClass}`} />
-      <span className="text-[13px] font-bold tracking-tight text-cheeze-ink">
+      <span className="text-[12px] sm:text-[13px] font-bold tracking-tight text-cheeze-ink">
         {label}
       </span>
     </div>

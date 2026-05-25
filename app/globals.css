@@ -114,6 +114,26 @@ body {
   letter-spacing: -0.011em;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  /* Korean default text: break on word boundaries (eojeol), never
+     mid-syllable. Browsers default to `normal` which is fine for
+     Latin but happily breaks "이야기" into "이야" / "기" when the
+     container is narrow — that's what we saw on mobile under
+     "우리 채널, 치즈필름 이야기". `keep-all` keeps each
+     CJK word intact and lets the line wrap at the space instead.
+     Pairs with the `text-balance` we add on the largest display
+     headings to avoid stranded single-syllable last lines. */
+  word-break: keep-all;
+}
+
+/* Big Korean display headings benefit from text-balance so the
+   line lengths even out (no widow "기" on its own line). Targets
+   any element that picked up the display font via inline style or
+   class. Browsers without `text-wrap: balance` (older Safari)
+   silently ignore it and fall back to normal wrapping. */
+h1, h2, h3,
+[style*="var(--font-display)"],
+.display-title {
+  text-wrap: balance;
 }
 
 /* Overscroll handling for routes.

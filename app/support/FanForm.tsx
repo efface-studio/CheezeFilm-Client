@@ -147,7 +147,10 @@ export default function FanForm({
             아직 등록된 배우 사진이 없어요. 메시지만 보내주셔도 좋아요.
           </div>
         ) : (
-          <ul className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+          // Phone (<640px) shows 2 columns so each 3:4 portrait card lands
+          // ~42vw wide instead of ~26vw — large enough that the cast photo
+          // reads clearly and the tap target comfortably exceeds 44px.
+          <ul className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
             {castChoices.map((c) => {
               const active = favoriteCast === c.name;
               return (

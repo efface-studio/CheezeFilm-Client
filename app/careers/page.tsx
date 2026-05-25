@@ -607,14 +607,19 @@ function Stat({
   accent?: string;
 }) {
   return (
-    <div className="px-5 py-4 first:pl-0 last:pr-0">
+    // Tightened mobile padding (`px-3 py-3` instead of `px-5 py-4`) so
+    // the 3-up stat strip doesn't crush each cell on phones where the
+    // Korean labels ("배우 우선", "우선 검토") are 4–5 characters and
+    // already need the full column width. At sm+ we go back to the
+    // original generous padding so the masthead feels editorial again.
+    <div className="px-3 py-3 sm:px-5 sm:py-4 first:pl-0 last:pr-0">
       <div
-        className={`text-3xl md:text-4xl leading-none tabular-nums ${accent ?? "text-cheeze-ink"}`}
+        className={`text-2xl sm:text-3xl md:text-4xl leading-none tabular-nums ${accent ?? "text-cheeze-ink"}`}
         style={{ fontFamily: "var(--font-display)" }}
       >
         {number}
       </div>
-      <div className="mt-2 text-[10px] tracking-[0.3em] uppercase text-cheeze-olive">
+      <div className="mt-2 text-[10px] tracking-[0.2em] sm:tracking-[0.3em] uppercase text-cheeze-olive">
         {label}
       </div>
     </div>
