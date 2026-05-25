@@ -33,8 +33,9 @@ const SHORT_FALLBACK_MAX_SECONDS = 60;
  * 기준 콜드 로드에서 가장 큰 단일 절약 (보통 longform 이 채널의 절반 이상).
  */
 const SHORTS_HARD_CEILING_SECONDS = 180;
-/** 동시 HEAD probe 갯수 — 한꺼번에 500개 다 쏘면 YouTube edge 가 거부할 수도 있어서 제한. */
-const PROBE_CONCURRENCY = 25;
+// PROBE_CONCURRENCY + pMapLimit retired with the API-path probe step;
+// duration + title heuristic now handles classification synchronously.
+// The RSS-only path (~15 videos) still uses probeIsShort directly.
 
 export type Video = {
   id: string;
@@ -104,29 +105,6 @@ type RssEntry = {
  * We send a manual-redirect HEAD so we can inspect status + Location without
  * downloading the page body. Result is null on network failure.
  */
-/**
- * Run an async task across an array with bounded concurrency. Used to
- * probe hundreds of videos without firing all HEAD requests at once.
- */
-async function pMapLimit<T, R>(
-  items: T[],
-  limit: number,
-  fn: (item: T, index: number) => Promise<R>,
-): Promise<R[]> {
-  const results: R[] = new Array(items.length);
-  let cursor = 0;
-  async function worker() {
-    while (true) {
-      const i = cursor++;
-      if (i >= items.length) return;
-      results[i] = await fn(items[i], i);
-    }
-  }
-  const n = Math.min(limit, items.length);
-  await Promise.all(Array.from({ length: n }, () => worker()));
-  return results;
-}
-
 async function probeIsShort(videoId: string): Promise<boolean | null> {
   try {
     const res = await fetch(`https://www.youtube.com/shorts/${videoId}`, {
@@ -346,30 +324,41 @@ async function fetchViaAPI(apiKey: string): Promise<{
 
   // 4) Classify every video.
   //
-  //    Cold-load optimisation: if the duration we already have from
-  //    step 3 is longer than the YouTube shorts ceiling (180s as of
-  //    2024), skip the HEAD probe entirely — it can't be a short.
-  //    For a 500-video channel where ~60% are longform, this cuts
-  //    ~300 HEAD requests off the cold render path.
+  //    Earlier passes did a /shorts/<id> HEAD probe per video for
+  //    100% accurate classification, but with ~500 videos on the
+  //    channel the probe step alone cost 4–8s on a cold render —
+  //    which is what the user actually saw as a stuck skeleton on
+  //    Filmography. The full HEAD-probe path has been retired.
   //
-  //    Only videos with `sec <= SHORTS_HARD_CEILING_SECONDS` (or no
-  //    duration data) still need the probe to disambiguate. Probe
-  //    results stay cached for an hour via Next's fetch cache.
-  const classified: Video[] = await pMapLimit(out, PROBE_CONCURRENCY, async (v) => {
+  //    Pure duration + title heuristic now:
+  //      - `sec > SHORTS_HARD_CEILING_SECONDS` (180s) → definitely
+  //        longform. YouTube hard-caps shorts at 3 min.
+  //      - `sec <= SHORT_FALLBACK_MAX_SECONDS` (60s) → call it a
+  //        short. Edge cases here are intentional short clips
+  //        uploaded as regular videos, which are rare on a content
+  //        channel like this and at worst cause one strip-card to
+  //        show in the wrong tab.
+  //      - 60–180s in between → check title/description for
+  //        `#shorts` / `쇼츠` tags; default to longform otherwise.
+  //
+  //    No network in this step. Step 1 (channel meta) and step 2
+  //    (playlist pages) still cost the same; step 3 (durations) is
+  //    one batched call. End-to-end cold render now dominated by
+  //    those, which are ~1.5–2s combined.
+  const classified: Video[] = out.map((v) => {
     const sec = durations.get(v.id);
-    // Fast path: clearly longform, skip the network.
-    if (typeof sec === "number" && sec > SHORTS_HARD_CEILING_SECONDS) {
-      return { ...v, durationSec: sec, isShort: false };
-    }
-    const probe = await probeIsShort(v.id);
     let isShort: boolean;
-    if (probe !== null) {
-      isShort = probe;
-    } else if (typeof sec === "number") {
-      // Probe failed (network / 4xx) — fall back to duration.
-      isShort = sec <= SHORT_FALLBACK_MAX_SECONDS;
+    if (typeof sec === "number") {
+      if (sec > SHORTS_HARD_CEILING_SECONDS) {
+        isShort = false;
+      } else if (sec <= SHORT_FALLBACK_MAX_SECONDS) {
+        isShort = true;
+      } else {
+        // 60–180s: tag sniff. Default longform.
+        isShort = /#shorts?\b|쇼츠/i.test(`${v.title} ${v.description ?? ""}`);
+      }
     } else {
-      // No info at all — last-ditch title sniff.
+      // No duration data (rare) — last-ditch title sniff.
       isShort = /#shorts?\b|쇼츠/i.test(`${v.title} ${v.description ?? ""}`);
     }
     return { ...v, durationSec: sec, isShort };
