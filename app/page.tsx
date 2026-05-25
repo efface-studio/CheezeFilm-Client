@@ -342,13 +342,32 @@ export default async function HomePage() {
             const featured = FEATURED_CAST_NAMES.map((n) => byName.get(n))
               .filter((m): m is NonNullable<typeof m> => Boolean(m?.photoPath));
             return (
-              <ol className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5">
-                {featured.map((m, i) => (
+              // `overflow-x-clip` keeps the off-screen translateX
+              // start position from briefly showing horizontal scroll
+              // before the cards land. Visual clip only — doesn't
+              // break sticky/scroll behaviour the way `overflow-hidden`
+              // would on a vertical scroll ancestor.
+              <ol className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5 overflow-x-clip">
+                {featured.map((m, i) => {
+                  // Mirrored marquee — first 6 cards (row 1 on lg)
+                  // fly in from the left, last 6 (row 2 on lg) fly in
+                  // from the right. Delay resets at i=6 so the two
+                  // rows run in parallel: cards 0 & 6 land first,
+                  // cards 1 & 7 next, etc. — like two trains pulling
+                  // into the platform from opposite ends.
+                  //
+                  // On tablet/mobile the grid wraps earlier (3 or 2
+                  // cols) so the visual story is less clean, but the
+                  // alternating L/R entrance still reads as deliberate
+                  // motion rather than a single sweep.
+                  const fromLeft = i < 6;
+                  const stagger = (i % 6) * 80;
+                  return (
                   <InView
                     key={m.slug}
                     as="li"
-                    className="fade-up"
-                    style={{ transitionDelay: `${i * 60}ms` } as React.CSSProperties}
+                    className={fromLeft ? "slide-from-left" : "slide-from-right"}
+                    style={{ transitionDelay: `${stagger}ms` } as React.CSSProperties}
                   >
                     <Link
                       href={`/members/${encodeURIComponent(m.slug)}`}
@@ -380,7 +399,8 @@ export default async function HomePage() {
                       </div>
                     </Link>
                   </InView>
-                ))}
+                  );
+                })}
               </ol>
             );
           })()}
