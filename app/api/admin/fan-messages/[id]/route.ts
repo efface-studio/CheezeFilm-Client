@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { serverClient } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { auditLog } from "@/lib/auditLog";
 
 export const runtime = "nodejs";
 
@@ -31,6 +32,13 @@ export async function PATCH(
   if ((count ?? 0) === 0) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+  auditLog({
+    action: "update",
+    resource: "fan_message",
+    id: numericId,
+    username: session.username,
+    meta: { is_read },
+  });
   return NextResponse.json({ ok: true });
 }
 
@@ -58,5 +66,11 @@ export async function DELETE(
   if ((count ?? 0) === 0) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+  auditLog({
+    action: "delete",
+    resource: "fan_message",
+    id: numericId,
+    username: session.username,
+  });
   return NextResponse.json({ ok: true });
 }

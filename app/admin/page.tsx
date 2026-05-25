@@ -2,13 +2,14 @@ import { redirect } from "next/navigation";
 import nextDynamic from "next/dynamic";
 import { getSession } from "@/lib/auth";
 import {
-  serverClient,
   storageUrl,
+  serverClient,
   type Audition,
   type FanMessage,
 } from "@/lib/db";
 import { getMembers } from "@/lib/members";
 import { getAllContent, loadContentMap, getContent } from "@/lib/content";
+import { batchResolveAuditionPhotos } from "@/lib/auditionPhoto";
 import AdminShell from "./AdminShell";
 import AdminActions from "./AdminActions";
 import AdminListToolbar from "./AdminListToolbar";
@@ -71,47 +72,6 @@ type Tab =
 
 function resolveMemberPhoto(photoPath: string | undefined) {
   return photoPath ? storageUrl("members", photoPath) : null;
-}
-
-/**
- * Audition photos resolver. The `auditions` Supabase Storage bucket is
- * **private** — public URLs return 400 — so we issue a short-lived
- * signed URL via the service-role client. The bucket policy spec
- * (supabase/schema.sql) explicitly notes it private so applicant
- * photos aren't world-readable.
- *
- * Two shapes have ever been stored in `photo_url`:
- *   - legacy entries: full `https://…` URL (some were uploaded to
- *     the public bucket before the security pass) → return as-is.
- *   - current entries: bucket-relative key like
- *     "1716567000-abc12345.jpg" → mint a signed URL for it.
- *
- * Returns `null` when nothing is stored, OR when the signed URL
- * mint fails (we'd rather show the "사진 없음" placeholder than a
- * broken-image icon).
- */
-async function resolveAuditionPhoto(
-  stored: string | null | undefined,
-): Promise<string | null> {
-  if (!stored) return null;
-  if (stored.startsWith("http://") || stored.startsWith("https://")) return stored;
-  try {
-    const sb = serverClient();
-    // 1-hour TTL is plenty for admin browsing — the dossier panel
-    // doesn't stay open that long and revisiting fires a fresh
-    // server render anyway.
-    const { data, error } = await sb.storage
-      .from("auditions")
-      .createSignedUrl(stored, 3600);
-    if (error || !data?.signedUrl) {
-      console.warn("[admin] signed URL failed for", stored, error?.message);
-      return null;
-    }
-    return data.signedUrl;
-  } catch (err) {
-    console.warn("[admin] signed URL threw for", stored, err);
-    return null;
-  }
 }
 
 export default async function AdminPage({
@@ -184,6 +144,34 @@ export default async function AdminPage({
           thumbnail: v.thumbnail,
         }))
       : [];
+
+  // Pre-resolve audition presentation data so each `<details>` expansion
+  // stays sync. Two N+1s previously fired *per expanded row*:
+  //   - `resolveAuditionPhoto(photo_url)` — signed-URL roundtrip per row
+  //   - `listingSummary(listing_id)`     — Supabase lookup per row
+  // Doing both at the page level lets us parallelise the first and
+  // dedupe the second (most auditions share a handful of listing IDs).
+  const auditionRows = tab === "auditions" ? (auditionsResult.data ?? []) as Audition[] : [];
+  const auditionPhotos = tab === "auditions"
+    ? await batchResolveAuditionPhotos(
+        auditionRows.map((a) => ({ id: a.id, photo_url: a.photo_url })),
+      )
+    : new Map<number, string | null>();
+  const auditionListingSummaries = tab === "auditions"
+    ? await (async () => {
+        const ids = Array.from(
+          new Set(
+            auditionRows
+              .map((a) => a.listing_id)
+              .filter((id): id is number => id != null),
+          ),
+        );
+        const pairs = await Promise.all(
+          ids.map(async (id) => [id, await listingSummary(id)] as const),
+        );
+        return new Map(pairs.filter(([, s]) => !!s) as [number, string][]);
+      })()
+    : new Map<number, string>();
 
   const auditionStats = {
     total: auditions.length,
@@ -302,7 +290,11 @@ export default async function AdminPage({
             scope="audition"
             total={auditions.length}
           />
-          <AuditionsTable items={auditions} />
+          <AuditionsTable
+            items={auditions}
+            photos={auditionPhotos}
+            listingSummaries={auditionListingSummaries}
+          />
         </div>
       )}
 
@@ -546,7 +538,15 @@ const GENDER_KO: Record<string, string> = {
  * show the candidate dossier. `grid` template ensures columns line up
  * with the header.
  */
-function AuditionsTable({ items }: { items: Audition[] }) {
+function AuditionsTable({
+  items,
+  photos,
+  listingSummaries,
+}: {
+  items: Audition[];
+  photos: Map<number, string | null>;
+  listingSummaries: Map<number, string>;
+}) {
   if (items.length === 0)
     return <EmptyCard>아직 접수된 오디션 지원이 없습니다.</EmptyCard>;
 
@@ -600,7 +600,11 @@ function AuditionsTable({ items }: { items: Audition[] }) {
                   <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="currentColor"><path d="M3 6l5 5 5-5z" /></svg>
                 </span>
               </summary>
-              <AuditionDetail audition={a} />
+              <AuditionDetail
+                audition={a}
+                photoSrc={photos.get(a.id) ?? null}
+                listing={a.listing_id != null ? listingSummaries.get(a.listing_id) ?? null : null}
+              />
             </details>
           </li>
         ))}
@@ -614,14 +618,22 @@ function AuditionsTable({ items }: { items: Audition[] }) {
  *   - Left rail: portrait photo + ID badge + key facts (제출일, 공고, 포지션, 성별, 연락처)
  *   - Right column: 자기소개 quote → 경력 → 포트폴리오, with editorial section dividers
  *   - Bottom: full-width status actions bar
+ *
+ * Both `photoSrc` and `listing` are pre-resolved at the page level
+ * (AdminPage → batchResolveAuditionPhotos + listingSummaries map) so
+ * this stays a pure sync component. Previously each row fired its own
+ * Supabase round-trips on expand, which made every `<details>` open
+ * pause for ~200ms with N+1 latency.
  */
-async function AuditionDetail({ audition: a }: { audition: Audition }) {
-  // listingSummary + photo URL both hit Supabase, so we run them in
-  // parallel — saves one network roundtrip per expanded row.
-  const [listing, photoSrc] = await Promise.all([
-    listingSummary(a.listing_id),
-    resolveAuditionPhoto(a.photo_url),
-  ]);
+function AuditionDetail({
+  audition: a,
+  photoSrc,
+  listing,
+}: {
+  audition: Audition;
+  photoSrc: string | null;
+  listing: string | null;
+}) {
   const submitted = new Date(a.created_at);
   const submittedStr = `${submitted.getFullYear()}.${String(submitted.getMonth() + 1).padStart(2, "0")}.${String(submitted.getDate()).padStart(2, "0")} ${String(submitted.getHours()).padStart(2, "0")}:${String(submitted.getMinutes()).padStart(2, "0")}`;
   return (

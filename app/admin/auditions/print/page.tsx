@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { serverClient, type Audition } from "@/lib/db";
 import { listingSummary } from "@/lib/auditionListings";
+import { batchResolveAuditionPhotos } from "@/lib/auditionPhoto";
 import AutoPrint from "../../AutoPrint";
 import PrintButton from "../../PrintButton";
 
@@ -55,14 +56,28 @@ export default async function PrintPage() {
     .select("*")
     .order("created_at", { ascending: false });
   const rows = (rowsData ?? []) as Audition[];
-  // Pre-resolve listing summaries so the JSX stays sync.
-  const listingSummaries = new Map<number, string>();
-  for (const a of rows) {
-    if (a.listing_id != null && !listingSummaries.has(a.listing_id)) {
-      const s = await listingSummary(a.listing_id);
-      if (s) listingSummaries.set(a.listing_id, s);
-    }
-  }
+
+  // Pre-resolve listing summaries + photo URLs in parallel. Previously
+  // the listing lookups ran sequentially in a for-loop (one Supabase
+  // round-trip each), and photos were left as raw bucket keys — which
+  // made the print preview show a broken image for every applicant
+  // since the auditions bucket is private. Both fixed in one pass:
+  //   - dedupe listing IDs then Promise.all over the unique set
+  //   - batch signed-URL mint for every photo
+  const uniqueListingIds = Array.from(
+    new Set(rows.map((a) => a.listing_id).filter((id): id is number => id != null)),
+  );
+  const [listingSummaryEntries, photoUrls] = await Promise.all([
+    Promise.all(
+      uniqueListingIds.map(async (id) => [id, await listingSummary(id)] as const),
+    ),
+    batchResolveAuditionPhotos(
+      rows.map((a) => ({ id: a.id, photo_url: a.photo_url })),
+    ),
+  ]);
+  const listingSummaries = new Map<number, string>(
+    listingSummaryEntries.filter(([, s]) => !!s) as [number, string][],
+  );
   const today = new Date();
   const printDate = formatDate(today.toISOString());
 
@@ -102,10 +117,14 @@ export default async function PrintPage() {
             <tr key={a.id}>
               <td className="mono">#{String(a.id).padStart(4, "0")}</td>
               <td>
-                {a.photo_url ? (
+                {/* Use the pre-signed URL (private bucket) rather than
+                    the raw key. Falls back to the initial-letter tile
+                    when nothing is uploaded or the signed-URL mint
+                    failed during the page render. */}
+                {photoUrls.get(a.id) ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={a.photo_url}
+                    src={photoUrls.get(a.id)!}
                     alt={a.name}
                     className="thumb"
                   />

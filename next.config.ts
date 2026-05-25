@@ -43,6 +43,18 @@ const nextConfig: NextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          // HSTS — lock the domain (and its subdomains) onto HTTPS for
+          // a year after the first visit. Browsers cache this header so
+          // an attacker can't strip TLS via a downgrade on a repeat
+          // visit. `preload` opts the domain into the Chrome HSTS
+          // preload list, applied to first-time visitors too. Vercel
+          // terminates TLS at the edge so HSTS is always honoured in
+          // production; on `localhost` browsers ignore HSTS so dev
+          // isn't affected.
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000; includeSubDomains; preload",
+          },
           {
             // Lock down every powerful feature we don't actually use.
             // Same posture as before plus payment, USB, serial, sensors,

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { serverClient } from "@/lib/db";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
+import { isEmail } from "@/lib/validate";
 
 export const runtime = "nodejs";
 
@@ -14,10 +15,6 @@ type Body = {
   favorite_work?: string | null;
   message?: string;
 };
-
-function isEmail(v: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-}
 
 export async function POST(req: Request) {
   const ip = clientIp(req);

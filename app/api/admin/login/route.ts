@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSession, verifyCredentials } from "@/lib/auth";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
+import { auditLog } from "@/lib/auditLog";
 
 export const runtime = "nodejs";
 
@@ -42,6 +43,16 @@ export async function POST(req: Request) {
   }
 
   if (!verifyCredentials(username, password)) {
+    // Log failed attempts too — the rate-limit catches brute force,
+    // but the audit trail lets us spot credential-stuffing waves and
+    // correlate IPs across multiple usernames.
+    auditLog({
+      action: "login",
+      resource: "session",
+      id: username,
+      username,
+      meta: { ok: false, ip },
+    });
     return NextResponse.json(
       { error: "아이디 또는 비밀번호가 올바르지 않습니다." },
       { status: 401 },
@@ -49,5 +60,12 @@ export async function POST(req: Request) {
   }
 
   await createSession(username);
+  auditLog({
+    action: "login",
+    resource: "session",
+    id: username,
+    username,
+    meta: { ok: true, ip },
+  });
   return NextResponse.json({ ok: true });
 }

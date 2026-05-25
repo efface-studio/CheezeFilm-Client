@@ -141,6 +141,11 @@ export default function HeroCover({
                   priority={i === 0}
                   loading={i === 0 ? "eager" : "lazy"}
                   fetchPriority={i === 0 ? "high" : "low"}
+                  // The hero cover is the page's LCP and visual hero —
+                  // worth the extra ~5% file size for the bump from
+                  // quality 75 → 85. AVIF compresses photos efficiently
+                  // enough that the wire delta is small at this size.
+                  quality={85}
                 />
               </div>
             );

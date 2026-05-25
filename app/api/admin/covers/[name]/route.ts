@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { serverClient } from "@/lib/db";
 import { bumpCovers } from "@/lib/revalidate";
+import { auditLog } from "@/lib/auditLog";
 
 export const runtime = "nodejs";
 
@@ -53,5 +54,11 @@ export async function DELETE(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   bumpCovers();
+  auditLog({
+    action: "delete",
+    resource: "cover_photo",
+    id: decoded,
+    username: session.username,
+  });
   return NextResponse.json({ deleted: decoded });
 }

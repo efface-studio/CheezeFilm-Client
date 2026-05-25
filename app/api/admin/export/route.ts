@@ -107,16 +107,28 @@ const FAN_COLS: ColSpec<FanMessage>[] = [
   { key: "created_at", header: "받은일시", width: 20 },
 ];
 
+/**
+ * Spreadsheet apps (Excel, Sheets, Numbers) execute any string cell
+ * starting with `=`, `+`, `@`, `-`, `\t`, or `\r` as a formula. Prefix
+ * matching values with a literal apostrophe so they stay inert when
+ * opened. `csvEscape` does the same for CSV; XLSX cell values pass
+ * through `toRowValues` and need this defence too.
+ */
+function neutralizeFormula<V>(v: V): V {
+  if (typeof v !== "string") return v;
+  if (/^[=+@\-\t\r]/.test(v)) return ("'" + v) as unknown as V;
+  return v;
+}
+
 function toRowValues<T extends Record<string, unknown>>(
   row: T,
   cols: ColSpec<T>[],
   ctx: ExportContext,
 ): (string | number | null)[] {
   return cols.map((c) => {
-    if (c.format) return c.format(row, ctx);
-    const v = row[c.key as keyof T];
-    if (v === null || v === undefined) return "";
-    return v as string | number;
+    const raw = c.format ? c.format(row, ctx) : (row[c.key as keyof T] ?? "");
+    if (raw === null || raw === undefined) return "";
+    return neutralizeFormula(raw) as string | number;
   });
 }
 
@@ -124,7 +136,15 @@ function toRowValues<T extends Record<string, unknown>>(
 
 function csvEscape(v: unknown): string {
   if (v === null || v === undefined) return "";
-  const s = String(v);
+  let s = String(v);
+  // Formula-injection guard. Excel / Sheets / Numbers all auto-execute
+  // a cell that starts with `=`, `+`, `@`, `-`, `\t`, or `\r` — so a
+  // user submitting an "intro" of `=cmd|'/c calc'!A1` could land RCE
+  // on whoever opens the CSV export. Prefix any such value with a
+  // literal apostrophe; spreadsheet apps strip it on edit but the
+  // formula stays dormant. Apply before quote-escaping so the prefix
+  // ends up inside the quotes on values that also contain newlines.
+  if (/^[=+@\-\t\r]/.test(s)) s = "'" + s;
   if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }

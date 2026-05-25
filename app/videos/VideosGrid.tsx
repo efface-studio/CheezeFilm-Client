@@ -140,7 +140,7 @@ export default function VideosGrid({
   function LongformGrid({ videos, onOpen }: { videos: Video[]; onOpen: (v: Video) => void }) {
     return (
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
-        {videos.map((v) => (
+        {videos.map((v, i) => (
           <button
             key={v.id}
             type="button"
@@ -154,7 +154,14 @@ export default function VideosGrid({
                 fill
                 sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                 className="object-cover"
-                loading="lazy"
+                // The first 6 cards (lg: 2 rows × 3 cols, sm: 3 rows × 2
+                // cols) sit at or just below the fold on most viewports.
+                // Eager-loading them takes one round-trip and improves
+                // LCP measurably on `/videos` — previously every card
+                // was lazy, so the page rendered an empty grid for ~200ms
+                // before the YouTube thumbnails streamed in.
+                priority={i < 6}
+                loading={i < 6 ? "eager" : "lazy"}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-cheeze-charcoal/55 via-cheeze-charcoal/0 to-transparent" />
               {v.durationSec && (
@@ -194,7 +201,7 @@ export default function VideosGrid({
       // `grid-cols-1` and using `w-full` forces full-width stretch on
       // both grids and makes the shorts grid align with longform.
       <div className="w-full grid sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12">
-        {videos.map((v) => (
+        {videos.map((v, i) => (
           <button
             key={v.id}
             type="button"
@@ -208,7 +215,11 @@ export default function VideosGrid({
                 fill
                 sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                 className="object-cover"
-                loading="lazy"
+                // First row of shorts (lg: 4 cards, sm: 2 cards) loads
+                // eagerly so the tab swap from longform → shorts doesn't
+                // show empty boxes for a beat.
+                priority={i < 4}
+                loading={i < 4 ? "eager" : "lazy"}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-cheeze-charcoal/85 to-transparent" />
               <span className="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-white/95 text-cheeze-ink text-[11px] font-bold px-3 py-1.5">

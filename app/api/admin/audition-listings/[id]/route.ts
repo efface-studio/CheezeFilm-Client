@@ -9,6 +9,7 @@ import {
 } from "@/lib/auditionListings";
 import type { AuditionListing } from "@/lib/db";
 import { bumpListings } from "@/lib/revalidate";
+import { auditLog } from "@/lib/auditLog";
 
 export const runtime = "nodejs";
 
@@ -82,6 +83,13 @@ export async function PATCH(
 
   await updateListing(numericId, body);
   bumpListings();
+  auditLog({
+    action: "update",
+    resource: "audition_listing",
+    id: numericId,
+    username: session.username,
+    meta: { status: body.status, role_type: body.role_type },
+  });
   return NextResponse.json({ ok: true });
 }
 
@@ -102,5 +110,11 @@ export async function DELETE(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   bumpListings();
+  auditLog({
+    action: "delete",
+    resource: "audition_listing",
+    id: numericId,
+    username: session.username,
+  });
   return NextResponse.json({ ok: true });
 }
