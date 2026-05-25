@@ -406,7 +406,11 @@ function ApplyForm({
         title="프로필 사진"
         sublabel="최소 1장, 최대 3장 · 얼굴이 잘 보이는 사진 권장"
       >
-        <ul className="grid grid-cols-3 gap-3">
+        {/* Phone (<640px) shows the 3 upload slots stacked 2-up so each
+            slot lands at ~42vw and the dashed "+" cue + file name preview
+            stay legible. At sm+ we go back to a 3-up row so the optional
+            second/third slots sit beside the primary one as before. */}
+        <ul className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {photos.map((p, i) => {
             const isFirst = i === 0;
             return (
