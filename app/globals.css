@@ -471,6 +471,37 @@ body {
   transform: translateY(0);
 }
 
+/* Horizontal slide-in reveals — used by the home Cast grid so the
+   two rows fly in from opposite sides like a film strip threading
+   from both ends. Pair with InView (sets data-revealed="true") and a
+   per-card `transition-delay` to get the "주루룩" marquee cascade.
+   Travel distance is generous (72px) so the motion reads even when
+   cards are tightly packed; cubic-bezier matches .fade-up's so the
+   landing feels consistent with the rest of the page. */
+.slide-from-left,
+.slide-from-right {
+  opacity: 0;
+  transition:
+    opacity 700ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 700ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  will-change: transform, opacity;
+}
+.slide-from-left  { transform: translate3d(-72px, 0, 0); }
+.slide-from-right { transform: translate3d( 72px, 0, 0); }
+.slide-from-left[data-revealed="true"],
+.slide-from-right[data-revealed="true"] {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .slide-from-left,
+  .slide-from-right {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
 /* Word-level stagger for hero titles. Each child <span> picks its own
    delay via --li. Pair with the Stagger client component (mode="word"). */
 .stagger > * {
