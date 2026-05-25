@@ -295,12 +295,16 @@ export default function SiteNav({ lang = "ko" }: { lang?: Lang }) {
           </span>
         </Link>
 
-        {/* Nav list with scroll-spy marker.
-            Active item = full-ink (looks black); inactive = muted olive that
-            reads as gray on the cream background. Labels are display-sized
-            so the rail anchors the page rather than acting as a chrome strip. */}
-        <nav className="-mx-2">
-          <ol className="space-y-2">
+        {/* Nav list — editorial table of contents.
+            Earlier version wrapped the active item in a rounded purple
+            pill and stacked numbers + KO + EN labels three-up. That
+            reads like a SaaS dashboard sidebar. The film studio reads
+            more like a magazine TOC: a column of plain rows, a thin
+            vertical bar marking the active line, and only the active
+            number lit in brand purple. No pill, no secondary label,
+            no surface noise — the type is the design. */}
+        <nav>
+          <ol>
             {NAV.map((item) => {
               const active = effectiveActive === item.sectionId;
               const isHash = item.href.includes("#");
@@ -314,20 +318,11 @@ export default function SiteNav({ lang = "ko" }: { lang?: Lang }) {
                     // anchor presses — sliding the whole viewport for them
                     // adds 300–600ms of perceived lag before the user lands.
                     data-no-vt
-                    // In-page hash links (every rail item on the home spread
-                    // now points at #issue / #films / #cast / #careers). We
-                    // animate the scroll instead of teleporting so the user
-                    // *sees* the page travelling — the rail is part of the
-                    // spread, not a route switcher.
                     onClick={
                       isHash && isHome
                         ? (e) => {
                             const id = item.href.split("#")[1];
                             e.preventDefault();
-                            // `#top` is a sentinel for the 01 소개 item —
-                            // scroll to the very top of the page rather
-                            // than to an anchor element. Anything else
-                            // tries to find a matching id.
                             if (id === "top") {
                               window.scrollTo({ top: 0, behavior: "smooth" });
                             } else {
@@ -342,30 +337,32 @@ export default function SiteNav({ lang = "ko" }: { lang?: Lang }) {
                           }
                         : undefined
                     }
-                    className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] font-semibold transition-all ${
+                    className={`group/nav relative flex items-baseline gap-4 py-2.5 text-[15px] tracking-tight transition-colors ${
                       active
-                        ? "bg-cheeze-purple/10 text-cheeze-purple-deep"
-                        : "text-toss-500 hover:bg-toss-50 hover:text-cheeze-ink"
+                        ? "text-cheeze-ink font-semibold"
+                        : "text-toss-500 hover:text-cheeze-ink font-medium"
                     }`}
                   >
                     <LinkPending />
+                    {/* Active marker — a single 1px vertical hairline
+                        on the left edge. Animates in with a scale-Y
+                        so the eye sees the cursor "land" on the line
+                        instead of a block flipping on/off. */}
+                    <span
+                      aria-hidden
+                      className={`absolute -left-3 top-1/2 -translate-y-1/2 w-px h-5 bg-cheeze-purple transition-transform duration-300 origin-center ${
+                        active ? "scale-y-100" : "scale-y-0"
+                      }`}
+                    />
                     <span
                       className={`text-[11px] font-mono tabular-nums transition-colors ${
-                        active ? "text-cheeze-purple" : "text-toss-300"
+                        active ? "text-cheeze-purple" : "text-toss-300 group-hover/nav:text-toss-500"
                       }`}
                     >
                       {item.num}
                     </span>
-                    <span className="flex-1">
+                    <span>
                       {lang === "en" ? item.labelEn : item.label}
-                    </span>
-                    <span
-                      aria-hidden
-                      className={`text-[10px] tracking-wider uppercase transition-opacity ${
-                        active ? "opacity-60" : "opacity-0"
-                      }`}
-                    >
-                      {lang === "en" ? item.label : item.labelEn}
                     </span>
                   </Link>
                 </li>
@@ -374,53 +371,45 @@ export default function SiteNav({ lang = "ko" }: { lang?: Lang }) {
           </ol>
         </nav>
 
-        {/* CTA + social row.
-            Toss-style: clean rounded card, one small status label, one
-            clear action. No yellow stripe, no film-perf dots, no mono
-            sub-label — those were over-decorating a 220px-wide button.
-            The whole rail is already editorial; the CTA's job is just
-            to feel inviting and tappable. */}
-        <div className="space-y-4">
+        {/* Bottom block — replaces the painted purple CTA card.
+            The card-with-arrow felt like every SaaS sidebar; we're
+            editorial here, so the bottom hand-off is now a two-line
+            text link with a small purple dot for liveness when there's
+            an open listing. The link itself carries the affordance. */}
+        <div className="space-y-5">
           <Link
             href="/support"
-            className="group/cta block rounded-2xl bg-cheeze-purple-deep text-cheeze-cream hover:bg-cheeze-purple transition-colors px-4 py-3.5"
+            className="group/cta block"
           >
-            {/* Status row — only renders when we have at least one open
-                listing. The label reflects the actual mix of role types
-                that are open right now (오디션 / 스태프 / 둘 다), so
-                we never tell the visitor "오디션 모집 중" when only
-                staff positions are actually accepting. */}
             {openLabel && (
-              <div className="flex items-center gap-1.5 text-[11px] text-cheeze-cream/75">
+              <div className="flex items-center gap-1.5 text-[10px] tracking-[0.3em] uppercase text-cheeze-olive">
                 <span
                   aria-hidden
-                  className="block w-1.5 h-1.5 rounded-full bg-cheeze-yellow cta-pulse"
+                  className="block w-1.5 h-1.5 rounded-full bg-cheeze-purple cta-pulse"
                 />
                 {openLabel}
               </div>
             )}
-
-            {/* Action row */}
             <div
-              className={`flex items-center justify-between gap-2 ${
-                openLabel ? "mt-1" : ""
+              className={`flex items-baseline gap-2 ${
+                openLabel ? "mt-2" : ""
               }`}
             >
-              <span className="text-[15px] font-semibold tracking-tight text-cheeze-cream">
+              <span className="text-[18px] tracking-tight font-semibold text-cheeze-ink group-hover/cta:text-cheeze-purple-deep transition-colors">
                 {lang === "en"
-                  ? (openLabel ? "Apply" : "Go to apply page")
-                  : (openLabel ? "지원하기" : "지원 페이지로")}
+                  ? (openLabel ? "Apply" : "Apply now")
+                  : (openLabel ? "지원하기" : "지원하기")}
               </span>
               <span
                 aria-hidden
-                className="text-cheeze-cream/80 text-[15px] leading-none transition-transform duration-300 group-hover/cta:translate-x-1"
+                className="text-cheeze-purple text-[18px] leading-none transition-transform duration-300 group-hover/cta:translate-x-1"
               >
                 →
               </span>
             </div>
           </Link>
 
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3 pt-1">
             <div className="flex items-center gap-3 text-[10px] tracking-[0.3em] uppercase">
               <a
                 href="https://www.youtube.com/@CheezeFilmz"
@@ -532,13 +521,16 @@ export default function SiteNav({ lang = "ko" }: { lang?: Lang }) {
           </div>
         </div>
 
-        {/* Collapsible nav row */}
+        {/* Collapsible mobile nav — same editorial column layout as
+            the desktop rail (hairline divisions, no painted active
+            chip, secondary label dropped). Active row sits in ink
+            with a small left dot; inactive rows in muted grey. */}
         <nav
           id="mobile-menu"
           hidden={!mobileOpen}
-          className="border-t border-cheeze-purple-deep/15 bg-cheeze-cream/95"
+          className="border-t border-cheeze-ink/10 bg-cheeze-cream/95"
         >
-          <ol className="px-5 py-2 divide-y divide-cheeze-purple-deep/10">
+          <ol className="px-5 divide-y divide-cheeze-ink/10">
             {NAV.map((item) => {
               const active = effectiveActive === item.sectionId;
               return (
@@ -546,25 +538,27 @@ export default function SiteNav({ lang = "ko" }: { lang?: Lang }) {
                   <Link
                     href={item.href}
                     onClick={() => setMobileOpen(false)}
-                    className={`flex items-baseline justify-between py-3 transition-colors ${
+                    className={`relative flex items-baseline gap-4 py-3.5 transition-colors ${
                       active
-                        ? "text-cheeze-purple-deep"
-                        : "text-cheeze-ink-soft"
+                        ? "text-cheeze-ink font-semibold"
+                        : "text-toss-500 font-medium"
                     }`}
                   >
-                    <span className="flex items-baseline gap-3">
-                      <span className="font-mono text-[10px] tracking-wider tabular-nums text-cheeze-olive/70">
-                        {item.num}
-                      </span>
+                    {active && (
                       <span
-                        className="text-xl"
-                        style={{ fontFamily: "var(--font-display)" }}
-                      >
-                        {lang === "en" ? item.labelEn : item.label}
-                      </span>
+                        aria-hidden
+                        className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-cheeze-purple"
+                      />
+                    )}
+                    <span
+                      className={`text-[11px] font-mono tabular-nums ${
+                        active ? "text-cheeze-purple" : "text-toss-300"
+                      }`}
+                    >
+                      {item.num}
                     </span>
-                    <span className="text-[9px] tracking-[0.3em] uppercase text-cheeze-olive/60">
-                      {lang === "en" ? item.label : item.labelEn}
+                    <span className="text-[15px] tracking-tight">
+                      {lang === "en" ? item.labelEn : item.label}
                     </span>
                   </Link>
                 </li>

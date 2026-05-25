@@ -23,13 +23,14 @@ import { getOpenListings, formatDeadline } from "@/lib/auditionListings";
  *  - Extra   → amber  (small parts; warm but lower-priority)
  *  - Staff   → zinc   (off-camera; neutral)
  *  Tailwind classes only; no per-color CSS so the bundle stays flat.
+ *
+ *  NOTE: The painted-chip + ribbon scheme that originally lived here
+ *  was retired with the editorial open-roles redesign — row colour now
+ *  lives in the role-text class chosen inline (lead = purple-deep,
+ *  support = ink, extra = ink-soft, staff = olive). Kept this comment
+ *  block so future editors don't reach for a colour map that no
+ *  longer exists.
  */
-const ROLE_ACCENT: Record<string, { ribbon: string; chip: string }> = {
-  lead:    { ribbon: "bg-cheeze-purple",      chip: "bg-cheeze-purple/12 text-cheeze-purple-deep" },
-  support: { ribbon: "bg-teal-500",            chip: "bg-teal-50 text-teal-700" },
-  extra:   { ribbon: "bg-amber-400",           chip: "bg-amber-50 text-amber-800" },
-  staff:   { ribbon: "bg-zinc-400",            chip: "bg-zinc-100 text-zinc-700" },
-};
 
 // ISR — the home pulls Supabase content, members, videos, and cover photos.
 // All of those are also wrapped in `unstable_cache` keyed by content/members/
@@ -529,82 +530,74 @@ export default async function HomePage() {
 
             {/* Live open-roles preview — fills the otherwise-empty
                 space below the CTAs. Only renders when at least one
-                listing is currently `open` (admin → 지원 공고). Each
-                listing chips its role label + a short title +
-                deadline. Click → /support?tab=audition where the form
-                already filters by these listings. */}
+                listing is currently `open` (admin → 지원 공고).
+                Earlier version stacked rounded cards with coloured
+                left ribbons + chip pills + accent shadows; user
+                feedback was that it read like a generic SaaS dashboard
+                ("AI-스러움"). This is the studio call-sheet pass:
+                a single ruled column, role tag as small caps text,
+                title set in display weight, date in mono on the
+                right. No cards, no shadows, no pulse dot. */}
             {openListings.length > 0 && (
-              <InView className="fade-up mt-10 pt-8 border-t border-cheeze-purple-deep/10">
-                {/* Section header with live status dot + count, plus
-                    an "Apply" link on the right. Spacing matches the
-                    Toss reference: dense uppercase eyebrow, no extra
-                    chrome around the count. */}
-                <div className="flex items-baseline justify-between mb-5">
-                  <div className="text-[10px] tracking-[0.35em] uppercase text-cheeze-olive flex items-center gap-2">
-                    <span className="pulse-dot" />
-                    <span className="font-bold text-cheeze-ink-soft">
-                      {t("openroles.label", lang)}
-                    </span>
-                    <span className="text-cheeze-olive/40">·</span>
-                    <span className="font-bold text-cheeze-purple-deep tabular-nums">
-                      {openListings.length}
-                      {t("openroles.unit", lang)}
-                    </span>
+              <InView className="fade-up mt-12 pt-10 border-t border-cheeze-ink/10">
+                {/* Section header — magazine-style. "Call sheet" eyebrow
+                    in tracked small-caps, count immediately after as a
+                    serif-leaning numeral. "Apply" lives as a quiet
+                    text link, not a button. */}
+                <div className="flex items-end justify-between mb-6 gap-4">
+                  <div>
+                    <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">
+                      {t("openroles.label", lang)} · <span className="tabular-nums">{String(openListings.length).padStart(2, "0")}</span>
+                    </div>
                   </div>
                   <Link
                     href="/support?tab=audition"
-                    className="inline-flex items-center gap-1.5 text-[11px] tracking-widest uppercase font-bold text-cheeze-purple-deep hover:text-cheeze-purple group/all"
+                    className="group/all text-[12px] tracking-tight text-cheeze-ink-soft hover:text-cheeze-ink underline underline-offset-4 decoration-cheeze-ink/20 hover:decoration-cheeze-ink/60 transition-colors"
                   >
                     {t("openroles.viewAll", lang)}
                     <span
                       aria-hidden
-                      className="transition-transform group-hover/all:translate-x-0.5"
+                      className="inline-block ml-1 transition-transform group-hover/all:translate-x-0.5"
                     >
                       →
                     </span>
                   </Link>
                 </div>
-                {/* Role-type color accents. Each card gets a 1.5px
-                    left ribbon in its role's color so the list reads
-                    as scannable at a glance. Color choices map to the
-                    role's "weight" — lead=brand purple, support=teal,
-                    extra=amber, staff=zinc. */}
-                <ul className="grid sm:grid-cols-2 gap-2.5">
+
+                {/* The list — hairline-divided rows, no surface. Each
+                    row is a clean three-column layout:
+                      [role tag]  [title]  [deadline]
+                    Role types stay color-coded via the text itself
+                    (lead = brand purple, others = ink/olive) so the
+                    scan-ability stays without painted chips. */}
+                <ul className="divide-y divide-cheeze-ink/10">
                   {openListings.slice(0, 4).map((l) => {
-                    const accent = ROLE_ACCENT[l.role_type] ?? ROLE_ACCENT.staff;
+                    const roleText =
+                      l.role_type === "lead"
+                        ? "text-cheeze-purple-deep"
+                        : l.role_type === "support"
+                          ? "text-cheeze-ink"
+                          : l.role_type === "extra"
+                            ? "text-cheeze-ink-soft"
+                            : "text-cheeze-olive";
                     return (
                       <li key={l.id}>
                         <Link
                           href="/support?tab=audition"
-                          className="group/listing relative flex items-center gap-3 overflow-hidden rounded-2xl bg-white pl-5 pr-4 py-3.5 ring-1 ring-cheeze-purple-deep/[0.08] hover:ring-cheeze-purple-deep/25 hover:shadow-[0_4px_20px_-6px_rgba(85,34,163,0.22)] hover:-translate-y-px transition-all"
+                          className="group/listing grid grid-cols-[5rem_1fr_auto] sm:grid-cols-[6rem_1fr_auto] items-baseline gap-3 sm:gap-5 py-3.5 transition-colors"
                         >
-                          {/* Left accent ribbon — colored by role type */}
                           <span
-                            aria-hidden
-                            className={`absolute left-0 inset-y-0 w-1 ${accent.ribbon}`}
-                          />
-                          {/* Role-type chip */}
-                          <span
-                            className={`shrink-0 inline-flex items-center justify-center h-6 px-2.5 rounded-md text-[10px] font-bold tracking-[0.15em] uppercase ${accent.chip}`}
+                            className={`text-[10px] font-bold tracking-[0.25em] uppercase ${roleText}`}
                           >
                             {t(`role.type.${l.role_type}`, lang)}
                           </span>
-                          {/* Title — main affordance */}
-                          <span className="flex-1 min-w-0 text-[14px] font-semibold text-cheeze-ink truncate group-hover/listing:text-cheeze-purple-deep transition-colors">
+                          <span className="min-w-0 truncate text-[15px] tracking-tight text-cheeze-ink group-hover/listing:text-cheeze-purple-deep transition-colors">
                             {l.title}
                           </span>
-                          {/* Deadline — only shows date, not time, to
-                              keep cards readable */}
-                          {l.deadline && (
-                            <span className="shrink-0 hidden sm:inline-block text-[11px] font-mono tabular-nums text-cheeze-olive/80">
-                              {formatDeadline(l.deadline)?.slice(0, 10) ?? l.deadline}
-                            </span>
-                          )}
-                          <span
-                            aria-hidden
-                            className="shrink-0 text-cheeze-purple/30 group-hover/listing:text-cheeze-purple group-hover/listing:translate-x-0.5 transition-all"
-                          >
-                            →
+                          <span className="text-[11px] font-mono tabular-nums text-cheeze-olive/70 group-hover/listing:text-cheeze-ink-soft transition-colors">
+                            {l.deadline
+                              ? (formatDeadline(l.deadline)?.slice(5, 10) ?? "")
+                              : ""}
                           </span>
                         </Link>
                       </li>
