@@ -371,38 +371,49 @@ export default function SiteNav({ lang = "ko" }: { lang?: Lang }) {
           </ol>
         </nav>
 
-        {/* Bottom block — replaces the painted purple CTA card.
-            The card-with-arrow felt like every SaaS sidebar; we're
-            editorial here, so the bottom hand-off is now a two-line
-            text link with a small purple dot for liveness when there's
-            an open listing. The link itself carries the affordance. */}
+        {/* Bottom CTA — restored to the deep-purple card pattern after
+            the bare-text version read too thin in context. Refinements
+            over the original card:
+              - 14px corner radius (was 16px) and a 1px brand-cream
+                outline so the card has a more deliberate "panel" feel
+                rather than the generic soft pill
+              - status row's pulse dot is the brand yellow again (was
+                briefly purple) — yellow on purple is the studio's
+                actual signature contrast
+              - body label uses the display font so the CTA reads as
+                a typographic block, not a button label
+              - arrow is its own column so it can drift 4px on hover
+                without bumping the label baseline */}
         <div className="space-y-5">
           <Link
             href="/support"
-            className="group/cta block"
+            className="group/cta block rounded-2xl bg-cheeze-purple-deep ring-1 ring-inset ring-cheeze-cream/10 px-4 py-4 hover:bg-cheeze-purple transition-colors"
           >
             {openLabel && (
-              <div className="flex items-center gap-1.5 text-[10px] tracking-[0.3em] uppercase text-cheeze-olive">
+              <div className="flex items-center gap-1.5 text-[10px] tracking-[0.3em] uppercase text-cheeze-cream/75">
                 <span
                   aria-hidden
-                  className="block w-1.5 h-1.5 rounded-full bg-cheeze-purple cta-pulse"
+                  className="block w-1.5 h-1.5 rounded-full bg-cheeze-yellow cta-pulse"
                 />
                 {openLabel}
               </div>
             )}
             <div
-              className={`flex items-baseline gap-2 ${
-                openLabel ? "mt-2" : ""
+              className={`flex items-baseline justify-between gap-2 ${
+                openLabel ? "mt-1.5" : ""
               }`}
             >
-              <span className="text-[18px] tracking-tight font-semibold text-cheeze-ink group-hover/cta:text-cheeze-purple-deep transition-colors">
+              <span
+                className="text-[17px] tracking-tight text-cheeze-cream"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
                 {lang === "en"
                   ? (openLabel ? "Apply" : "Apply now")
                   : (openLabel ? "지원하기" : "지원하기")}
               </span>
               <span
                 aria-hidden
-                className="text-cheeze-purple text-[18px] leading-none transition-transform duration-300 group-hover/cta:translate-x-1"
+                className="text-cheeze-yellow text-[17px] leading-none transition-transform duration-300 group-hover/cta:translate-x-1"
               >
                 →
               </span>

@@ -669,11 +669,48 @@ export default async function HomePage() {
               </Link>
             </div>
           </InView>
-          <InView className="fade-up lg:col-span-5 lg:border-l lg:border-cheeze-cream/15 lg:pl-10 space-y-6">
-            <ContactRow label="Business" value={c("contact.business")} href={`mailto:${c("contact.business")}`} />
-            <ContactRow label="Audition" value={c("contact.audition")} href={`mailto:${c("contact.audition")}`} />
-            <ContactRow label="YouTube" value="@CheezeFilmz" href="https://www.youtube.com/@CheezeFilmz" />
-            <ContactRow label="Instagram" value="@cheezefilm.official" href="https://www.instagram.com/cheezefilm.official/" />
+          {/* Directory plate — was a plain 4-row table (yellow eyebrow,
+              underlined white value, ✉/↗ icon, hairline rule). User
+              feedback was that it read flat, so the new pass treats
+              the block as a film-studio credits panel: indexed rows,
+              the channel/email value sized up as the credit line,
+              brand glyphs (YouTube red play, IG gradient cam) where a
+              social icon adds character, and a yellow underline that
+              actually draws on hover. */}
+          <InView className="fade-up lg:col-span-5 lg:border-l lg:border-cheeze-cream/15 lg:pl-10">
+            <div className="text-[10px] tracking-[0.45em] uppercase text-cheeze-yellow/80 mb-6">
+              — Directory · 04
+            </div>
+            <ul className="divide-y divide-cheeze-cream/12">
+              <ContactRow
+                index="01"
+                kind="business"
+                label="Business"
+                value={c("contact.business")}
+                href={`mailto:${c("contact.business")}`}
+              />
+              <ContactRow
+                index="02"
+                kind="audition"
+                label="Audition"
+                value={c("contact.audition")}
+                href={`mailto:${c("contact.audition")}`}
+              />
+              <ContactRow
+                index="03"
+                kind="youtube"
+                label="YouTube"
+                value="@CheezeFilmz"
+                href="https://www.youtube.com/@CheezeFilmz"
+              />
+              <ContactRow
+                index="04"
+                kind="instagram"
+                label="Instagram"
+                value="@cheezefilm.official"
+                href="https://www.instagram.com/cheezefilm.official/"
+              />
+            </ul>
           </InView>
         </div>
       </section>
@@ -890,6 +927,11 @@ export async function SiteFooter({ isHome = false }: { isHome?: boolean } = {}) 
           </div>
           <div className="flex items-center gap-2">
             <span className="opacity-60">Crafted by</span>
+            {/* "· efface.dev ↗" tail dropped — the wordmark itself
+                links to https://efface.dev, the trailing domain
+                duplicated the destination and stretched the credit
+                line on narrow screens. Yellow dot + "efface" wordmark
+                stays as the credit. */}
             <a
               href="https://efface.dev"
               target="_blank"
@@ -898,9 +940,6 @@ export async function SiteFooter({ isHome = false }: { isHome?: boolean } = {}) 
             >
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-cheeze-yellow group-hover:bg-cheeze-cream transition-colors" />
               efface
-              <span className="text-cheeze-cream/40 group-hover:text-cheeze-cream/70 transition-colors">
-                · efface.dev ↗
-              </span>
             </a>
           </div>
         </div>
@@ -1318,31 +1357,103 @@ function FilmCard({
   );
 }
 
-function ContactRow({ label, value, href }: { label: string; value: string; href: string }) {
+/**
+ * Directory row on the Contact section — film-studio credits plate.
+ *
+ * Layout: indexed number (yellow mono, top-left) + display-sized label
+ * (Business / Audition / YouTube / Instagram, set in the brand display
+ * font in cream) + the actual value (email or @handle, in mono cream)
+ * + a `kind`-specific glyph that slides in from the right on hover. A
+ * yellow hairline animates left-to-right beneath the row from a single
+ * pixel into the full row width — the visual equivalent of a film cue
+ * mark passing across the slate.
+ *
+ * Splitting the click target across the entire row (rather than just
+ * the email/handle text) makes the row feel like a single tappable
+ * card on touch, where chasing a 12-char inline link is fiddly.
+ */
+function ContactRow({
+  index,
+  kind,
+  label,
+  value,
+  href,
+}: {
+  index: string;
+  kind: "business" | "audition" | "youtube" | "instagram";
+  label: string;
+  value: string;
+  href: string;
+}) {
   // `mailto:` 와 외부 링크는 다르게 처리 — mailto 에 `target="_blank"`
   // 를 붙이면 일부 브라우저가 빈 탭을 띄운 뒤 메일 클라이언트를 호출하는
   // 식으로 어색해짐. http(s) 만 새 탭으로.
-  const isMail = href.startsWith("mailto:");
   const isExternal = href.startsWith("http");
   return (
-    <div className="grid grid-cols-[6rem_1fr] gap-3 items-baseline pb-3 border-b border-cheeze-cream/15 group">
-      <span className="text-[10px] tracking-[0.3em] uppercase text-cheeze-yellow/80">
-        {label}
-      </span>
+    <li>
       <a
         href={href}
         target={isExternal ? "_blank" : undefined}
         rel={isExternal ? "noreferrer" : undefined}
-        className="text-sm break-all underline decoration-cheeze-cream/25 underline-offset-[6px] hover:text-cheeze-yellow hover:decoration-cheeze-yellow transition-colors inline-flex items-center gap-1.5"
+        className="group/row relative flex items-start gap-4 py-5 transition-colors"
       >
-        <span>{value}</span>
+        {/* Animated yellow underline — sits on the bottom edge of the
+            row, scales from 0 → 100% on hover. The hairline divider
+            above each li (via `divide-y`) reads as the row's top edge;
+            this is the row's hover-only "active" stripe. */}
         <span
           aria-hidden
-          className="text-[10px] opacity-50 group-hover:opacity-100 transition-opacity"
+          className="absolute left-0 right-0 -bottom-px h-px bg-cheeze-yellow origin-left scale-x-0 group-hover/row:scale-x-100 transition-transform duration-500 ease-out"
+        />
+        {/* Index pill — small, lives in a fixed column so the labels
+            line up across rows. */}
+        <span className="shrink-0 mt-1 text-[10px] font-mono tabular-nums tracking-widest text-cheeze-yellow/70 group-hover/row:text-cheeze-yellow transition-colors">
+          .{index}
+        </span>
+        <div className="min-w-0 flex-1">
+          {/* Big credit-style label — cream, display weight, slight
+              left-shift on hover so the eye sees the row "lean in". */}
+          <div
+            className="text-[22px] sm:text-[26px] leading-none tracking-tight text-cheeze-cream transition-transform duration-300 group-hover/row:translate-x-1"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            {label}
+          </div>
+          {/* The actual address / handle — mono, smaller, cream/65.
+              `break-all` keeps long email strings from blowing the
+              column out at narrow widths. */}
+          <div className="mt-1.5 text-[13px] font-mono break-all text-cheeze-cream/70 group-hover/row:text-cheeze-yellow transition-colors">
+            {value}
+          </div>
+        </div>
+        {/* Right-side glyph. Brand SVGs for YT/IG so the row reads as
+            a "go to channel" affordance; envelope strokes for the two
+            email rows so the action is unambiguous (the cursor shows a
+            mailto: link in the corner regardless). Slides 4px on hover
+            so the eye registers movement even when colours stay flat. */}
+        <span
+          aria-hidden
+          className="shrink-0 self-center text-cheeze-cream/40 group-hover/row:text-cheeze-yellow transition-all duration-300 group-hover/row:translate-x-1"
         >
-          {isMail ? "✉" : "↗"}
+          {kind === "youtube" ? (
+            <svg viewBox="0 0 24 24" width="28" height="28" className="block">
+              <path fill="currentColor" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z" />
+              <path fill="#3a1474" d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+            </svg>
+          ) : kind === "instagram" ? (
+            <svg viewBox="0 0 24 24" width="26" height="26" className="block">
+              <rect x="2.5" y="2.5" width="19" height="19" rx="5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+              <circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" strokeWidth="1.6" />
+              <circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" width="26" height="26" className="block" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <path d="m3 7 9 6 9-6" />
+            </svg>
+          )}
         </span>
       </a>
-    </div>
+    </li>
   );
 }
