@@ -760,3 +760,26 @@ body {
   0%, 100% { opacity: 0.3; }
   50%      { opacity: 1; }
 }
+
+/* PlayerModal entrance — was inlined in a runtime <style> tag inside
+   the modal component, which caused a layout recalc on every first
+   open. Promoted here so the keyframes are part of the shipped CSS
+   bundle and the modal mount is a pure compositor operation. */
+@keyframes player-modal-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes player-modal-in {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+.player-modal-backdrop {
+  animation: player-modal-fade 200ms ease-out both;
+}
+.player-modal-card {
+  animation: player-modal-in 320ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .player-modal-backdrop,
+  .player-modal-card { animation: none !important; }
+}

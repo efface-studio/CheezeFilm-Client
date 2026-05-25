@@ -167,8 +167,13 @@ export default async function CareersPage() {
               </p>
             </InView>
 
-            {/* Stat strip — magazine masthead figures. */}
-            <InView className="fade-up mt-10 grid grid-cols-3 max-w-2xl border-y border-cheeze-purple-deep/20 divide-x divide-cheeze-purple-deep/15">
+            {/* Stat strip — magazine masthead figures. On phones the
+                3-col + vertical dividers crushed Korean labels
+                (오디션·정시 등) into ~100px columns with the divide-x
+                slicing the kerning. Stacks 1-up on mobile with
+                horizontal rules instead, snaps back to the 3-up
+                masthead at sm+. */}
+            <InView className="fade-up mt-10 grid grid-cols-1 sm:grid-cols-3 max-w-2xl border-y border-cheeze-purple-deep/20 divide-y sm:divide-y-0 sm:divide-x divide-cheeze-purple-deep/15">
               <Stat number={ROLES.length} label={t("careers.stat.open", lang)} />
               <Stat
                 number="1st"

@@ -25,6 +25,12 @@ export function StaggerText({
    *  of the first instead of restarting at 0. */
   startIndex?: number;
 }) {
+  // Stable keys derived from position + glyph keep React from
+  // recreating the spans when the parent re-renders with the same
+  // text. Previously the per-index keys meant a re-render mid-stagger
+  // (e.g. navigating back to /) would reset every span's CSS animation
+  // state and show a visible jank. Position + codepoint is enough to
+  // disambiguate runs of the same character (e.g. "ㄴㄴ").
   if (mode === "character") {
     // Render each character as its own span. Spaces become non-breaking
     // so they keep their width even while invisible (avoids text-reflow
@@ -35,12 +41,12 @@ export function StaggerText({
       <>
         {chars.map((ch, i) => {
           if (ch === " ") {
-            return <span key={i}>&nbsp;</span>;
+            return <span key={`sp-${startIndex}-${i}`}>&nbsp;</span>;
           }
           const li = startIndex + idx++;
           return (
             <span
-              key={i}
+              key={`c-${startIndex}-${i}-${ch.codePointAt(0)}`}
               style={{ ["--li" as string]: li } as React.CSSProperties}
             >
               {ch}
@@ -59,12 +65,12 @@ export function StaggerText({
     <>
       {parts.map((p, i) => {
         if (/^\s+$/.test(p)) {
-          return <span key={i}>{p}</span>;
+          return <span key={`ws-${startIndex}-${i}`}>{p}</span>;
         }
         const li = startIndex + idx++;
         return (
           <span
-            key={i}
+            key={`w-${startIndex}-${i}-${p}`}
             style={{ ["--li" as string]: li } as React.CSSProperties}
           >
             {p}

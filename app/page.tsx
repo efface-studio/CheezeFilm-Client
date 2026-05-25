@@ -268,7 +268,12 @@ export default async function HomePage() {
                 divider between cells, one bold label each. The earlier
                 metallic-gradient chips read as loud; this version
                 trusts the metal-coloured dots + clean typography. */}
-            <div className="mt-10 rounded-2xl bg-toss-50 grid grid-cols-3 divide-x divide-toss-200/70">
+            {/* On phones the 3-col + divide-x kept the cells narrow
+                enough that Korean labels (실버 / 골드 / 대상) sat with
+                hairline verticals slicing through their kerning. Stack
+                vertically with horizontal hairlines instead, then snap
+                back to the 3-up row at sm+. */}
+            <div className="mt-10 rounded-2xl bg-toss-50 grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-toss-200/70">
               <AwardChip label={t("awards.silver", lang)} dotClass="bg-zinc-400" />
               <AwardChip label={t("awards.gold", lang)} dotClass="bg-amber-400" />
               <AwardChip label={t("awards.grand", lang)} dotClass="bg-cheeze-purple" />
@@ -1132,8 +1137,13 @@ async function FilmsGrid({ heroVideos, lang }: { heroVideos: string[]; lang: imp
       </div>
       {recent.length > 0 && (
         <div className="mt-20 pt-12 border-t border-cheeze-purple-deep/15">
-          <InView className="fade-up flex items-baseline justify-between gap-6 mb-8">
-            <div>
+          {/* `flex-wrap` + per-child `flex-shrink-0` so on narrow
+              phones the "View All" link drops onto its own line
+              instead of fighting the heading for space. The link
+              keeps `whitespace-nowrap` to stay legible whichever
+              line it lands on. */}
+          <InView className="fade-up flex flex-wrap items-baseline justify-between gap-x-6 gap-y-3 mb-8">
+            <div className="min-w-0">
               <div className="text-[10px] tracking-[0.4em] uppercase text-cheeze-olive">
                 — Just dropped
               </div>
@@ -1143,7 +1153,7 @@ async function FilmsGrid({ heroVideos, lang }: { heroVideos: string[]; lang: imp
             </div>
             <Link
               href="/videos"
-              className="text-[11px] tracking-widest uppercase font-bold text-cheeze-purple-deep hover:text-cheeze-purple border-b border-cheeze-purple-deep/30 hover:border-cheeze-purple pb-1 transition-colors whitespace-nowrap"
+              className="shrink-0 text-[11px] tracking-widest uppercase font-bold text-cheeze-purple-deep hover:text-cheeze-purple border-b border-cheeze-purple-deep/30 hover:border-cheeze-purple pb-1 transition-colors whitespace-nowrap"
             >
               {t("films.recent.viewAll", lang)}
             </Link>
@@ -1244,7 +1254,12 @@ async function ShortsStripSection({ lang }: { lang: import("@/lib/i18n").Lang })
                   src={v.thumbnail}
                   alt={v.title}
                   fill
-                  sizes="(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw"
+                  // Grid is 6 cols on lg (16.6vw each) / 3 on sm
+                  // (33vw) / 2 on phone (50vw). Earlier hint
+                  // overshot to 20vw on lg, which made Next pick the
+                  // next-larger candidate (~10–15KB heavier per
+                  // thumb). Trimmed to actual grid widths.
+                  sizes="(min-width: 1024px) 17vw, (min-width: 640px) 33vw, 50vw"
                   className="object-cover"
                   loading="lazy"
                 />
@@ -1348,11 +1363,21 @@ function FilmCard({
         <div className="aspect-[3/4] relative overflow-hidden bg-cheeze-charcoal">
           {videoId && (
             <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`}
+              {/* Switched from bare <img src="maxresdefault"> to
+                  next/Image with a smaller variant. The card lands at
+                  ~33vw on desktop and 50–100vw on phones — never close
+                  to the 1280px maxres asset, so we shipped ~100-200KB
+                  per card of waste. `hq720` (1280x720) is a tighter
+                  upper bound; Next then negotiates AVIF/WebP + the
+                  right candidate from there. `sizes` matches the
+                  3-col grid (33vw lg, 50vw sm, 100vw mobile). */}
+              <Image
+                src={`https://i.ytimg.com/vi/${videoId}/hq720.jpg`}
                 alt={title}
-                className="absolute inset-0 w-full h-full object-cover"
+                fill
+                sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                className="object-cover"
+                quality={75}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-cheeze-charcoal/70 via-cheeze-charcoal/0 to-transparent" />
             </>

@@ -41,7 +41,12 @@ export default function SupportTabs({
       <div
         role="tablist"
         aria-label="지원 종류 선택"
-        className="inline-grid grid-cols-2 gap-1 p-1 rounded-full bg-toss-100 mb-10 w-[280px]"
+        // The hard-coded 280px width overflowed at <375px viewports
+        // (iPhone SE 1st gen, older Android). w-full on mobile lets
+        // the pill fill the column; sm:w-[280px] restores the
+        // deliberate compact width at tablet+ widths where label
+        // ambiguity isn't a problem.
+        className="grid sm:inline-grid grid-cols-2 gap-1 p-1 rounded-full bg-toss-100 mb-10 w-full sm:w-[280px] max-w-full"
       >
         <TabButton
           active={tab === "audition"}
