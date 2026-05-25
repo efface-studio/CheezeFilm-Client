@@ -75,8 +75,10 @@ const NAV: NavItem[] = [
 type OpenRoleType = "lead" | "support" | "extra" | "staff";
 
 /** Map the actual open role types to a lang-aware status label.
- *  We treat anything that's not "staff" as an audition role for label
- *  purposes; if both buckets are open we show both. */
+ *  Labels are tight enough to fit on one line at the rail's 220px
+ *  width without needing wide tracking — the previous
+ *  "오디션 · 스태프 모집 중" line was 12 chars and wrapped "중" onto
+ *  its own row in the CTA card. Kept short and active. */
 function deriveOpenLabel(roleTypes: Set<OpenRoleType>, lang: Lang): string {
   const hasStaff = roleTypes.has("staff");
   const hasAudition =
@@ -84,11 +86,11 @@ function deriveOpenLabel(roleTypes: Set<OpenRoleType>, lang: Lang): string {
     roleTypes.has("support") ||
     roleTypes.has("extra");
   if (lang === "en") {
-    if (hasStaff && hasAudition) return "Casting & hiring";
-    if (hasAudition) return "Casting now";
-    if (hasStaff) return "Hiring now";
+    if (hasStaff && hasAudition) return "Now casting + hiring";
+    if (hasAudition) return "Now casting";
+    if (hasStaff) return "Now hiring";
   } else {
-    if (hasStaff && hasAudition) return "오디션 · 스태프 모집 중";
+    if (hasStaff && hasAudition) return "오디션 + 스태프 모집";
     if (hasAudition) return "오디션 모집 중";
     if (hasStaff) return "스태프 모집 중";
   }
@@ -371,52 +373,60 @@ export default function SiteNav({ lang = "ko" }: { lang?: Lang }) {
           </ol>
         </nav>
 
-        {/* Bottom CTA — restored to the deep-purple card pattern after
-            the bare-text version read too thin in context. Refinements
-            over the original card:
-              - 14px corner radius (was 16px) and a 1px brand-cream
-                outline so the card has a more deliberate "panel" feel
-                rather than the generic soft pill
-              - status row's pulse dot is the brand yellow again (was
-                briefly purple) — yellow on purple is the studio's
-                actual signature contrast
-              - body label uses the display font so the CTA reads as
-                a typographic block, not a button label
-              - arrow is its own column so it can drift 4px on hover
-                without bumping the label baseline */}
+        {/* Bottom CTA — film clapper card.
+            Previous pass had the status line wrapping ("중" hanging
+            on its own row) because tracking-[0.3em] on Korean blew
+            the column out. The redo:
+              - drops the wide tracking (Korean doesn't need it)
+              - uses a shorter status label (deriveOpenLabel above)
+              - replaces the ring outline with a brand-yellow left
+                strip — the signature clapper/film bookmark mark
+              - tightens padding so the card reads as a single
+                confident block, not a generic soft pill
+              - the action label sits at the bottom in display weight,
+                arrow drifts on hover */}
         <div className="space-y-5">
           <Link
             href="/support"
-            className="group/cta block rounded-2xl bg-cheeze-purple-deep ring-1 ring-inset ring-cheeze-cream/10 px-4 py-4 hover:bg-cheeze-purple transition-colors"
+            className="group/cta relative block overflow-hidden rounded-xl bg-cheeze-purple-deep hover:bg-cheeze-purple transition-colors"
           >
-            {openLabel && (
-              <div className="flex items-center gap-1.5 text-[10px] tracking-[0.3em] uppercase text-cheeze-cream/75">
+            {/* Film bookmark — solid brand-yellow strip down the left
+                edge. Reads as a clapperboard slate / film perforation
+                mark. Slightly extends on hover for a touch of life. */}
+            <span
+              aria-hidden
+              className="absolute left-0 top-0 bottom-0 w-1 bg-cheeze-yellow group-hover/cta:w-1.5 transition-[width] duration-300"
+            />
+            <div className="pl-5 pr-4 py-3.5">
+              {openLabel && (
+                <div className="flex items-center gap-1.5 text-[11px] text-cheeze-cream/80 whitespace-nowrap">
+                  <span
+                    aria-hidden
+                    className="block w-1.5 h-1.5 rounded-full bg-cheeze-yellow cta-pulse"
+                  />
+                  {openLabel}
+                </div>
+              )}
+              <div
+                className={`flex items-end justify-between gap-2 ${
+                  openLabel ? "mt-2" : ""
+                }`}
+              >
+                <span
+                  className="text-[18px] leading-none tracking-tight text-cheeze-cream"
+                  style={{ fontFamily: "var(--font-display)" }}
+                >
+                  {lang === "en"
+                    ? (openLabel ? "Apply" : "Apply now")
+                    : (openLabel ? "지원하기" : "지원하기")}
+                </span>
                 <span
                   aria-hidden
-                  className="block w-1.5 h-1.5 rounded-full bg-cheeze-yellow cta-pulse"
-                />
-                {openLabel}
+                  className="text-cheeze-yellow text-[16px] leading-none transition-transform duration-300 group-hover/cta:translate-x-1"
+                >
+                  →
+                </span>
               </div>
-            )}
-            <div
-              className={`flex items-baseline justify-between gap-2 ${
-                openLabel ? "mt-1.5" : ""
-              }`}
-            >
-              <span
-                className="text-[17px] tracking-tight text-cheeze-cream"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                {lang === "en"
-                  ? (openLabel ? "Apply" : "Apply now")
-                  : (openLabel ? "지원하기" : "지원하기")}
-              </span>
-              <span
-                aria-hidden
-                className="text-cheeze-yellow text-[17px] leading-none transition-transform duration-300 group-hover/cta:translate-x-1"
-              >
-                →
-              </span>
             </div>
           </Link>
 
