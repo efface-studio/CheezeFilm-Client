@@ -927,6 +927,11 @@ export async function SiteFooter({ isHome = false }: { isHome?: boolean } = {}) 
           </div>
           <div className="flex items-center gap-2">
             <span className="opacity-60">Crafted by</span>
+            {/* "· efface.dev ↗" tail dropped — the wordmark itself
+                links to https://efface.dev, the trailing domain
+                duplicated the destination and stretched the credit
+                line on narrow screens. Yellow dot + "efface" wordmark
+                stays as the credit. */}
             <a
               href="https://efface.dev"
               target="_blank"
@@ -935,9 +940,6 @@ export async function SiteFooter({ isHome = false }: { isHome?: boolean } = {}) 
             >
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-cheeze-yellow group-hover:bg-cheeze-cream transition-colors" />
               efface
-              <span className="text-cheeze-cream/40 group-hover:text-cheeze-cream/70 transition-colors">
-                · efface.dev ↗
-              </span>
             </a>
           </div>
         </div>
