@@ -92,7 +92,11 @@ export default function VideosGrid({
           </button>
         </div>
 
-        <div className="flex items-center gap-3 flex-1 min-w-[240px] max-w-md">
+        {/* min-w-[240px] forced an overflow on viewports < ~390px when
+            the tab pills already filled the row. Drop the min on
+            mobile (min-w-0 lets it shrink), restore at sm+ where
+            240px is comfortable. */}
+        <div className="flex items-center gap-3 flex-1 min-w-0 sm:min-w-[240px] max-w-md">
           <span className="text-cheeze-olive text-xs uppercase tracking-widest hidden sm:inline">
             {t("videos.search.label", lang)}
           </span>
@@ -266,16 +270,17 @@ function PlayerModal({ video, onClose }: { video: Video; onClose: () => void }) 
     .trim();
 
   return (
+    // Keyframes `player-modal-fade` / `player-modal-in` live in
+    // globals.css so the modal doesn't ship an inline <style> tag on
+    // each open (which caused a one-frame layout recalc on first
+    // interaction).
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-cheeze-charcoal/85 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 grid place-items-center bg-cheeze-charcoal/85 backdrop-blur-sm p-4 player-modal-backdrop"
       onClick={onClose}
-      style={{ animation: "fadeIn 200ms ease-out both" }}
     >
-      <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes modalIn{from{opacity:0;transform:translateY(20px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}`}</style>
       <div
-        className={`w-full ${video.isShort ? "max-w-md" : "max-w-4xl"} max-h-[92vh] overflow-y-auto bg-cheeze-cream border border-cheeze-purple-deep`}
+        className={`w-full ${video.isShort ? "max-w-md" : "max-w-4xl"} max-h-[92vh] overflow-y-auto bg-cheeze-cream border border-cheeze-purple-deep player-modal-card`}
         onClick={(e) => e.stopPropagation()}
-        style={{ animation: "modalIn 320ms cubic-bezier(0.2,0.7,0.2,1) both" }}
       >
         <div className={`${video.isShort ? "aspect-[9/16]" : "aspect-video"} relative bg-cheeze-charcoal`}>
           <iframe

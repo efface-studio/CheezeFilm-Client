@@ -127,6 +127,26 @@ export default function SiteNav({ lang = "ko" }: { lang?: Lang }) {
 
   useEffect(() => {
     let cancelled = false;
+    // sessionStorage cache: previously every client-side route change
+    // fired a fresh /api/audition-listings GET, costing 50–150ms per
+    // navigation even though the data rarely changes. With this cache,
+    // the first visit per session hits the API and subsequent route
+    // changes resolve synchronously. Cache lives for the tab's
+    // lifetime; reload picks up any admin-side changes.
+    const CACHE_KEY = "cf:openroles:v1";
+    const cached = (() => {
+      if (typeof sessionStorage === "undefined") return null;
+      try {
+        const raw = sessionStorage.getItem(CACHE_KEY);
+        return raw ? (JSON.parse(raw) as OpenRoleType[]) : null;
+      } catch {
+        return null;
+      }
+    })();
+    if (cached) {
+      setOpenLabel(deriveOpenLabel(new Set(cached), lang));
+      return;
+    }
     fetch("/api/audition-listings")
       .then((r) =>
         r.json().catch(() => ({ listings: [] })) as Promise<{
@@ -135,10 +155,13 @@ export default function SiteNav({ lang = "ko" }: { lang?: Lang }) {
       )
       .then((d) => {
         if (cancelled) return;
-        const roleTypes = new Set<OpenRoleType>(
-          (d.listings ?? []).map((l) => l.role_type),
-        );
-        setOpenLabel(deriveOpenLabel(roleTypes, lang));
+        const roleTypes = (d.listings ?? []).map((l) => l.role_type);
+        try {
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify(roleTypes));
+        } catch {
+          /* quota — fine to skip the cache write */
+        }
+        setOpenLabel(deriveOpenLabel(new Set(roleTypes), lang));
       })
       .catch(() => {
         if (!cancelled) setOpenLabel("");

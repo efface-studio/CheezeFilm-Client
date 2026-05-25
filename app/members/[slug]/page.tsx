@@ -410,7 +410,12 @@ export default async function MemberDetailPage({
 
       {/* ── PREV / NEXT NAV ──────────────────────────── */}
       <section className="border-b border-cheeze-purple-deep/15">
-        <div className="mx-auto max-w-[100rem] px-6 py-10 grid grid-cols-2 gap-6">
+        {/* On phone the 2-col grid crushed prev/next into ~140px
+            columns and the member-name display text wrapped mid-syllable.
+            Stack vertically below sm: prev on top, next below — the
+            text-right next still sits flush right on mobile so the
+            chevron arrow direction stays consistent. */}
+        <div className="mx-auto max-w-[100rem] px-6 py-10 grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
             {prev ? (
               <Link
