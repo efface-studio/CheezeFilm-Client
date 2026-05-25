@@ -938,7 +938,11 @@ export async function SiteFooter({ isHome = false }: { isHome?: boolean } = {}) 
               rel="noreferrer"
               className="group inline-flex items-center gap-1.5 font-bold text-cheeze-yellow hover:text-cheeze-cream transition-colors"
             >
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-cheeze-yellow group-hover:bg-cheeze-cream transition-colors" />
+              {/* `.credit-breath` is a slow 2.4s scale+opacity cycle
+                  defined in globals.css. Reads as a gentle "alive"
+                  beat next to the wordmark without flickering for
+                  attention. Pauses under prefers-reduced-motion. */}
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-cheeze-yellow group-hover:bg-cheeze-cream transition-colors credit-breath" />
               efface
             </a>
           </div>
@@ -1395,7 +1399,7 @@ function ContactRow({
         href={href}
         target={isExternal ? "_blank" : undefined}
         rel={isExternal ? "noreferrer" : undefined}
-        className="group/row relative flex items-start gap-4 py-5 transition-colors"
+        className="group/row relative flex items-start gap-4 py-4 transition-colors"
       >
         {/* Animated yellow underline — sits on the bottom edge of the
             row, scales from 0 → 100% on hover. The hairline divider
@@ -1411,10 +1415,13 @@ function ContactRow({
           .{index}
         </span>
         <div className="min-w-0 flex-1">
-          {/* Big credit-style label — cream, display weight, slight
-              left-shift on hover so the eye sees the row "lean in". */}
+          {/* Credit-style label — cream, display weight. Earlier pass
+              had this at 22-26px which read as a billboard; trimmed
+              one stop down to 18-20px so the email/handle line below
+              gets equal voice and the whole block reads as a row of
+              credits, not four marquee titles. */}
           <div
-            className="text-[22px] sm:text-[26px] leading-none tracking-tight text-cheeze-cream transition-transform duration-300 group-hover/row:translate-x-1"
+            className="text-[18px] sm:text-[20px] leading-none tracking-tight text-cheeze-cream transition-transform duration-300 group-hover/row:translate-x-1"
             style={{ fontFamily: "var(--font-display)" }}
           >
             {label}
@@ -1422,7 +1429,7 @@ function ContactRow({
           {/* The actual address / handle — mono, smaller, cream/65.
               `break-all` keeps long email strings from blowing the
               column out at narrow widths. */}
-          <div className="mt-1.5 text-[13px] font-mono break-all text-cheeze-cream/70 group-hover/row:text-cheeze-yellow transition-colors">
+          <div className="mt-1 text-[13px] font-mono break-all text-cheeze-cream/70 group-hover/row:text-cheeze-yellow transition-colors">
             {value}
           </div>
         </div>
@@ -1436,18 +1443,18 @@ function ContactRow({
           className="shrink-0 self-center text-cheeze-cream/40 group-hover/row:text-cheeze-yellow transition-all duration-300 group-hover/row:translate-x-1"
         >
           {kind === "youtube" ? (
-            <svg viewBox="0 0 24 24" width="28" height="28" className="block">
+            <svg viewBox="0 0 24 24" width="24" height="24" className="block">
               <path fill="currentColor" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z" />
               <path fill="#3a1474" d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
             </svg>
           ) : kind === "instagram" ? (
-            <svg viewBox="0 0 24 24" width="26" height="26" className="block">
+            <svg viewBox="0 0 24 24" width="22" height="22" className="block">
               <rect x="2.5" y="2.5" width="19" height="19" rx="5" fill="none" stroke="currentColor" strokeWidth="1.6" />
               <circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" strokeWidth="1.6" />
               <circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" />
             </svg>
           ) : (
-            <svg viewBox="0 0 24 24" width="26" height="26" className="block" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 24 24" width="22" height="22" className="block" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="5" width="18" height="14" rx="2" />
               <path d="m3 7 9 6 9-6" />
             </svg>

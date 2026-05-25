@@ -575,6 +575,22 @@ body {
   animation: pulse-dot 1800ms ease-out infinite;
 }
 
+/* Slow breathing dot — used in the footer "Crafted by ● efface"
+   credit. Subtler than `.pulse-dot` (no shadow ring) so it doesn't
+   compete with the foreground; just a slow scale + opacity cycle so
+   the credit feels "alive" without flickering for attention. The
+   2400ms cycle keeps it well below what reads as "blinking" — it's a
+   single, continuous breath. */
+@keyframes credit-breath {
+  0%, 100% { transform: scale(1);    opacity: 1;    }
+  50%      { transform: scale(1.35); opacity: 0.65; }
+}
+.credit-breath {
+  animation: credit-breath 2400ms ease-in-out infinite;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .vrule, .hrule, .mask-reveal, .fade-up,
   .stagger > *, .typewriter > *, .display-title::after {
@@ -583,7 +599,7 @@ body {
     clip-path: none !important;
     opacity: 1 !important;
   }
-  .marquee, .pulse-dot, .cta-pulse { animation: none !important; }
+  .marquee, .pulse-dot, .cta-pulse, .credit-breath { animation: none !important; }
 }
 
 /* Vignette: removed in the Toss redesign (the projected-screen feel
