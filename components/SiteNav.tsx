@@ -421,23 +421,36 @@ export default function SiteNav({ lang = "ko" }: { lang?: Lang }) {
           </Link>
 
           <div className="flex items-center justify-between gap-3 pt-1">
-            <div className="flex items-center gap-3 text-[10px] tracking-[0.3em] uppercase">
+            {/* Tracked-uppercase text labels ("YouTube · IG") replaced
+                with brand glyphs — the wordmarks were doing the same
+                job a 20px icon does, twice over, and the row reads
+                cleaner with just the recognisable shapes. `aria-label`
+                on each anchor preserves the link's meaning for AT. */}
+            <div className="flex items-center gap-1">
               <a
                 href="https://www.youtube.com/@CheezeFilmz"
                 target="_blank"
                 rel="noreferrer"
-                className="text-cheeze-olive hover:text-cheeze-purple transition-colors"
+                aria-label={lang === "en" ? "YouTube channel" : "유튜브 채널"}
+                className="inline-flex w-9 h-9 items-center justify-center rounded-full text-cheeze-olive hover:text-cheeze-ink hover:bg-toss-50 transition-colors"
               >
-                YouTube
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+                  <path fill="currentColor" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z" />
+                  <path fill="var(--cheeze-cream)" d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                </svg>
               </a>
-              <span className="text-cheeze-olive/30">·</span>
               <a
                 href="https://www.instagram.com/cheezefilm.official/"
                 target="_blank"
                 rel="noreferrer"
-                className="text-cheeze-olive hover:text-cheeze-purple transition-colors"
+                aria-label={lang === "en" ? "Instagram profile" : "인스타그램 프로필"}
+                className="inline-flex w-9 h-9 items-center justify-center rounded-full text-cheeze-olive hover:text-cheeze-ink hover:bg-toss-50 transition-colors"
               >
-                IG
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="5" />
+                  <circle cx="12" cy="12" r="4" />
+                  <circle cx="17.4" cy="6.6" r="1" fill="currentColor" stroke="none" />
+                </svg>
               </a>
             </div>
             {/* Language toggle — sits at the bottom of the rail next
